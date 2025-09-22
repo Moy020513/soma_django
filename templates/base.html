@@ -11,20 +11,595 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
+        /* SOMA Brand Colors */
+        :root {
+            --soma-orange: #ff6b35;
+            --soma-blue: #1a365d;
+            --soma-light-gray: #d4d3d2;
+            --soma-orange-light: #ff8c5a;
+            --soma-orange-dark: #e55a2b;
+            --soma-blue-light: #2d5282;
+            --soma-blue-dark: #0f2a44;
+        }
+        
+        /* Global Styling */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Sidebar Styling */
         .sidebar {
             min-height: 100vh;
-            background-color: #343a40;
+            background: linear-gradient(180deg, var(--soma-blue) 0%, var(--soma-blue-dark) 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
+        
+        .sidebar .text-white {
+            color: white !important;
+        }
+        
+        .sidebar h4 {
+            color: var(--soma-orange);
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .sidebar .text-muted {
+            color: var(--soma-light-gray) !important;
+            opacity: 0.8;
+        }
+        
         .nav-link {
             color: #ffffff !important;
+            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+            margin: 0.2rem 0;
         }
+        
         .nav-link:hover {
-            background-color: #495057;
-            color: #ffffff !important;
+            background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
+            color: white !important;
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(243, 148, 62, 0.3);
         }
+        
         .nav-link.active {
-            background-color: #007bff;
-            color: #ffffff !important;
+            background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
+            color: white !important;
+            box-shadow: 0 4px 8px rgba(243, 148, 62, 0.3);
+        }
+        
+        .nav-link i {
+            color: var(--soma-orange);
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover i,
+        .nav-link.active i {
+            color: white;
+        }
+        
+        /* Header Styling */
+        .main-header {
+            background: linear-gradient(135deg, var(--soma-blue) 0%, var(--soma-blue-light) 100%);
+            color: white;
+            padding: 1.5rem 0;
+            margin: -1rem -1.5rem 2rem -1.5rem;
+            box-shadow: 0 4px 12px rgba(59, 67, 129, 0.2);
+        }
+        
+        .main-header h1 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .main-header .border-bottom {
+            border-bottom: 2px solid var(--soma-orange) !important;
+        }
+        
+        /* Button Styling */
+        .btn-primary {
+            background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
+            border-color: var(--soma-orange);
+            border: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background: linear-gradient(45deg, var(--soma-orange-dark), var(--soma-orange));
+            border-color: var(--soma-orange-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(243, 148, 62, 0.3);
+        }
+        
+        .btn-outline-primary {
+            color: var(--soma-orange);
+            border-color: var(--soma-orange);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary:hover,
+        .btn-outline-primary:focus {
+            background-color: var(--soma-orange);
+            border-color: var(--soma-orange);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(243, 148, 62, 0.3);
+        }
+        
+        .btn-outline-secondary {
+            color: var(--soma-blue);
+            border-color: var(--soma-blue);
+        }
+        
+        .btn-outline-secondary:hover,
+        .btn-outline-secondary:focus {
+            background-color: var(--soma-blue);
+            border-color: var(--soma-blue);
+        }
+        
+        /* Dropdown Styling */
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-radius: 0.75rem;
+        }
+        
+        .dropdown-item:hover {
+            background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
+            color: white;
+        }
+        
+        /* User Dropdown Button */
+        .btn-outline-secondary.dropdown-toggle {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.3);
+            color: white;
+        }
+        
+        .btn-outline-secondary.dropdown-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
+        }
+        
+        /* Card Styling */
+        .card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--soma-light-gray), #e9ecef);
+            border-bottom: 2px solid var(--soma-orange);
+            border-radius: 1rem 1rem 0 0 !important;
+            font-weight: 600;
+            color: var(--soma-blue);
+        }
+        
+        /* Alert Styling */
+        .alert-primary {
+            background: linear-gradient(135deg, var(--soma-blue), var(--soma-blue-light));
+            border-color: var(--soma-blue);
+            color: white;
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 4px 15px rgba(59, 67, 129, 0.2);
+        }
+        
+        .alert-primary .alert-heading {
+            color: var(--soma-orange);
+            font-weight: bold;
+        }
+        
+        /* Badge Styling */
+        .badge {
+            font-weight: 500;
+            padding: 0.5em 0.75em;
+        }
+        
+        .bg-warning {
+            background: linear-gradient(45deg, #ffc107, #ffcd39) !important;
+        }
+        
+        .bg-success {
+            background: linear-gradient(45deg, #28a745, #34ce57) !important;
+        }
+        
+        .bg-danger {
+            background: linear-gradient(45deg, #dc3545, #e45563) !important;
+        }
+        
+        .bg-info {
+            background: linear-gradient(45deg, #17a2b8, #20c9e3) !important;
+        }
+        
+        /* Text Colors */
+        .text-primary {
+            color: var(--soma-orange) !important;
+        }
+        
+        .text-info {
+            color: var(--soma-blue) !important;
+        }
+        
+        /* Border Colors */
+        .border-warning {
+            border-color: var(--soma-orange) !important;
+            border-width: 2px !important;
+        }
+        
+        /* List Group */
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid var(--soma-light-gray);
+        }
+        
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* Form Controls */
+        .form-control:focus {
+            border-color: var(--soma-orange);
+            box-shadow: 0 0 0 0.2rem rgba(243, 148, 62, 0.25);
+        }
+        
+        /* Custom Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Index Page Specific Styles */
+        .admin-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+        
+        .admin-panel-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-left: 4px solid var(--soma-orange);
+        }
+        
+        .user-card {
+            border: 2px solid var(--soma-light-gray);
+            transition: all 0.4s ease;
+        }
+        
+        .user-card:hover {
+            border-color: var(--soma-orange);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(243, 148, 62, 0.2);
+        }
+        
+        .user-icon-wrapper {
+            background: linear-gradient(135deg, var(--soma-light-gray), #e9ecef);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-info-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-left: 4px solid var(--soma-blue);
+        }
+        
+        .info-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--soma-light-gray);
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .welcome-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--soma-blue);
+        }
+        
+        .help-section {
+            background: linear-gradient(135deg, var(--soma-light-gray), #e9ecef);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            height: 100%;
+        }
+        
+        /* Profile Page Specific Styles */
+        .profile-card {
+            border-left: 4px solid var(--soma-orange);
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        }
+        
+        .actions-card {
+            border-left: 4px solid var(--soma-blue);
+        }
+        
+        .permissions-card {
+            border-left: 4px solid var(--soma-orange);
+        }
+        
+        .profile-field {
+            padding: 1rem;
+            background: rgba(243, 148, 62, 0.05);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--soma-orange);
+        }
+        
+        .profile-label {
+            color: var(--soma-blue);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .profile-value {
+            color: #495057;
+            margin: 0;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 0.25rem;
+            border: 1px solid var(--soma-light-gray);
+        }
+        
+        .action-btn {
+            transition: all 0.3s ease;
+            border-width: 2px;
+            font-weight: 500;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .permission-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .permission-item {
+            padding: 1rem;
+            background: rgba(59, 67, 129, 0.05);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--soma-blue);
+        }
+        
+        .permission-label {
+            color: var(--soma-blue);
+            font-weight: 500;
+        }
+        
+        .status-badge {
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+        }
+        
+        /* Notifications Page Specific Styles */
+        .notifications-header {
+            background: linear-gradient(135deg, var(--soma-blue), var(--soma-blue-light));
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(59, 67, 129, 0.2);
+        }
+        
+        .notifications-header h4 {
+            color: white;
+            margin: 0;
+        }
+        
+        .notifications-header .fas.fa-bell {
+            color: var(--soma-orange) !important;
+        }
+        
+        .notification-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+        }
+        
+        .notification-badge.unread {
+            background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
+            color: white;
+        }
+        
+        .notification-badge.read {
+            background: linear-gradient(45deg, #28a745, #34ce57);
+            color: white;
+        }
+        
+        .back-btn {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.3);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .notification-card {
+            border: none;
+            border-left: 4px solid var(--soma-light-gray);
+            transition: all 0.3s ease;
+        }
+        
+        .notification-card.notification-unread {
+            border-left-color: var(--soma-orange);
+            border-left-width: 6px;
+            background: linear-gradient(135deg, #fff, rgba(243, 148, 62, 0.05));
+            box-shadow: 0 4px 15px rgba(243, 148, 62, 0.1);
+        }
+        
+        .notification-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .notification-title {
+            color: var(--soma-blue);
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .notification-message {
+            color: #495057;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .notification-date {
+            background: rgba(59, 67, 129, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .new-badge {
+            background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .type-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        .type-badge.warning {
+            background: linear-gradient(45deg, #ffc107, #ffcd39);
+            color: #212529;
+        }
+        
+        .type-badge.success {
+            background: linear-gradient(45deg, #28a745, #34ce57);
+            color: white;
+        }
+        
+        .type-badge.danger {
+            background: linear-gradient(45deg, #dc3545, #e45563);
+            color: white;
+        }
+        
+        .action-link {
+            transition: all 0.3s ease;
+            border-width: 2px;
+        }
+        
+        .action-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(243, 148, 62, 0.3);
+        }
+        
+        .control-btn {
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: var(--soma-orange);
+            border-color: var(--soma-orange);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .mark-read-item:hover {
+            background: linear-gradient(45deg, #28a745, #34ce57);
+            color: white;
+        }
+        
+        .already-read {
+            font-style: italic;
+            opacity: 0.7;
+        }
+        
+        .empty-notifications .card {
+            border: 2px dashed var(--soma-light-gray);
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        }
+        
+        .empty-icon {
+            background: linear-gradient(135deg, var(--soma-light-gray), #e9ecef);
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .empty-title {
+            color: var(--soma-blue);
+            font-weight: 600;
+        }
+        
+        .empty-subtitle {
+            font-size: 1.1rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                box-shadow: none;
+            }
+            
+            .main-header {
+                margin: -1rem -15px 2rem -15px;
+            }
+            
+            .user-icon-wrapper {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .user-icon-wrapper i {
+                font-size: 2rem !important;
+            }
         }
     </style>
 </head>
@@ -48,7 +623,7 @@
                         
                         {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'admin:index' %}">
+                            <a class="nav-link" href="{% url 'admin_redirect' %}">
                                 <i class="fas fa-tachometer-alt me-2"></i>Admin
                             </a>
                         </li>
@@ -60,23 +635,29 @@
             <!-- Main content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <!-- Header -->
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom">
+                    <div class="px-4">
+                        <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                    </div>
                     
                     {% if user.is_authenticated %}
-                    <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-toolbar mb-2 mb-md-0 px-4">
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user me-1"></i>{{ user.username }}
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'admin:logout' %}">Cerrar Sesión</a></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                </a></li>
                             </ul>
                         </div>
                     </div>
                     {% else %}
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        <a href="{% url 'admin:login' %}" class="btn btn-primary">Iniciar Sesión</a>
+                    <div class="btn-toolbar mb-2 mb-md-0 px-4">
+                        <a href="{% url 'admin:login' %}" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                        </a>
                     </div>
                     {% endif %}
                 </div>

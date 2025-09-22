@@ -5,9 +5,13 @@ from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', views.admin_redirect, name='admin_redirect'),
+    path('admin/real/', admin.site.urls),
     path('', views.index, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('perfil/', views.perfil_usuario, name='perfil_usuario'),
+    path('mis-notificaciones/', views.notificaciones_usuario, name='notificaciones_usuario'),
+    path('notificaciones/<int:notificacion_id>/leida/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
     path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticación
     path('usuarios/', include('apps.usuarios.urls')),
     path('rh/', include('apps.recursos_humanos.urls')),

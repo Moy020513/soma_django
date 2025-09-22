@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card profile-card">
+            <div class="card-header">
+                <h5><i class="fas fa-user me-2" style="color: var(--soma-orange);"></i>Información Personal</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="profile-field mb-3">
+                            <label class="profile-label"><i class="fas fa-user-tag me-2" style="color: var(--soma-orange);"></i><strong>Usuario:</strong></label>
+                            <p class="profile-value">{{ usuario.username }}</p>
+                        </div>
+                        
+                        <div class="profile-field mb-3">
+                            <label class="profile-label"><i class="fas fa-id-badge me-2" style="color: var(--soma-orange);"></i><strong>Nombre:</strong></label>
+                            <p class="profile-value">{{ usuario.first_name|default:"No especificado" }}</p>
+                        </div>
+                        
+                        <div class="profile-field mb-3">
+                            <label class="profile-label"><i class="fas fa-user me-2" style="color: var(--soma-orange);"></i><strong>Apellidos:</strong></label>
+                            <p class="profile-value">{{ usuario.last_name|default:"No especificado" }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="profile-field mb-3">
+                            <label class="profile-label"><i class="fas fa-envelope me-2" style="color: var(--soma-orange);"></i><strong>Email:</strong></label>
+                            <p class="profile-value">{{ usuario.email|default:"No especificado" }}</p>
+                        </div>
+                        
+                        <div class="profile-field mb-3">
+                            <label class="profile-label"><i class="fas fa-calendar-plus me-2" style="color: var(--soma-orange);"></i><strong>Fecha de registro:</strong></label>
+                            <p class="profile-value">{{ usuario.date_joined|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        
+                        <div class="profile-field mb-3">
+                            <label class="profile-label"><i class="fas fa-clock me-2" style="color: var(--soma-orange);"></i><strong>Último acceso:</strong></label>
+                            <p class="profile-value">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card actions-card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog me-2" style="color: var(--soma-blue);"></i>Acciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'password_change' %}" class="btn btn-outline-primary action-btn">
+                        <i class="fas fa-key me-2"></i>Cambiar Contraseña
+                    </a>
+                    
+                    <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary action-btn">
+                        <i class="fas fa-bell me-2"></i>Mis Notificaciones
+                    </a>
+                    
+                    <a href="{% url 'home' %}" class="btn btn-outline-secondary action-btn">
+                        <i class="fas fa-home me-2"></i>Volver al Inicio
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3 permissions-card">
+            <div class="card-header">
+                <h5><i class="fas fa-shield-alt me-2" style="color: var(--soma-blue);"></i>Estado de la Cuenta</h5>
+            </div>
+            <div class="card-body">
+                <div class="permission-items">
+                    <div class="permission-item d-flex justify-content-between align-items-center">
+                        <span class="permission-label">
+                            <i class="fas fa-user-check me-2" style="color: var(--soma-orange);"></i>
+                            Usuario activo
+                        </span>
+                        {% if usuario.is_active %}
+                            <span class="badge bg-success status-badge">
+                                <i class="fas fa-check me-1"></i>Activo
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger status-badge">
+                                <i class="fas fa-times me-1"></i>Inactivo
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="permission-item d-flex justify-content-between align-items-center">
+                        <span class="permission-label">
+                            <i class="fas fa-user-cog me-2" style="color: var(--soma-orange);"></i>
+                            Administrador
+                        </span>
+                        {% if usuario.is_staff %}
+                            <span class="badge bg-success status-badge">
+                                <i class="fas fa-check me-1"></i>Sí
+                            </span>
+                        {% else %}
+                            <span class="badge status-badge" style="background: var(--soma-light-gray); color: var(--soma-blue);">
+                                <i class="fas fa-minus me-1"></i>No
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="permission-item d-flex justify-content-between align-items-center">
+                        <span class="permission-label">
+                            <i class="fas fa-crown me-2" style="color: var(--soma-orange);"></i>
+                            Superusuario
+                        </span>
+                        {% if usuario.is_superuser %}
+                            <span class="badge bg-warning status-badge">
+                                <i class="fas fa-star me-1"></i>Sí
+                            </span>
+                        {% else %}
+                            <span class="badge status-badge" style="background: var(--soma-light-gray); color: var(--soma-blue);">
+                                <i class="fas fa-minus me-1"></i>No
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

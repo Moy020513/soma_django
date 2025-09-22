@@ -5,106 +5,190 @@
 {% block page_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
+<!-- Mostrar mensajes si los hay -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
 <div class="row">
     <div class="col-12">
         <div class="alert alert-primary" role="alert">
             <h4 class="alert-heading">{{ titulo }}</h4>
             <p>{{ descripcion }}</p>
             <hr>
-            <p class="mb-0">Bienvenido al sistema de gestión empresarial. Desde aquí puedes acceder a todas las funcionalidades del sistema.</p>
+            {% if es_admin %}
+                <p class="mb-0">Bienvenido al sistema de gestión empresarial. Como administrador, tienes acceso completo a todas las funcionalidades.</p>
+            {% else %}
+                <p class="mb-0">Bienvenido al sistema de gestión empresarial. Tu cuenta está configurada como usuario estándar.</p>
+            {% endif %}
         </div>
     </div>
 </div>
 
+{% if es_admin %}
+<!-- Contenido para administradores -->
 <div class="row">
     <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center">
+        <div class="card h-100 text-center admin-card">
             <div class="card-body">
-                <i class="fas fa-users fa-3x text-primary mb-3"></i>
-                <h5 class="card-title">Recursos Humanos</h5>
-                <p class="card-text">Gestión de empleados, puestos y contratos.</p>
-                {% if user.is_staff %}
-                <a href="{% url 'admin:recursos_humanos_empleado_changelist' %}" class="btn btn-primary">Ver</a>
-                {% endif %}
+                <i class="fas fa-users fa-3x mb-3" style="color: var(--soma-orange);"></i>
+                <h5 class="card-title" style="color: var(--soma-blue);">Recursos Humanos</h5>
+                <p class="card-text text-muted">Gestión de empleados, puestos y contratos.</p>
+                <a href="{% url 'admin:recursos_humanos_empleado_changelist' %}" class="btn btn-primary">
+                    <i class="fas fa-eye me-2"></i>Ver
+                </a>
             </div>
         </div>
     </div>
     
     <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center">
+        <div class="card h-100 text-center admin-card">
             <div class="card-body">
-                <i class="fas fa-car fa-3x text-success mb-3"></i>
-                <h5 class="card-title">Flota Vehicular</h5>
-                <p class="card-text">Control de vehículos, asignaciones y mantenimiento.</p>
-                {% if user.is_staff %}
-                <a href="{% url 'admin:flota_vehicular_vehiculo_changelist' %}" class="btn btn-success">Ver</a>
-                {% endif %}
+                <i class="fas fa-car fa-3x mb-3" style="color: #28a745;"></i>
+                <h5 class="card-title" style="color: var(--soma-blue);">Flota Vehicular</h5>
+                <p class="card-text text-muted">Control de vehículos, asignaciones y mantenimiento.</p>
+                <a href="{% url 'admin:flota_vehicular_vehiculo_changelist' %}" class="btn btn-success">
+                    <i class="fas fa-eye me-2"></i>Ver
+                </a>
             </div>
         </div>
     </div>
     
     <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center">
+        <div class="card h-100 text-center admin-card">
             <div class="card-body">
-                <i class="fas fa-tools fa-3x text-warning mb-3"></i>
-                <h5 class="card-title">Herramientas</h5>
-                <p class="card-text">Inventario y asignación de herramientas.</p>
-                {% if user.is_staff %}
-                <a href="{% url 'admin:herramientas_herramienta_changelist' %}" class="btn btn-warning">Ver</a>
-                {% endif %}
+                <i class="fas fa-tools fa-3x mb-3" style="color: #ffc107;"></i>
+                <h5 class="card-title" style="color: var(--soma-blue);">Herramientas</h5>
+                <p class="card-text text-muted">Inventario y asignación de herramientas.</p>
+                <a href="{% url 'admin:herramientas_herramienta_changelist' %}" class="btn btn-warning text-dark">
+                    <i class="fas fa-eye me-2"></i>Ver
+                </a>
             </div>
         </div>
     </div>
     
     <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center">
+        <div class="card h-100 text-center admin-card">
             <div class="card-body">
-                <i class="fas fa-building fa-3x text-info mb-3"></i>
-                <h5 class="card-title">Empresas</h5>
-                <p class="card-text">Gestión de empresas, sucursales y departamentos.</p>
-                {% if user.is_staff %}
-                <a href="{% url 'admin:empresas_empresa_changelist' %}" class="btn btn-info">Ver</a>
-                {% endif %}
+                <i class="fas fa-building fa-3x mb-3" style="color: #17a2b8;"></i>
+                <h5 class="card-title" style="color: var(--soma-blue);">Empresas</h5>
+                <p class="card-text text-muted">Gestión de empresas, sucursales y departamentos.</p>
+                <a href="{% url 'admin:empresas_empresa_changelist' %}" class="btn btn-info">
+                    <i class="fas fa-eye me-2"></i>Ver
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-{% if user.is_authenticated and user.is_staff %}
 <div class="row mt-4">
     <div class="col-12">
-        <h3><i class="fas fa-tachometer-alt me-2"></i>Panel de Administración</h3>
-        <div class="card">
+        <div class="card admin-panel-card">
+            <div class="card-header">
+                <h3><i class="fas fa-tachometer-alt me-2"></i>Panel de Administración</h3>
+            </div>
             <div class="card-body">
-                <p>Como administrador, tienes acceso completo a todas las funcionalidades del sistema.</p>
-                <a href="{% url 'admin:index' %}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-cogs me-2"></i>Ir al Panel de Admin
-                </a>
+                <p class="mb-3">Como administrador, tienes acceso completo a todas las funcionalidades del sistema SOMA.</p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'admin:index' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-cogs me-2"></i>Panel de Admin
+                    </a>
+                    <a href="{% url 'perfil_usuario' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-user me-2"></i>Mi Perfil
+                    </a>
+                    <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-bell me-2"></i>Notificaciones
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% elif user.is_authenticated %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5>Bienvenido, {{ user.first_name|default:user.username }}</h5>
-                <p>Estás conectado al sistema. Contacta con tu administrador para obtener los permisos necesarios.</p>
-            </div>
-        </div>
-    </div>
-</div>
+
 {% else %}
+<!-- Contenido para usuarios estándar -->
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5 mb-4">
+        <div class="card h-100 text-center user-card">
+            <div class="card-body">
+                <div class="user-icon-wrapper mb-3">
+                    <i class="fas fa-user fa-4x" style="color: var(--soma-orange);"></i>
+                </div>
+                <h5 class="card-title" style="color: var(--soma-blue);">Mi Perfil</h5>
+                <p class="card-text text-muted">Consulta y actualiza tu información personal, revisa tus permisos y configuraciones.</p>
+                <a href="{% url 'perfil_usuario' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-id-card me-2"></i>Ver Perfil
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-5 mb-4">
+        <div class="card h-100 text-center user-card">
+            <div class="card-body">
+                <div class="user-icon-wrapper mb-3">
+                    <i class="fas fa-bell fa-4x" style="color: var(--soma-blue);"></i>
+                </div>
+                <h5 class="card-title" style="color: var(--soma-blue);">Notificaciones</h5>
+                <p class="card-text text-muted">Revisa tus notificaciones, mensajes importantes y actualizaciones del sistema.</p>
+                <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-envelope me-2"></i>Ver Notificaciones
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row mt-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-body text-center">
-                <h5>Acceso al Sistema</h5>
-                <p>Para acceder a las funcionalidades del sistema, necesitas iniciar sesión.</p>
-                <a href="{% url 'admin:login' %}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
-                </a>
+        <div class="card user-info-card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Información de tu Cuenta</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6 class="welcome-text">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
+                        <p class="text-muted mb-4">Tu cuenta está configurada como usuario estándar. Si necesitas acceso a funcionalidades administrativas, contacta con tu administrador del sistema.</p>
+                        
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="info-item">
+                                    <i class="fas fa-user-tag me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Usuario:</strong> {{ user.username }}
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-envelope me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Email:</strong> {{ user.email|default:"No especificado" }}
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="info-item">
+                                    <i class="fas fa-clock me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Último acceso:</strong> {{ user.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-calendar-plus me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Miembro desde:</strong> {{ user.date_joined|date:"d/m/Y" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="help-section">
+                            <h6><i class="fas fa-question-circle me-2" style="color: var(--soma-blue);"></i>¿Necesitas ayuda?</h6>
+                            <p class="text-muted small mb-3">Para solicitar acceso a más funcionalidades o reportar problemas, contacta con el administrador del sistema.</p>
+                            <a href="mailto:admin@soma.com" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-envelope me-2"></i>Contactar Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
