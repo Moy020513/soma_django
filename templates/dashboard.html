@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - SOMA{% endblock %}
+
+{% block page_title %}Dashboard Principal{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Estadísticas rápidas -->
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_empleados }}</h4>
+                        <p>Empleados</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_vehiculos }}</h4>
+                        <p>Vehículos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-car fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_herramientas }}</h4>
+                        <p>Herramientas</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ notificaciones_pendientes }}</h4>
+                        <p>Notificaciones</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-bell fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Notificaciones recientes -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Notificaciones Recientes</h5>
+            </div>
+            <div class="card-body">
+                {% if notificaciones_recientes %}
+                    {% for notificacion in notificaciones_recientes %}
+                    <div class="alert alert-{{ notificacion.tipo }} alert-dismissible fade show">
+                        <strong>{{ notificacion.titulo }}</strong><br>
+                        {{ notificacion.mensaje }}
+                        <small class="text-muted d-block">{{ notificacion.fecha_creacion|timesince }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No hay notificaciones recientes</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transferencias pendientes -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Transferencias Pendientes</h5>
+            </div>
+            <div class="card-body">
+                {% if transferencias_pendientes %}
+                    {% for transferencia in transferencias_pendientes %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <strong>{{ transferencia.vehiculo }}</strong><br>
+                        De: {{ transferencia.empleado_origen }}<br>
+                        A: {{ transferencia.empleado_destino }}<br>
+                        <span class="badge bg-warning">{{ transferencia.get_estado_display }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No hay transferencias pendientes</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

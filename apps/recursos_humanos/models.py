@@ -1,0 +1,161 @@
+from django.db import models
+from django.core.validators import RegexValidator
+from django.urls import reverse
+from apps.empresas.models import Departamento
+from apps.usuarios.models import Usuario
+
+
+class Puesto(models.Model):
+    """Modelo para representar puestos de trabajo"""
+    
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del puesto")
+    descripcion = models.TextField(verbose_name="Descripción del puesto")
+    salario_minimo = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name="Salario mínimo"
+    )
+    salario_maximo = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name="Salario máximo"
+    )
+    requisitos = models.TextField(blank=True, verbose_name="Requisitos")
+    activo = models.BooleanField(default=True, verbose_name="Puesto activo")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+    
+    class Meta:
+        verbose_name = "Puesto"
+        verbose_name_plural = "Puestos"
+        ordering = ['nombre']
+    
+    def __str__(self):
+        return self.nombre
+
+
+class Empleado(models.Model):
+    """Modelo para representar empleados"""
+    
+    ESTADOS_CIVILES = [
+        ('soltero', 'Soltero/a'),
+        ('casado', 'Casado/a'),
+        ('divorciado', 'Divorciado/a'),
+        ('viudo', 'Viudo/a'),
+        ('union_libre', 'Unión libre'),
+    ]
+    
+    TIPOS_SANGRE = [
+        ('O+', 'O+'), ('O-', 'O-'),
+        ('A+', 'A+'), ('A-', 'A-'),
+        ('B+', 'B+'), ('B-', 'B-'),
+        ('AB+', 'AB+'), ('AB-', 'AB-'),
+    ]
+    
+    # Información personal
+    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='empleado')
+    numero_empleado = models.CharField(max_length=20, unique=True, verbose_name="Número de empleado")
+    curp = models.CharField(
+        max_length=18,
+        unique=True,
+        validators=[RegexValidator(r'^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9]{2}$', 'CURP inválida')],
+        verbose_name="CURP"
+    )
+    rfc = models.CharField(
+        max_length=13,
+        validators=[RegexValidator(r'^[A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3}$', 'RFC inválido')],
+        verbose_name="RFC"
+    )
+    nss = models.CharField(max_length=11, blank=True, verbose_name="Número de Seguro Social")
+    fecha_nacimiento = models.DateField(verbose_name="Fecha de nacimiento")
+    estado_civil = models.CharField(max_length=15, choices=ESTADOS_CIVILES, verbose_name="Estado civil")
+    tipo_sangre = models.CharField(max_length=3, choices=TIPOS_SANGRE, blank=True, verbose_name="Tipo de sangre")
+    
+    # Información de contacto
+    telefono_personal = models.CharField(max_length=15, verbose_name="Teléfono personal")
+    telefono_emergencia = models.CharField(max_length=15, verbose_name="Teléfono de emergencia")
+    contacto_emergencia = models.CharField(max_length=100, verbose_name="Contacto de emergencia")
+    direccion = models.TextField(verbose_name="Dirección")
+    
+    # Información laboral
+    departamento = models.ForeignKey(Departamento, on_delete=models.PROTECT, verbose_name="Departamento")
+    puesto = models.ForeignKey(Puesto, on_delete=models.PROTECT, verbose_name="Puesto")
+    jefe_directo = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Jefe directo")
+    fecha_ingreso = models.DateField(verbose_name="Fecha de ingreso")
+    fecha_baja = models.DateField(null=True, blank=True, verbose_name="Fecha de baja")
+    motivo_baja = models.TextField(blank=True, verbose_name="Motivo de baja")
+    salario_actual = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Salario actual")
+    
+    # Documentos
+    foto = models.ImageField(upload_to='empleados/fotos/', blank=True, null=True, verbose_name="Fotografía")
+    
+    # Estado
+    activo = models.BooleanField(default=True, verbose_name="Empleado activo")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
+    
+    class Meta:
+        verbose_name = "Empleado"
+        verbose_name_plural = "Empleados"
+        ordering = ['numero_empleado']
+    
+    def __str__(self):
+        return f"{self.numero_empleado} - {self.usuario.get_full_name()}"
+    
+    def get_absolute_url(self):
+        return reverse('recursos_humanos:empleado_detalle', kwargs={'pk': self.pk})
+    
+    @property
+    def nombre_completo(self):
+        return self.usuario.get_full_name()
+    
+    @property
+    def empresa(self):
+        return self.departamento.sucursal.empresa
+    
+    @property
+    def sucursal(self):
+        return self.departamento.sucursal
+    
+    @property
+    def antiguedad(self):
+        from datetime import date
+        if self.fecha_ingreso:
+            delta = date.today() - self.fecha_ingreso
+            return delta.days // 365
+        return 0
+
+
+class TipoContrato(models.Model):
+    """Modelo para tipos de contrato"""
+    
+    nombre = models.CharField(max_length=50, unique=True, verbose_name="Tipo de contrato")
+    descripcion = models.TextField(verbose_name="Descripción")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    
+    class Meta:
+        verbose_name = "Tipo de contrato"
+        verbose_name_plural = "Tipos de contrato"
+    
+    def __str__(self):
+        return self.nombre
+
+
+class Contrato(models.Model):
+    """Modelo para contratos de empleados"""
+    
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='contratos')
+    tipo_contrato = models.ForeignKey(TipoContrato, on_delete=models.PROTECT, verbose_name="Tipo de contrato")
+    fecha_inicio = models.DateField(verbose_name="Fecha de inicio")
+    fecha_fin = models.DateField(null=True, blank=True, verbose_name="Fecha de fin")
+    salario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Salario")
+    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+    activo = models.BooleanField(default=True, verbose_name="Contrato activo")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+    
+    class Meta:
+        verbose_name = "Contrato"
+        verbose_name_plural = "Contratos"
+        ordering = ['-fecha_inicio']
+    
+    def __str__(self):
+        return f"{self.empleado.numero_empleado} - {self.tipo_contrato.nombre} ({self.fecha_inicio})"

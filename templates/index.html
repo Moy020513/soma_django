@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-primary" role="alert">
+            <h4 class="alert-heading">{{ titulo }}</h4>
+            <p>{{ descripcion }}</p>
+            <hr>
+            <p class="mb-0">Bienvenido al sistema de gestión empresarial. Desde aquí puedes acceder a todas las funcionalidades del sistema.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Recursos Humanos</h5>
+                <p class="card-text">Gestión de empleados, puestos y contratos.</p>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:recursos_humanos_empleado_changelist' %}" class="btn btn-primary">Ver</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-car fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Flota Vehicular</h5>
+                <p class="card-text">Control de vehículos, asignaciones y mantenimiento.</p>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:flota_vehicular_vehiculo_changelist' %}" class="btn btn-success">Ver</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-tools fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Herramientas</h5>
+                <p class="card-text">Inventario y asignación de herramientas.</p>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:herramientas_herramienta_changelist' %}" class="btn btn-warning">Ver</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Empresas</h5>
+                <p class="card-text">Gestión de empresas, sucursales y departamentos.</p>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:empresas_empresa_changelist' %}" class="btn btn-info">Ver</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user.is_authenticated and user.is_staff %}
+<div class="row mt-4">
+    <div class="col-12">
+        <h3><i class="fas fa-tachometer-alt me-2"></i>Panel de Administración</h3>
+        <div class="card">
+            <div class="card-body">
+                <p>Como administrador, tienes acceso completo a todas las funcionalidades del sistema.</p>
+                <a href="{% url 'admin:index' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-cogs me-2"></i>Ir al Panel de Admin
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif user.is_authenticated %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5>Bienvenido, {{ user.first_name|default:user.username }}</h5>
+                <p>Estás conectado al sistema. Contacta con tu administrador para obtener los permisos necesarios.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Acceso al Sistema</h5>
+                <p>Para acceder a las funcionalidades del sistema, necesitas iniciar sesión.</p>
+                <a href="{% url 'admin:login' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
