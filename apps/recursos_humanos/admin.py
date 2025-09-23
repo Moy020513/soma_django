@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from .models import Puesto, Empleado, TipoContrato, Contrato
 
 
@@ -11,8 +12,39 @@ class PuestoAdmin(admin.ModelAdmin):
     readonly_fields = ['fecha_creacion']
 
 
+class EmpleadoForm(forms.ModelForm):
+    class Meta:
+        model = Empleado
+        fields = '__all__'
+        widgets = {
+            'fecha_nacimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+            'fecha_ingreso': forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+            'fecha_baja': forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Compactar inputs
+        for name, field in self.fields.items():
+            css = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (css + ' form-control form-control-sm').strip()
+            # Hacer los campos más compactos visualmente
+            style = field.widget.attrs.get('style', '')
+            compact_style = 'max-width: 600px; padding: .25rem .5rem; font-size: .875rem;'
+            field.widget.attrs['style'] = (style + ' ' + compact_style).strip()
+        # Hacer numero_empleado de solo lectura si ya existe (se genera automático)
+        if self.instance and self.instance.pk:
+            self.fields['numero_empleado'].widget.attrs['readonly'] = True
+        # No requerir numero_empleado en alta: se generará automáticamente
+        if 'numero_empleado' in self.fields:
+            self.fields['numero_empleado'].required = False
+            self.fields['numero_empleado'].help_text = 'Si lo dejas vacío, se generará automáticamente.'
+
+
 @admin.register(Empleado)
 class EmpleadoAdmin(admin.ModelAdmin):
+    form = EmpleadoForm
+    save_on_top = True
     list_display = ['numero_empleado', 'nombre_completo', 'departamento', 'puesto', 'fecha_ingreso', 'activo']
     list_filter = ['departamento__sucursal__empresa', 'departamento', 'puesto', 'activo', 'fecha_ingreso']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
@@ -21,22 +53,26 @@ class EmpleadoAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Información del Usuario', {
-            'fields': ('usuario', 'numero_empleado', 'foto')
+            'fields': (
+                ('usuario', 'numero_empleado'),
+                ('foto',),
+            ),
+            'classes': ('',),
         }),
         ('Documentos Oficiales', {
-            'fields': ('curp', 'rfc', 'nss')
+            'fields': (('curp', 'rfc'), ('nss',)),
         }),
         ('Información Personal', {
-            'fields': ('fecha_nacimiento', 'estado_civil', 'tipo_sangre')
+            'fields': (('fecha_nacimiento', 'estado_civil', 'tipo_sangre'),),
         }),
         ('Contacto', {
-            'fields': ('telefono_personal', 'direccion', 'telefono_emergencia', 'contacto_emergencia')
+            'fields': (('telefono_personal', 'telefono_emergencia'), ('contacto_emergencia',), ('direccion',)),
         }),
         ('Información Laboral', {
-            'fields': ('departamento', 'puesto', 'jefe_directo', 'salario_actual')
+            'fields': (('departamento', 'puesto'), ('jefe_directo', 'salario_actual')),
         }),
         ('Fechas Laborales', {
-            'fields': ('fecha_ingreso', 'fecha_baja', 'motivo_baja')
+            'fields': (('fecha_ingreso', 'fecha_baja'), ('motivo_baja',)),
         }),
         ('Estado', {
             'fields': ('activo',)
@@ -46,6 +82,14 @@ class EmpleadoAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    class Media:
+        css = {
+            'all': (
+                # Compactar controles en admin
+                'admin/css/forms.css',
+            )
+        }
     
     def nombre_completo(self, obj):
         return obj.usuario.get_full_name()

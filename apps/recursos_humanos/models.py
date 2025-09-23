@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.urls import reverse
 from apps.empresas.models import Departamento
 from apps.usuarios.models import Usuario
+import re
 
 
 class Puesto(models.Model):
@@ -123,6 +124,28 @@ class Empleado(models.Model):
             delta = date.today() - self.fecha_ingreso
             return delta.days // 365
         return 0
+
+    def _generate_numero_empleado(self) -> str:
+        """Genera un número de empleado autoincremental como cadena de 4 dígitos.
+        Busca el mayor número puramente numérico existente y suma 1.
+        """
+        qs = Empleado.objects.values_list('numero_empleado', flat=True)
+        max_num = 0
+        for val in qs:
+            if val and re.fullmatch(r"\d+", str(val)):
+                try:
+                    n = int(val)
+                    if n > max_num:
+                        max_num = n
+                except ValueError:
+                    continue
+        return f"{max_num + 1:04d}"
+
+    def save(self, *args, **kwargs):
+        # Generar número de empleado si viene vacío
+        if not self.numero_empleado:
+            self.numero_empleado = self._generate_numero_empleado()
+        super().save(*args, **kwargs)
 
 
 class TipoContrato(models.Model):
