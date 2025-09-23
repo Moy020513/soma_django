@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<div class="admin-branding">
+    <div class="logo-container mb-2">
+        <img src="{% static 'images/logo.png' %}" alt="Servicios Industriales SOMA" class="soma-logo-admin">
+    </div>
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">Servicios Industriales SOMA</a>
+    </h1>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<div class="admin-nav-global">
+    {% if user.is_active and user.is_staff %}
+        {% url 'admin:password_change' as password_change_url %}
+        {% if password_change_url %}
+            <a href="{{ password_change_url }}" class="admin-nav-link">
+                <i class="fas fa-key me-1"></i>{% trans 'Change password' %}
+            </a>
+        {% endif %}
+    {% endif %}
+    <a href="{% url 'admin:logout' %}" class="admin-nav-link">
+        <i class="fas fa-sign-out-alt me-1"></i>{% trans 'Log out' %}
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="admin-content">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="admin-main-content">
+        {% block content_title %}{% endblock %}
+        {% block pretitle %}{% endblock %}
+        {% block content_subtitle %}{% endblock %}
+
+        {% block object-tools %}{% endblock %}
+
+        {% block coltype %}{% endblock %}
+
+        {% block bodyclass %}{% endblock %}
+
+        {% block breadcrumbs %}
+        <nav aria-label="breadcrumb" class="admin-breadcrumbs">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'admin:index' %}">
+                        <i class="fas fa-home me-1"></i>{% trans 'Home' %}
+                    </a>
+                </li>
+                {% for breadcrumb in breadcrumbs %}
+                    {% if forloop.last %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.0 }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item">
+                            <a href="{{ breadcrumb.1 }}">{{ breadcrumb.0 }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </nav>
+        {% endblock %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+<div class="admin-footer">
+    <div class="admin-footer-content">
+        <div class="admin-footer-left">
+            <p class="mb-0">
+                <strong>Servicios Industriales SOMA</strong> - Sistema de Gestión Empresarial
+            </p>
+        </div>
+        <div class="admin-footer-right">
+            <p class="mb-0 text-muted">
+                {% now "Y" %} © Todos los derechos reservados
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

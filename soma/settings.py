@@ -47,6 +47,7 @@ THIRD_PARTY_APPS = [
     'widget_tweaks',
     'django_filters',
     'import_export',
+    'django_htmx',
 ]
 
 LOCAL_APPS = [
@@ -58,17 +59,39 @@ LOCAL_APPS = [
     'apps.notificaciones',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django_extensions',
+    'crispy_forms',
+    'crispy_bootstrap5',
+    'widget_tweaks',
+    'django_filters',
+    'import_export',
+    'apps.usuarios',
+    'apps.recursos_humanos',
+    'apps.flota_vehicular',
+    'apps.herramientas',
+    'apps.empresas',
+    'apps.notificaciones',
+    'soma.apps.SomaConfig',  # App principal personalizada al final
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
 ]
 
 ROOT_URLCONF = 'soma.urls'
@@ -76,7 +99,10 @@ ROOT_URLCONF = 'soma.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [
+            BASE_DIR / 'templates',
+            BASE_DIR / 'templates' / 'admin'
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -84,6 +110,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.i18n',
             ],
         },
     },
@@ -129,7 +156,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'es-es'
+LANGUAGE_CODE = 'es'
+
+LANGUAGES = [
+    ('es', 'Español'),
+    ('en', 'English'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
 
 TIME_ZONE = 'America/Mexico_City'
 
@@ -164,15 +200,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
 # URLs de autenticación
-LOGIN_URL = '/accounts/login/'
+LOGIN_URL = '/admin/login/'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGOUT_REDIRECT_URL = '/admin/login/'
-
-# Login/Logout URLs
-LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/admin/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Configuración del contexto de notificaciones
 # Context processors

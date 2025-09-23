@@ -20,9 +20,9 @@ class Usuario(AbstractUser):
         ('empleado', 'Empleado'),
     ]
     
-    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True, blank=True)
-    tipo_usuario = models.CharField(max_length=20, choices=TIPOS_USUARIO, default='empleado')
-    telefono = models.CharField(max_length=15, blank=True)
+    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Rol')
+    tipo_usuario = models.CharField(max_length=20, choices=TIPOS_USUARIO, default='empleado', verbose_name='Tipo de usuario')
+    telefono = models.CharField(max_length=15, blank=True, verbose_name='Teléfono')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     activo = models.BooleanField(default=True)

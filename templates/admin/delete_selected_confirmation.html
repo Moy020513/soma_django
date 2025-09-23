@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|title }}</a>
+    &rsaquo; {% trans 'Delete multiple objects' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="change-form-header">
+    <h1>{% trans 'Delete multiple objects' %}</h1>
+</div>
+
+<div class="change-form-content">
+    <div class="form-container">
+        {% if perms_lacking %}
+            <div class="alert alert-warning">
+                <h4>{% trans "Deleting the selected objects will result in deleting related objects, but your account doesn't have permission to delete the following types of objects:" %}</h4>
+                <ul>
+                    {% for obj in perms_lacking %}
+                        <li>{{ obj }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <div class="alert alert-danger">
+                <h4>{% trans "Are you sure?" %}</h4>
+                <p>{% blocktrans %}Are you sure you want to delete the selected {{ name }} objects? All of the following objects and their related items will be deleted:{% endblocktrans %}</p>
+
+                {% for deleteable_object, object_list in deletable_objects %}
+                    <h5>{{ deleteable_object|capfirst }}</h5>
+                    <ul>
+                        {% for obj in object_list %}
+                            <li>{{ obj }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+
+                <p class="text-danger font-weight-bold">
+                    {% trans "This action cannot be undone." %}
+                </p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="submit-row">
+                    <input type="hidden" name="action" value="delete_selected">
+                    <input type="hidden" name="select_across" value="0">
+                    {% for obj in queryset %}
+                        <input type="hidden" name="_selected_action" value="{{ obj.pk }}">
+                    {% endfor %}
+                    <input type="submit" value="{% trans 'Yes, I'm sure' %}" class="deletelink">
+                    <a href="{% url opts|admin_urlname:'changelist' %}" class="btn btn-secondary">{% trans 'No, take me back' %}</a>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

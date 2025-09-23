@@ -1,0 +1,240 @@
+{% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios Industriales SOMA - Iniciar Sesión</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #f8561bff 50%, #001c44ff 0%);
+        background-attachment: fixed;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(1px);
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 450px;
+        padding: 20px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .login-form-wrapper {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        padding: 30px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .logo-section {
+        margin-bottom: 15px;
+    }
+
+    .login-logo {
+        max-width: 80px;
+        max-height: 90px;
+        width: auto;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .login-header h2 {
+        color: #1a365d;
+        font-size: 18px;
+        font-weight: 600;
+        margin: 8px 0 4px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .login-header h3 {
+        color: #ff6b35;
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0 0 12px 0;
+    }
+
+    .login-header p {
+        color: #6c757d;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .login-form .form-row {
+        margin-bottom: 15px;
+    }
+
+    .login-form label {
+        display: block;
+        color: #1a365d;
+        font-weight: 500;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .login-form input[type="text"],
+    .login-form input[type="password"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+
+    .login-form input[type="text"]:focus,
+    .login-form input[type="password"]:focus {
+        border-color: #ff6b35;
+        outline: none;
+    }
+
+    .btn-login {
+        background: linear-gradient(45deg, #ff6b35, #ff8555);
+        border: none;
+        color: white;
+        padding: 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+
+    .btn-login:hover {
+        background: linear-gradient(45deg, #e55a2b, #ff6b35);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+    }
+
+    .login-footer {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+
+    .login-footer p {
+        color: #6c757d;
+        margin: 0 0 8px 0;
+        font-size: 13px;
+    }
+
+    .login-footer .text-muted {
+        color: #6c757d !important;
+        font-size: 12px;
+    }
+
+    .alert {
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-form-wrapper">
+            <div class="login-header">
+                <div class="logo-section">
+                    <img src="{% static 'images/logo.png' %}" alt="Servicios Industriales SOMA" class="login-logo">
+                </div>
+                
+                <p>Por favor, inicia sesión para continuar.</p>
+            </div>
+
+            {% if form.errors and not form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <strong>Por favor corrige el error abajo.</strong>
+                </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <strong>Por favor corrige los errores abajo.</strong>
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="login-form">
+                <form action="{{ app_path }}" method="post" id="login-form">
+                    {% csrf_token %}
+                    <div class="form-row">
+                        {{ form.username.errors }}
+                        <label for="{{ form.username.id_for_label }}">Nombre de usuario:</label>
+                        {{ form.username }}
+                    </div>
+                    <div class="form-row">
+                        {{ form.password.errors }}
+                        <label for="{{ form.password.id_for_label }}">Contraseña:</label>
+                        {{ form.password }}
+                    </div>
+                    {% if form.non_field_errors %}
+                        <div class="form-row">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    <div class="form-row">
+                        <input type="submit" value="Iniciar sesión" class="btn-login">
+                        <input type="hidden" name="next" value="{{ next }}">
+                    </div>
+                </form>
+            </div>
+
+            <div class="login-footer">
+                <p>¿Olvidaste tu contraseña o nombre de usuario?</p>
+                <p class="text-muted">Por favor contacta a tu administrador.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

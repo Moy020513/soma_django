@@ -5,8 +5,7 @@ from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
-    path('admin/', views.admin_redirect, name='admin_redirect'),
-    path('admin/real/', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('', views.index, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('perfil/', views.perfil_usuario, name='perfil_usuario'),

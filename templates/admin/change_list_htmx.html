@@ -1,0 +1,36 @@
+{% load i18n admin_urls static admin_list %}
+
+<!-- HTMX Response: Only return changelist content -->
+<div class="module{% if cl.has_filters %} filtered{% endif %}" id="changelist">
+  {% if cl.has_filters %}
+    <div id="changelist-filter"
+      hx-boost="true"
+      hx-target="#changelist-results"
+      hx-select="#changelist-results, #changelist-filter"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-swap-oob="true">
+      <details class="filters-collapse">
+        <summary>
+          <span><i class="fas fa-filter me-2"></i>Filtros</span>
+          {% if cl.has_active_filters %}
+            <a href="{{ cl.clear_all_filters_qs }}" class="btn-clear-filters ms-auto">&#10006; Limpiar</a>
+          {% endif %}
+        </summary>
+        <div class="filters-body">
+          {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+        </div>
+      </details>
+    </div>
+  {% endif %}
+
+  <div class="changelist-form-container">
+    {% search_form cl %}
+    <form id="changelist-form" method="post" novalidate>{% csrf_token %}
+      <div id="changelist-results">
+        {% result_list cl %}
+        {% pagination cl %}
+      </div>
+    </form>
+  </div>
+</div>

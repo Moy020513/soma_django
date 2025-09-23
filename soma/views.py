@@ -18,16 +18,6 @@ def index(request):
     return render(request, 'index.html', context)
 
 
-def admin_redirect(request):
-    """Redirige usuarios no-admin al index con mensaje"""
-    if not request.user.is_authenticated:
-        return redirect('admin:login')
-    
-    if not (request.user.is_staff or request.user.is_superuser):
-        messages.warning(request, 'No tienes permisos para acceder al panel administrativo.')
-        return redirect('home')
-    
-    return redirect('admin:index')
 
 @login_required
 def dashboard(request):
