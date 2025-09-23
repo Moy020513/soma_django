@@ -68,12 +68,12 @@
     }
 
     .login-logo {
-        max-width: 80px;
-        max-height: 90px;
+        max-height: 140px;
         width: auto;
         height: auto;
         display: block;
         margin: 0 auto;
+        padding: 0rem;
     }
 
     .login-header h2 {
@@ -223,7 +223,8 @@
                     {% endif %}
                     <div class="form-row">
                         <input type="submit" value="Iniciar sesión" class="btn-login">
-                        <input type="hidden" name="next" value="{{ next }}">
+                        {% url 'dashboard' as dashboard_url %}
+                        <input type="hidden" name="next" value="{% if next %}{{ next }}{% else %}{{ dashboard_url }}{% endif %}">
                     </div>
                 </form>
             </div>

@@ -15,20 +15,57 @@
     {% endfor %}
 {% endif %}
 
-<div class="row">
+{% if es_admin %}
+<div class="row mt-0">
     <div class="col-12">
-        <div class="alert alert-primary" role="alert">
-            <h4 class="alert-heading">{{ titulo }}</h4>
-            <p>{{ descripcion }}</p>
-            <hr>
-            {% if es_admin %}
-                <p class="mb-0">Bienvenido al sistema de gestión empresarial. Como administrador, tienes acceso completo a todas las funcionalidades.</p>
-            {% else %}
-                <p class="mb-0">Bienvenido al sistema de gestión empresarial. Tu cuenta está configurada como usuario estándar.</p>
-            {% endif %}
+        <div class="card user-info-card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Información de tu Cuenta</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6 class="welcome-text">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
+                        <p class="text-muted mb-4">Tu cuenta tiene permisos de administrador. Tienes acceso completo a las funcionalidades del sistema SOMA.</p>
+
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="info-item">
+                                    <i class="fas fa-user-tag me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Usuario:</strong> {{ user.username }}
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-envelope me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Email:</strong> {{ user.email|default:"No especificado" }}
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="info-item">
+                                    <i class="fas fa-clock me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Último acceso:</strong> {{ user.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-calendar-plus me-2" style="color: var(--soma-orange);"></i>
+                                    <strong>Miembro desde:</strong> {{ user.date_joined|date:"d/m/Y" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="help-section">
+                            <h6><i class="fas fa-shield-alt me-2" style="color: var(--soma-blue);"></i>Administración</h6>
+                            <p class="text-muted small mb-3">Accede al panel de administración para gestionar módulos y configuraciones del sistema.</p>
+                            <a href="{% url 'admin:index' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-cogs me-2"></i>Ir al Panel de Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endif %}
 
 {% if es_admin %}
 <!-- Contenido para administradores -->
@@ -86,65 +123,11 @@
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card admin-panel-card">
-            <div class="card-header">
-                <h3><i class="fas fa-tachometer-alt me-2"></i>Panel de Administración</h3>
-            </div>
-            <div class="card-body">
-                <p class="mb-3">Como administrador, tienes acceso completo a todas las funcionalidades del sistema SOMA.</p>
-                <div class="d-flex flex-wrap gap-3">
-                    <a href="{% url 'admin:index' %}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-cogs me-2"></i>Panel de Admin
-                    </a>
-                    <a href="{% url 'perfil_usuario' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-user me-2"></i>Mi Perfil
-                    </a>
-                    <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-bell me-2"></i>Notificaciones
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 {% else %}
 <!-- Contenido para usuarios estándar -->
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5 mb-4">
-        <div class="card h-100 text-center user-card">
-            <div class="card-body">
-                <div class="user-icon-wrapper mb-3">
-                    <i class="fas fa-user fa-4x" style="color: var(--soma-orange);"></i>
-                </div>
-                <h5 class="card-title" style="color: var(--soma-blue);">Mi Perfil</h5>
-                <p class="card-text text-muted">Consulta y actualiza tu información personal, revisa tus permisos y configuraciones.</p>
-                <a href="{% url 'perfil_usuario' %}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-id-card me-2"></i>Ver Perfil
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6 col-lg-5 mb-4">
-        <div class="card h-100 text-center user-card">
-            <div class="card-body">
-                <div class="user-icon-wrapper mb-3">
-                    <i class="fas fa-bell fa-4x" style="color: var(--soma-blue);"></i>
-                </div>
-                <h5 class="card-title" style="color: var(--soma-blue);">Notificaciones</h5>
-                <p class="card-text text-muted">Revisa tus notificaciones, mensajes importantes y actualizaciones del sistema.</p>
-                <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary btn-lg">
-                    <i class="fas fa-envelope me-2"></i>Ver Notificaciones
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
+<div class="row mt-0">
     <div class="col-12">
         <div class="card user-info-card">
             <div class="card-header">
@@ -154,7 +137,6 @@
                 <div class="row">
                     <div class="col-md-8">
                         <h6 class="welcome-text">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
-                        <p class="text-muted mb-4">Tu cuenta está configurada como usuario estándar. Si necesitas acceso a funcionalidades administrativas, contacta con tu administrador del sistema.</p>
                         
                         <div class="row">
                             <div class="col-sm-6">
@@ -189,6 +171,38 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-5 mb-4">
+        <div class="card h-100 text-center user-card">
+            <div class="card-body">
+                <div class="user-icon-wrapper mb-3">
+                    <i class="fas fa-user fa-4x" style="color: var(--soma-orange);"></i>
+                </div>
+                <h5 class="card-title" style="color: var(--soma-blue);">Mi Perfil</h5>
+                <p class="card-text text-muted">Consulta y actualiza tu información personal, revisa tus permisos y configuraciones.</p>
+                <a href="{% url 'perfil_usuario' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-id-card me-2"></i>Ver Perfil
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-5 mb-4">
+        <div class="card h-100 text-center user-card">
+            <div class="card-body">
+                <div class="user-icon-wrapper mb-3">
+                    <i class="fas fa-bell fa-4x" style="color: var(--soma-blue);"></i>
+                </div>
+                <h5 class="card-title" style="color: var(--soma-blue);">Notificaciones</h5>
+                <p class="card-text text-muted">Revisa tus notificaciones, mensajes importantes y actualizaciones del sistema.</p>
+                <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-envelope me-2"></i>Ver Notificaciones
+                </a>
             </div>
         </div>
     </div>

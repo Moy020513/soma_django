@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import login as auth_login
+from django.urls import reverse
 from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular
 from apps.herramientas.models import Herramienta
@@ -37,6 +40,34 @@ def dashboard(request):
         )[:5],
     }
     return render(request, 'dashboard.html', context)
+
+
+def admin_login_anyuser(request):
+    """
+    Login para /admin/login/ que permite autenticar a cualquier usuario activo.
+    - Si es staff/superuser: redirige a la Home (index) con el contenido de administrador.
+    - Si NO es staff: redirige a la Home (index) con perfil y notificaciones.
+    """
+    next_url = request.GET.get('next') or request.POST.get('next') or ''
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            auth_login(request, user)
+            # Staff o no staff: enviar al Home (index)
+            # Desde Home, los administradores tienen accesos directos al Panel de Admin.
+            return redirect('home')
+    else:
+        form = AuthenticationForm(request)
+
+    context = {
+        'form': form,
+        # app_path es usado por el template de login del admin para el action
+        'app_path': request.get_full_path(),
+        'next': next_url,
+    }
+    # Reutilizamos el template personalizado ya existente del admin
+    return render(request, 'admin/login.html', context)
 
 
 @login_required

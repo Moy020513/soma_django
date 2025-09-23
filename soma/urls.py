@@ -1,10 +1,12 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
+    # Admin login override: debe ir ANTES de admin.site.urls para tomar prioridad
+    re_path(r'^admin/login/?$', views.admin_login_anyuser, name='admin_login_anyuser'),
     path('admin/', admin.site.urls),
     path('', views.index, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),

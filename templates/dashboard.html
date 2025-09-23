@@ -8,53 +8,55 @@
 {% block content %}
 <div class="row">
     <!-- Estadísticas rápidas -->
-    <div class="col-md-3 mb-4">
-        <div class="card text-white bg-primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4>{{ total_empleados }}</h4>
-                        <p>Empleados</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card text-white bg-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4>{{ total_vehiculos }}</h4>
-                        <p>Vehículos</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-car fa-2x"></i>
+    {% if request.user.is_staff or request.user.is_superuser %}
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_empleados }}</h4>
+                            <p>Empleados</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card text-white bg-warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4>{{ total_herramientas }}</h4>
-                        <p>Herramientas</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-tools fa-2x"></i>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_vehiculos }}</h4>
+                            <p>Vehículos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-car fa-2x"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_herramientas }}</h4>
+                            <p>Herramientas</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
     
     <div class="col-md-3 mb-4">
         <div class="card text-white bg-info">
@@ -66,6 +68,26 @@
                     </div>
                     <div class="align-self-center">
                         <i class="fas fa-bell fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mi Perfil (visible para todos) -->
+    <div class="col-md-3 mb-4">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+                        <p>Mi Perfil</p>
+                        <a href="{% url 'perfil_usuario' %}" class="btn btn-light btn-sm mt-2">
+                            <i class="fas fa-user me-1"></i> Ver perfil
+                        </a>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-id-badge fa-2x"></i>
                     </div>
                 </div>
             </div>
