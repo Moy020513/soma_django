@@ -1,21 +1,43 @@
 from django.contrib import admin
-from .models import Empresa, Sucursal, Departamento
+from django.utils.html import format_html
+from .models import Empresa, Contacto
+class ContactoInline(admin.TabularInline):
+    model = Contacto
+    extra = 1
+    fields = ('nombre', 'apellidos', 'telefono', 'correo')
+    show_change_link = True
+
 
 
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'razon_social', 'rfc', 'telefono', 'activa', 'fecha_creacion']
-    list_filter = ['activa', 'fecha_creacion']
-    search_fields = ['nombre', 'razon_social', 'rfc']
-    readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
+    def logo_preview(self, obj: Empresa):
+        if obj.logo:
+            return format_html('<img src="{}" alt="Logo" style="height:32px; width:auto; object-fit:contain; background:#fafafa; padding:2px; border:1px solid #eee; border-radius:4px;"/>', obj.logo.url)
+        return '—'
+    logo_preview.short_description = 'Logo'
+    logo_preview.admin_order_field = 'logo'
+
+    def direccion_preview(self, obj: Empresa):
+        if obj.direccion:
+            text = obj.direccion.strip().replace('\n', ' ')
+            return (text[:60] + '…') if len(text) > 60 else text
+        return '—'
+    direccion_preview.short_description = 'Dirección'
+
+    list_display = ['logo_preview', 'nombre', 'direccion_preview', 'activa']
+    list_display_links = ['nombre']
+    inlines = [ContactoInline]
+    list_filter = ['activa']
+    search_fields = ['nombre']
     list_editable = ['activa']
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'razon_social', 'rfc')
+            'fields': ('nombre',)
         }),
         ('Contacto', {
-            'fields': ('direccion', 'telefono', 'email', 'sitio_web')
+            'fields': ('direccion',)
         }),
         ('Imagen', {
             'fields': ('logo',),
@@ -24,69 +46,15 @@ class EmpresaAdmin(admin.ModelAdmin):
         ('Estado', {
             'fields': ('activa',)
         }),
-        ('Fechas', {
-            'fields': ('fecha_creacion', 'fecha_actualizacion'),
-            'classes': ('collapse',)
-        }),
     )
 
 
-@admin.register(Sucursal)
-class SucursalAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'empresa', 'codigo', 'gerente', 'activa', 'fecha_apertura']
-    list_filter = ['empresa', 'activa', 'fecha_apertura']
-    search_fields = ['nombre', 'codigo', 'empresa__nombre', 'gerente']
-    readonly_fields = ['fecha_creacion']
-    list_editable = ['activa']
-    
-    fieldsets = (
-        ('Información Básica', {
-            'fields': ('empresa', 'nombre', 'codigo')
-        }),
-        ('Contacto', {
-            'fields': ('direccion', 'telefono', 'email')
-        }),
-        ('Administración', {
-            'fields': ('gerente', 'fecha_apertura')
-        }),
-        ('Estado', {
-            'fields': ('activa',)
-        }),
-        ('Fechas', {
-            'fields': ('fecha_creacion',),
-            'classes': ('collapse',)
-        }),
-    )
+@admin.register(Contacto)
+class ContactoAdmin(admin.ModelAdmin):
+    list_display = ('nombre_completo', 'empresa', 'telefono', 'correo')
+    list_filter = ('empresa',)
+    search_fields = ('nombre', 'apellidos', 'telefono', 'correo', 'empresa__nombre')
+    verbose_name = 'Contacto'
+    verbose_name_plural = 'Contactos'
 
 
-@admin.register(Departamento)
-class DepartamentoAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'sucursal', 'empresa', 'codigo', 'jefe_departamento', 'activo']
-    list_filter = ['sucursal__empresa', 'sucursal', 'activo']
-    search_fields = ['nombre', 'codigo', 'sucursal__nombre', 'jefe_departamento']
-    readonly_fields = ['fecha_creacion']
-    list_editable = ['activo']
-    
-    def empresa(self, obj):
-        return obj.sucursal.empresa.nombre
-    empresa.short_description = 'Empresa'
-    empresa.admin_order_field = 'sucursal__empresa__nombre'
-    
-    fieldsets = (
-        ('Información Básica', {
-            'fields': ('sucursal', 'nombre', 'codigo')
-        }),
-        ('Descripción', {
-            'fields': ('descripcion',)
-        }),
-        ('Administración', {
-            'fields': ('jefe_departamento', 'presupuesto_anual')
-        }),
-        ('Estado', {
-            'fields': ('activo',)
-        }),
-        ('Fechas', {
-            'fields': ('fecha_creacion',),
-            'classes': ('collapse',)
-        }),
-    )

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.shortcuts import redirect
-from .models import Puesto, Empleado, TipoContrato, Contrato
+from .models import Puesto, Empleado
 
 
 @admin.register(Puesto)
@@ -46,8 +46,8 @@ class EmpleadoForm(forms.ModelForm):
 class EmpleadoAdmin(admin.ModelAdmin):
     form = EmpleadoForm
     save_on_top = True
-    list_display = ['numero_empleado', 'nombre_completo', 'departamento', 'puesto', 'fecha_ingreso', 'activo']
-    list_filter = ['departamento__sucursal__empresa', 'departamento', 'puesto', 'activo', 'fecha_ingreso']
+    list_display = ['numero_empleado', 'nombre_completo', 'puesto', 'fecha_ingreso', 'activo']
+    list_filter = ['puesto', 'activo', 'fecha_ingreso']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
     list_editable = ['activo']
@@ -70,7 +70,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
             'fields': (('telefono_personal', 'telefono_emergencia'), ('contacto_emergencia',), ('direccion',)),
         }),
         ('Información Laboral', {
-            'fields': (('departamento', 'puesto'), ('jefe_directo', 'salario_actual')),
+            'fields': (('puesto',), ('jefe_directo', 'salario_actual')),
         }),
         ('Fechas Laborales', {
             'fields': (('fecha_ingreso', 'fecha_baja'), ('motivo_baja',)),
@@ -114,19 +114,3 @@ class EmpleadoAdmin(admin.ModelAdmin):
     nombre_completo.admin_order_field = 'usuario__first_name'
 
 
-@admin.register(TipoContrato)
-class TipoContratoAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'activo']
-    list_filter = ['activo']
-    search_fields = ['nombre', 'descripcion']
-    list_editable = ['activo']
-
-
-@admin.register(Contrato)
-class ContratoAdmin(admin.ModelAdmin):
-    list_display = ['empleado', 'tipo_contrato', 'fecha_inicio', 'fecha_fin', 'salario', 'activo']
-    list_filter = ['tipo_contrato', 'activo', 'fecha_inicio']
-    search_fields = ['empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name']
-    readonly_fields = ['fecha_creacion']
-    list_editable = ['activo']
-    date_hierarchy = 'fecha_inicio'

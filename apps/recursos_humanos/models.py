@@ -1,7 +1,6 @@
 from django.db import models
 from django.core.validators import RegexValidator
 from django.urls import reverse
-from apps.empresas.models import Departamento
 from apps.usuarios.models import Usuario
 import re
 
@@ -80,7 +79,6 @@ class Empleado(models.Model):
     direccion = models.TextField(verbose_name="Dirección")
     
     # Información laboral
-    departamento = models.ForeignKey(Departamento, on_delete=models.PROTECT, verbose_name="Departamento")
     puesto = models.ForeignKey(Puesto, on_delete=models.PROTECT, verbose_name="Puesto")
     jefe_directo = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Jefe directo")
     fecha_ingreso = models.DateField(verbose_name="Fecha de ingreso")
@@ -111,13 +109,7 @@ class Empleado(models.Model):
     def nombre_completo(self):
         return self.usuario.get_full_name()
     
-    @property
-    def empresa(self):
-        return self.departamento.sucursal.empresa
-    
-    @property
-    def sucursal(self):
-        return self.departamento.sucursal
+    #
     
     @property
     def antiguedad(self):
@@ -150,37 +142,4 @@ class Empleado(models.Model):
         super().save(*args, **kwargs)
 
 
-class TipoContrato(models.Model):
-    """Modelo para tipos de contrato"""
-    
-    nombre = models.CharField(max_length=50, unique=True, verbose_name="Tipo de contrato")
-    descripcion = models.TextField(verbose_name="Descripción")
-    activo = models.BooleanField(default=True, verbose_name="Activo")
-    
-    class Meta:
-        verbose_name = "Tipo de contrato"
-        verbose_name_plural = "Tipos de contrato"
-    
-    def __str__(self):
-        return self.nombre
-
-
-class Contrato(models.Model):
-    """Modelo para contratos de empleados"""
-    
-    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='contratos')
-    tipo_contrato = models.ForeignKey(TipoContrato, on_delete=models.PROTECT, verbose_name="Tipo de contrato")
-    fecha_inicio = models.DateField(verbose_name="Fecha de inicio")
-    fecha_fin = models.DateField(null=True, blank=True, verbose_name="Fecha de fin")
-    salario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Salario")
-    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
-    activo = models.BooleanField(default=True, verbose_name="Contrato activo")
-    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
-    
-    class Meta:
-        verbose_name = "Contrato"
-        verbose_name_plural = "Contratos"
-        ordering = ['-fecha_inicio']
-    
-    def __str__(self):
-        return f"{self.empleado.numero_empleado} - {self.tipo_contrato.nombre} ({self.fecha_inicio})"
+ 

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ empresa.nombre }}{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <a href="{% url 'empresas:index' %}" class="btn btn-link px-0 mb-3">← Volver</a>
+  <div class="card shadow-sm">
+    <div class="row g-0">
+      <div class="col-md-4 d-flex align-items-center justify-content-center p-3">
+        <img src="{% if empresa.logo %}{{ empresa.logo.url }}{% else %}{% static 'img/logo-placeholder.svg' %}{% endif %}"
+             alt="Logo {{ empresa.nombre }}" class="img-fluid" style="max-height: 200px; object-fit: contain;">
+      </div>
+      <div class="col">
+        <div class="card-body">
+          <h1 class="h4">{{ empresa.nombre }}</h1>
+          <div class="mb-2">
+            <span class="text-muted"><i class="fa-solid fa-location-dot me-1"></i>Dirección:</span>
+            {% with d=empresa.direccion|default_if_none:"" %}
+              {% if d|cut:" "|cut:"\n"|cut:"\r"|cut:"\t" %}
+                <span class="text-body">{{ empresa.direccion|linebreaksbr }}</span>
+              {% else %}
+                <span class="text-body">—</span>
+              {% endif %}
+            {% endwith %}
+          </div>
+          <p>
+            <span class="badge {% if empresa.activa %}bg-success{% else %}bg-secondary{% endif %}">
+              {{ empresa.activa|yesno:"Activa,Inactiva" }}
+            </span>
+          </p>
+        </div>
+          {% if empresa.contactos.all %}
+          <div class="mt-3">
+            <h2 class="h6">Contactos</h2>
+            {% if empresa.contactos.exists %}
+              <ul class="list-group list-group-flush">
+                {% for c in empresa.contactos.all %}
+                  <li class="list-group-item px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>{{ c.nombre_completo }}</strong>
+                        {% if c.telefono %}<div class="text-muted small"><i class="fa-solid fa-phone me-1"></i>{{ c.telefono }}</div>{% endif %}
+                        {% if c.correo %}<div class="text-muted small"><i class="fa-solid fa-envelope me-1"></i>{{ c.correo }}</div>{% endif %}
+                      </div>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="text-muted">No hay contactos registrados.</div>
+            {% endif %}
+          </div>
+          {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

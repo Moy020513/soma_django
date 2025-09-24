@@ -2,7 +2,6 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from .models import Empleado, Puesto
-from apps.empresas.models import Departamento
 import re
 
 Usuario = get_user_model()
@@ -22,7 +21,6 @@ class EmpleadoRegistroForm(forms.Form):
 
     # Laborales
     fecha_ingreso = forms.DateField(label='Fecha de ingreso', required=True, widget=forms.DateInput(attrs={'type': 'date'}))
-    departamento = forms.ModelChoiceField(queryset=Departamento.objects.all(), required=True, label='Departamento')
     puesto = forms.ModelChoiceField(queryset=Puesto.objects.filter(activo=True), required=True, label='Puesto')
     es_supervisor = forms.BooleanField(required=False, label='Es supervisor')
 

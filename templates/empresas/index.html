@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Empresas{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Empresas</h1>
+  </div>
+  {% if empresas %}
+    <div class="row g-3">
+      {% for e in empresas %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+            <a href="{{ e.get_absolute_url }}" class="text-decoration-none">
+              <img src="{% if e.logo %}{{ e.logo.url }}{% else %}{% static 'img/logo-placeholder.svg' %}{% endif %}"
+                   class="card-img-top" alt="Logo de {{ e.nombre }}"
+                   style="object-fit: contain; height: 140px; background:#fafafa;">
+            </a>
+            <div class="card-body">
+              <h5 class="card-title mb-1"><a href="{{ e.get_absolute_url }}" class="stretched-link text-decoration-none">{{ e.nombre }}</a></h5>
+              <div class="small mb-2">
+                <span class="text-muted"><i class="fa-solid fa-location-dot me-1"></i>Dirección:</span>
+                {% with d=e.direccion|default_if_none:"" %}
+                  {% if d|cut:" "|cut:"\n"|cut:"\r"|cut:"\t" %}
+                    <span class="text-body">{{ e.direccion|linebreaksbr }}</span>
+                  {% else %}
+                    <span class="text-body">—</span>
+                  {% endif %}
+                {% endwith %}
+              </div>
+              <span class="badge {% if e.activa %}bg-success{% else %}bg-secondary{% endif %}">{{ e.activa|yesno:"Activa,Inactiva" }}</span>
+            </div>
+            <div class="card-footer bg-white border-0">
+              <a href="{{ e.get_absolute_url }}" class="btn btn-sm btn-primary">Ver detalles</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">No hay empresas registradas.</div>
+  {% endif %}
+</div>
+{% endblock %}

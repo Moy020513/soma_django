@@ -1,6 +1,7 @@
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib import messages
+from django.utils import translation
 
 
 class NonStaffAccessRestrictionMiddleware:
@@ -47,4 +48,23 @@ class NonStaffAccessRestrictionMiddleware:
                 return redirect(reverse('dashboard'))
 
         response = self.get_response(request)
+        return response
+
+
+class ForceSpanishLocaleMiddleware:
+    """
+    Fuerza el idioma español para toda la aplicación, independientemente del
+    header Accept-Language del navegador. Útil para asegurar que el admin y
+    los mensajes de Django se muestren en español.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        translation.activate('es')
+        request.LANGUAGE_CODE = 'es'
+        response = self.get_response(request)
+        response.setdefault('Content-Language', 'es')
+        translation.deactivate()
         return response

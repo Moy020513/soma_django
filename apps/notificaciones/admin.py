@@ -1,9 +1,12 @@
 from django.contrib import admin
 from .models import Notificacion
+from .forms import NotificacionForm
 
 
 @admin.register(Notificacion)
 class NotificacionAdmin(admin.ModelAdmin):
+    save_on_top = False
+    form = NotificacionForm
     list_display = ['titulo', 'usuario', 'tipo', 'leida', 'fecha_creacion']
     list_filter = ['tipo', 'leida', 'fecha_creacion']
     search_fields = ['titulo', 'mensaje', 'usuario__email', 'usuario__first_name', 'usuario__last_name']
@@ -11,16 +14,10 @@ class NotificacionAdmin(admin.ModelAdmin):
     list_editable = ['leida']
     date_hierarchy = 'fecha_creacion'
     
+    # En el formulario no se muestran 'leida', 'url' ni 'fecha_creacion'
     fieldsets = (
         (None, {
-            'fields': ('usuario', 'titulo', 'mensaje')
-        }),
-        ('Configuración', {
-            'fields': ('tipo', 'leida', 'url')
-        }),
-        ('Información adicional', {
-            'fields': ('fecha_creacion',),
-            'classes': ('collapse',)
+            'fields': ('usuario', 'titulo', 'mensaje', 'tipo')
         }),
     )
     

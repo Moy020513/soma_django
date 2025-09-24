@@ -68,7 +68,6 @@ def registrar_empleado(request):
                 telefono_emergencia='',
                 contacto_emergencia='',
                 direccion='',
-                departamento=cd['departamento'],
                 puesto=cd['puesto'],
                 jefe_directo=None,
                 fecha_ingreso=cd['fecha_ingreso'],
@@ -79,7 +78,7 @@ def registrar_empleado(request):
             )
             empleado.save()
 
-            messages.success(request, f"Empleado creado. Usuario: {username} | Contraseña: {password}")
+            messages.success(request, f"Empleado creado correctamente. Usuario: {username} | Contraseña: {password}")
             return redirect(reverse('admin:recursos_humanos_empleado_changelist'))
     else:
         form = EmpleadoRegistroForm()
