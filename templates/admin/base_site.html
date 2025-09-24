@@ -11,7 +11,7 @@
         <img src="{% static 'images/logo.png' %}" alt="Servicios Industriales SOMA" class="soma-logo-admin">
     </div>
     <h1 id="site-name">
-        <a href="{% url 'admin:index' %}">Servicios Industriales SOMA</a>
+    <a href="{% url 'home' %}">Servicios Industriales SOMA</a>
     </h1>
 </div>
 {% endblock %}
@@ -58,7 +58,7 @@
         <nav aria-label="breadcrumb" class="admin-breadcrumbs">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">
-                    <a href="{% url 'admin:index' %}">
+                    <a href="{% url 'home' %}">
                         <i class="fas fa-home me-1"></i>{% trans 'Home' %}
                     </a>
                 </li>

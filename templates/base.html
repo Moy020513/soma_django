@@ -1849,13 +1849,7 @@
                             </a>
                         </li>
                         
-                        {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'admin:index' %}">
-                                <i class="fas fa-tachometer-alt me-2"></i>Admin
-                            </a>
-                        </li>
-                        {% endif %}
+                        {# Enlace al Admin eliminado a petición del usuario #}
                     </ul>
                 </div>
             </nav>

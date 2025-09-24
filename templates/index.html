@@ -51,15 +51,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="help-section">
-                            <h6><i class="fas fa-shield-alt me-2" style="color: var(--soma-blue);"></i>Administración</h6>
-                            <p class="text-muted small mb-3">Accede al panel de administración para gestionar módulos y configuraciones del sistema.</p>
-                            <a href="{% url 'admin:index' %}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-cogs me-2"></i>Ir al Panel de Admin
-                            </a>
-                        </div>
-                    </div>
+                    <!-- Columna de acceso al panel de admin eliminada a petición del usuario -->
                 </div>
             </div>
         </div>
@@ -68,63 +60,101 @@
 {% endif %}
 
 {% if es_admin %}
-<!-- Contenido para administradores -->
-<div class="row">
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center admin-card">
-            <div class="card-body">
-                <i class="fas fa-users fa-3x mb-3" style="color: var(--soma-orange);"></i>
-                <h5 class="card-title" style="color: var(--soma-blue);">Recursos Humanos</h5>
-                <p class="card-text text-muted">Gestión de empleados, puestos y contratos.</p>
-                <a href="{% url 'admin:recursos_humanos_empleado_changelist' %}" class="btn btn-primary">
-                    <i class="fas fa-eye me-2"></i>Ver
-                </a>
+<!-- Sección admin compacta en Home: Acciones recientes + índice textual -->
+<div class="mt-3">
+    <div class="card">
+        <div class="card-header">
+            <strong>Acciones recientes</strong>
+        </div>
+        <div class="card-body p-0">
+            {% load log %}
+            {% get_admin_log 10 as admin_log for_user user %}
+            {% if admin_log %}
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Acción</th>
+                            <th>Usuario</th>
+                            <th>Objeto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in admin_log %}
+                        <tr>
+                            <td>{{ entry.action_time|date:"M j, Y g:i A" }}</td>
+                            <td>
+                                {% if entry.is_addition %}Agregado{% elif entry.is_change %}Modificado{% elif entry.is_deletion %}Eliminado{% endif %}
+                            </td>
+                            <td>{{ entry.user.get_full_name|default:entry.user.username }}</td>
+                            <td>"{{ entry.object_repr }}"</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+                <p class="text-muted m-3">No hay acciones recientes.</p>
+            {% endif %}
         </div>
     </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center admin-card">
-            <div class="card-body">
-                <i class="fas fa-car fa-3x mb-3" style="color: #28a745;"></i>
-                <h5 class="card-title" style="color: var(--soma-blue);">Flota Vehicular</h5>
-                <p class="card-text text-muted">Control de vehículos, asignaciones y mantenimiento.</p>
-                <a href="{% url 'admin:flota_vehicular_vehiculo_changelist' %}" class="btn btn-success">
-                    <i class="fas fa-eye me-2"></i>Ver
-                </a>
+
+            <div class="card mt-3">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <strong>Módulos</strong>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#modulosGrid" aria-expanded="true" aria-controls="modulosGrid">
+                        Mostrar/Ocultar
+                    </button>
+                </div>
+                <div id="modulosGrid" class="collapse show">
+                    <div class="card-body">
+                        {% if app_list %}
+                            <div class="row g-3">
+                                {% for app in app_list %}
+                                <div class="col-sm-6 col-lg-4">
+                                    <div class="card h-100 admin-card">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="user-icon-wrapper me-3" style="width:56px;height:56px;">
+                                                    <i class="
+                                                        {% if app.app_label == 'auth' %}fas fa-user-shield
+                                                        {% elif app.app_label == 'usuarios' %}fas fa-users-cog
+                                                        {% elif app.app_label == 'empresas' %}fas fa-building
+                                                        {% elif app.app_label == 'flota_vehicular' %}fas fa-car
+                                                        {% elif app.app_label == 'herramientas' %}fas fa-tools
+                                                        {% elif app.app_label == 'notificaciones' %}fas fa-bell
+                                                        {% elif app.app_label == 'recursos_humanos' %}fas fa-users
+                                                        {% else %}fas fa-cube{% endif %}"></i>
+                                                </div>
+                                                <h5 class="card-title mb-0" style="color: var(--soma-blue);">
+                                                    {% if app.app_label == 'auth' %}Autenticación y Autorización
+                                                    {% elif app.app_label == 'usuarios' %}Gestión de Usuarios
+                                                    {% elif app.app_label == 'empresas' %}Empresas
+                                                    {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
+                                                    {% elif app.app_label == 'herramientas' %}Herramientas
+                                                    {% elif app.app_label == 'notificaciones' %}Notificaciones
+                                                    {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                                                    {% else %}{{ app.name }}{% endif %}
+                                                </h5>
+                                            </div>
+                                            <div class="mt-auto d-flex gap-2">
+                                                <a href="{{ app.app_url }}" class="btn btn-primary w-100">
+                                                    <i class="fas fa-sliders-h me-2"></i>Administrar
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No hay módulos disponibles.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center admin-card">
-            <div class="card-body">
-                <i class="fas fa-tools fa-3x mb-3" style="color: #ffc107;"></i>
-                <h5 class="card-title" style="color: var(--soma-blue);">Herramientas</h5>
-                <p class="card-text text-muted">Inventario y asignación de herramientas.</p>
-                <a href="{% url 'admin:herramientas_herramienta_changelist' %}" class="btn btn-warning text-dark">
-                    <i class="fas fa-eye me-2"></i>Ver
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 text-center admin-card">
-            <div class="card-body">
-                <i class="fas fa-building fa-3x mb-3" style="color: #17a2b8;"></i>
-                <h5 class="card-title" style="color: var(--soma-blue);">Empresas</h5>
-                <p class="card-text text-muted">Gestión de empresas, sucursales y departamentos.</p>
-                <a href="{% url 'admin:empresas_empresa_changelist' %}" class="btn btn-info">
-                    <i class="fas fa-eye me-2"></i>Ver
-                </a>
-            </div>
-        </div>
-    </div>
 </div>
-
-
-
 {% else %}
 <!-- Contenido para usuarios estándar -->
 <div class="row mt-0">

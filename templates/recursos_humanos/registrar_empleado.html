@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Registrar empleado{% endblock %}
+{% block page_title %}Registrar empleado{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <strong>Nuevo empleado</strong>
+        </div>
+        <div class="card-body">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <h5 class="mb-3">Datos personales</h5>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ form.nombre.label }}</label>
+                {{ form.nombre }}
+                {{ form.nombre.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.apellido_paterno.label }}</label>
+                {{ form.apellido_paterno }}
+                {{ form.apellido_paterno.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.apellido_materno.label }}</label>
+                {{ form.apellido_materno }}
+                {{ form.apellido_materno.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.telefono.label }}</label>
+                {{ form.telefono }}
+                <div class="form-text">10 dígitos, solo números</div>
+                {{ form.telefono.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.nss.label }}</label>
+                {{ form.nss }}
+                {{ form.nss.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.curp.label }}</label>
+                {{ form.curp }}
+                <div class="form-text">18 caracteres. Se guardará en mayúsculas.</div>
+                {{ form.curp.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.rfc.label }}</label>
+                {{ form.rfc }}
+                <div class="form-text">Opcional</div>
+                {{ form.rfc.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.fecha_nacimiento.label }}</label>
+                {{ form.fecha_nacimiento }}
+                {{ form.fecha_nacimiento.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.sexo.label }}</label>
+                {{ form.sexo }}
+                {{ form.sexo.errors }}
+              </div>
+            </div>
+
+            <hr class="my-4" />
+            <h5 class="mb-3">Datos laborales</h5>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ form.fecha_ingreso.label }}</label>
+                {{ form.fecha_ingreso }}
+                {{ form.fecha_ingreso.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.departamento.label }}</label>
+                {{ form.departamento }}
+                {{ form.departamento.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ form.puesto.label }}</label>
+                {{ form.puesto }}
+                {{ form.puesto.errors }}
+              </div>
+              <div class="col-md-12 d-flex align-items-end mt-2">
+                <div class="form-check">
+                  {{ form.es_supervisor }}
+                  <label class="form-check-label">{{ form.es_supervisor.label }}</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-primary" type="submit">
+                <i class="fas fa-save me-1"></i> Guardar
+              </button>
+              <a class="btn btn-outline-secondary" href="{% url 'admin:recursos_humanos_empleado_changelist' %}">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

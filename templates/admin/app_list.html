@@ -1,24 +1,41 @@
 {% extends "admin/base_site.html" %}
 {% load i18n %}
-{% load i18n %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
-    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    <a href="{% url 'home' %}">{% trans 'Home' %}</a>
     &rsaquo; {{ title }}
 </div>
 {% endblock %}
 
 {% block content %}
 <div class="app-list-header">
-    <h1>{{ title }}</h1>
+    <h1>
+        {% if app_list.0.app_label == 'auth' %}Autenticación y Autorización
+        {% elif app_list.0.app_label == 'usuarios' %}Gestión de Usuarios
+        {% elif app_list.0.app_label == 'empresas' %}Empresas
+        {% elif app_list.0.app_label == 'flota_vehicular' %}Flota Vehicular
+        {% elif app_list.0.app_label == 'herramientas' %}Herramientas
+        {% elif app_list.0.app_label == 'notificaciones' %}Notificaciones
+        {% elif app_list.0.app_label == 'recursos_humanos' %}Recursos Humanos
+        {% else %}{{ title }}{% endif %}
+    </h1>
 </div>
 
 <div class="app-list-content">
     {% for app in app_list %}
         <div class="app-card">
             <div class="app-header">
-                <h2>{{ app.name }}</h2>
+                <h2>
+                    {% if app.app_label == 'auth' %}Autenticación y Autorización
+                    {% elif app.app_label == 'usuarios' %}Gestión de Usuarios
+                    {% elif app.app_label == 'empresas' %}Empresas
+                    {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
+                    {% elif app.app_label == 'herramientas' %}Herramientas
+                    {% elif app.app_label == 'notificaciones' %}Notificaciones
+                    {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                    {% else %}{{ app.name }}{% endif %}
+                </h2>
                 <div class="app-models-count">{{ app.models|length }} {% if app.models|length == 1 %}{% trans 'model' %}{% else %}{% trans 'models' %}{% endif %}</div>
             </div>
 
@@ -27,21 +44,13 @@
                     <div class="model-item">
                         <a href="{{ model.admin_url }}" class="model-link">
                             <div class="model-icon">
-                                <i class="fas fa-{{ model.object_name|lower }}"></i>
+                                <i class="fas fa-cube"></i>
                             </div>
-                            <div class="model-info">
+                            <div class="model-info d-flex w-100 justify-content-between align-items-center">
                                 <div class="model-name">{{ model.name }}</div>
-                                <div class="model-perms">
-                                    {% if model.add_url %}
-                                        <span class="perm-add">{% trans 'Add' %}</span>
-                                    {% endif %}
-                                    {% if model.change_url %}
-                                        <span class="perm-change">{% trans 'Change' %}</span>
-                                    {% endif %}
-                                    {% if model.view_url %}
-                                        <span class="perm-view">{% trans 'View' %}</span>
-                                    {% endif %}
-                                </div>
+                                <span class="btn btn-sm btn-primary">
+                                    <i class="fas fa-sliders-h me-1"></i> {% trans 'Administrar' %}
+                                </span>
                             </div>
                         </a>
                     </div>

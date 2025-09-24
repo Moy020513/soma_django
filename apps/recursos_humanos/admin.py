@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django import forms
+from django.shortcuts import redirect
 from .models import Puesto, Empleado, TipoContrato, Contrato
 
 
@@ -63,7 +64,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
             'fields': (('curp', 'rfc'), ('nss',)),
         }),
         ('Información Personal', {
-            'fields': (('fecha_nacimiento', 'estado_civil', 'tipo_sangre'),),
+            'fields': (('fecha_nacimiento', 'estado_civil', 'tipo_sangre', 'sexo'),),
         }),
         ('Contacto', {
             'fields': (('telefono_personal', 'telefono_emergencia'), ('contacto_emergencia',), ('direccion',)),
@@ -90,6 +91,22 @@ class EmpleadoAdmin(admin.ModelAdmin):
                 'admin/css/forms.css',
             )
         }
+
+    change_list_template = 'admin/recursos_humanos/empleado/change_list.html'
+
+    def has_add_permission(self, request):
+        # Deshabilitar el alta estándar en admin para usar el nuevo flujo
+        return False
+
+    def add_view(self, request, form_url='', extra_context=None):
+        # Redirigir siempre al nuevo flujo de registro de empleados
+        return redirect('rh:registrar_empleado')
+
+    def get_model_perms(self, request):
+        # Ocultar el enlace "Añadir" también en el índice de la app del admin
+        perms = super().get_model_perms(request)
+        perms['add'] = False
+        return perms
     
     def nombre_completo(self, obj):
         return obj.usuario.get_full_name()

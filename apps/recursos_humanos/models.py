@@ -64,12 +64,14 @@ class Empleado(models.Model):
     rfc = models.CharField(
         max_length=13,
         validators=[RegexValidator(r'^[A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3}$', 'RFC inválido')],
-        verbose_name="RFC"
+        verbose_name="RFC",
+        blank=True
     )
     nss = models.CharField(max_length=11, blank=True, verbose_name="Número de Seguro Social")
     fecha_nacimiento = models.DateField(verbose_name="Fecha de nacimiento")
     estado_civil = models.CharField(max_length=15, choices=ESTADOS_CIVILES, verbose_name="Estado civil")
     tipo_sangre = models.CharField(max_length=3, choices=TIPOS_SANGRE, blank=True, verbose_name="Tipo de sangre")
+    sexo = models.CharField(max_length=1, choices=[('M', 'Masculino'), ('F', 'Femenino'), ('I', 'Indefinido')], verbose_name="Sexo", default='I')
     
     # Información de contacto
     telefono_personal = models.CharField(max_length=15, verbose_name="Teléfono personal")

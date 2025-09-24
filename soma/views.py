@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login as auth_login
 from django.urls import reverse
+from django.contrib import admin as djadmin
 from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular
 from apps.herramientas.models import Herramienta
@@ -13,11 +14,15 @@ from apps.notificaciones.models import Notificacion
 @login_required
 def index(request):
     """Vista principal del sitio"""
+    es_admin = request.user.is_staff or request.user.is_superuser
     context = {
         'titulo': 'Sistema SOMA',
         'descripcion': 'Sistema de Gestión Empresarial',
-        'es_admin': request.user.is_staff or request.user.is_superuser,
+        'es_admin': es_admin,
     }
+    if es_admin:
+        # Proveer listado de apps del admin para renderizar en el Home
+        context['app_list'] = djadmin.site.get_app_list(request)
     return render(request, 'index.html', context)
 
 

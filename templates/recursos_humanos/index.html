@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Recursos Humanos{% endblock %}
+{% block page_title %}Recursos Humanos{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="m-0">Módulo de Recursos Humanos</h5>
+    <a class="btn btn-primary" href="{% url 'rh:registrar_empleado' %}">
+      <i class="fas fa-user-plus me-1"></i> Registrar empleado
+    </a>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <p>Usa el botón de arriba para registrar un nuevo empleado mediante el flujo personalizado.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

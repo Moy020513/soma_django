@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 from . import views
@@ -7,6 +8,8 @@ from . import views
 urlpatterns = [
     # Admin login override: debe ir ANTES de admin.site.urls para tomar prioridad
     re_path(r'^admin/login/?$', views.admin_login_anyuser, name='admin_login_anyuser'),
+    # Redirección limpia sólo para la raíz exacta /admin/ hacia el Home de la app
+    re_path(r'^admin/?$', RedirectView.as_view(pattern_name='home', permanent=False), name='admin_root_redirect'),
     path('admin/', admin.site.urls),
     path('', views.index, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -14,6 +17,8 @@ urlpatterns = [
     path('mis-notificaciones/', views.notificaciones_usuario, name='notificaciones_usuario'),
     path('notificaciones/<int:notificacion_id>/leida/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
     path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticación
+    # Redirige a RH para registro de empleados (flujo único)
+    path('auth/register/', RedirectView.as_view(pattern_name='rh:registrar_empleado', permanent=False), name='registrar_empleado_redirect'),
     path('usuarios/', include('apps.usuarios.urls')),
     path('rh/', include('apps.recursos_humanos.urls')),
     path('flota/', include('apps.flota_vehicular.urls')),
