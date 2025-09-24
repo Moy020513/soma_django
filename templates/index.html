@@ -15,44 +15,14 @@
     {% endfor %}
 {% endif %}
 
+{# Mensaje de bienvenida simplificado (se eliminaron los datos de cuenta detallados) #}
 {% if es_admin %}
 <div class="row mt-0">
     <div class="col-12">
-        <div class="card user-info-card">
-            <div class="card-header">
-                <h5><i class="fas fa-info-circle me-2"></i>Información de tu Cuenta</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <h6 class="welcome-text">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
-                        <p class="text-muted mb-4">Tu cuenta tiene permisos de administrador. Tienes acceso completo a las funcionalidades del sistema SOMA.</p>
-
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <div class="info-item">
-                                    <i class="fas fa-user-tag me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Usuario:</strong> {{ user.username }}
-                                </div>
-                                <div class="info-item">
-                                    <i class="fas fa-envelope me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Email:</strong> {{ user.email|default:"No especificado" }}
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="info-item">
-                                    <i class="fas fa-clock me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Último acceso:</strong> {{ user.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}
-                                </div>
-                                <div class="info-item">
-                                    <i class="fas fa-calendar-plus me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Miembro desde:</strong> {{ user.date_joined|date:"d/m/Y" }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Columna de acceso al panel de admin eliminada a petición del usuario -->
-                </div>
+        <div class="card user-info-card mb-3">
+            <div class="card-body py-3">
+                <h6 class="welcome-text mb-1">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
+                <p class="text-muted small mb-0">Tienes permisos de administrador en el sistema SOMA.</p>
             </div>
         </div>
     </div>
@@ -60,47 +30,7 @@
 {% endif %}
 
 {% if es_admin %}
-<!-- Sección admin compacta en Home: Acciones recientes + índice textual -->
-<div class="mt-3">
-    <div class="card">
-        <div class="card-header">
-            <strong>Acciones recientes</strong>
-        </div>
-        <div class="card-body p-0">
-            {% load log %}
-            {% get_admin_log 10 as admin_log for_user user %}
-            {% if admin_log %}
-            <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr>
-                            <th>Hora</th>
-                            <th>Acción</th>
-                            <th>Usuario</th>
-                            <th>Objeto</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in admin_log %}
-                        <tr>
-                            <td>{{ entry.action_time|date:"M j, Y g:i A" }}</td>
-                            <td>
-                                {% if entry.is_addition %}Agregado{% elif entry.is_change %}Modificado{% elif entry.is_deletion %}Eliminado{% endif %}
-                            </td>
-                            <td>{{ entry.user.get_full_name|default:entry.user.username }}</td>
-                            <td>"{{ entry.object_repr }}"</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-                <p class="text-muted m-3">No hay acciones recientes.</p>
-            {% endif %}
-        </div>
-    </div>
-
-            <div class="card mt-3">
+            <div class="card mt-0">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <strong>Módulos</strong>
                     <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#modulosGrid" aria-expanded="true" aria-controls="modulosGrid">
@@ -156,51 +86,12 @@
             </div>
 </div>
 {% else %}
-<!-- Contenido para usuarios estándar -->
+{# Mensaje de bienvenida para usuario estándar #}
 <div class="row mt-0">
     <div class="col-12">
-        <div class="card user-info-card">
-            <div class="card-header">
-                <h5><i class="fas fa-info-circle me-2"></i>Información de tu Cuenta</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <h6 class="welcome-text">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
-                        
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <div class="info-item">
-                                    <i class="fas fa-user-tag me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Usuario:</strong> {{ user.username }}
-                                </div>
-                                <div class="info-item">
-                                    <i class="fas fa-envelope me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Email:</strong> {{ user.email|default:"No especificado" }}
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="info-item">
-                                    <i class="fas fa-clock me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Último acceso:</strong> {{ user.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}
-                                </div>
-                                <div class="info-item">
-                                    <i class="fas fa-calendar-plus me-2" style="color: var(--soma-orange);"></i>
-                                    <strong>Miembro desde:</strong> {{ user.date_joined|date:"d/m/Y" }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="help-section">
-                            <h6><i class="fas fa-question-circle me-2" style="color: var(--soma-blue);"></i>¿Necesitas ayuda?</h6>
-                            <p class="text-muted small mb-3">Para solicitar acceso a más funcionalidades o reportar problemas, contacta con el administrador del sistema.</p>
-                            <a href="mailto:admin@soma.com" class="btn btn-outline-secondary btn-sm">
-                                <i class="fas fa-envelope me-2"></i>Contactar Admin
-                            </a>
-                        </div>
-                    </div>
-                </div>
+        <div class="card user-info-card mb-3">
+            <div class="card-body py-3">
+                <h6 class="welcome-text mb-0">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
             </div>
         </div>
     </div>
@@ -217,21 +108,6 @@
                 <p class="card-text text-muted">Consulta y actualiza tu información personal, revisa tus permisos y configuraciones.</p>
                 <a href="{% url 'perfil_usuario' %}" class="btn btn-primary btn-lg">
                     <i class="fas fa-id-card me-2"></i>Ver Perfil
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6 col-lg-5 mb-4">
-        <div class="card h-100 text-center user-card">
-            <div class="card-body">
-                <div class="user-icon-wrapper mb-3">
-                    <i class="fas fa-bell fa-4x" style="color: var(--soma-blue);"></i>
-                </div>
-                <h5 class="card-title" style="color: var(--soma-blue);">Notificaciones</h5>
-                <p class="card-text text-muted">Revisa tus notificaciones, mensajes importantes y actualizaciones del sistema.</p>
-                <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary btn-lg">
-                    <i class="fas fa-envelope me-2"></i>Ver Notificaciones
                 </a>
             </div>
         </div>

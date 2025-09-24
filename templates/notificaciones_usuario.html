@@ -23,7 +23,7 @@
                 </div>
             </div>
             <a href="{% url 'home' %}" class="btn btn-outline-secondary back-btn">
-                <i class="fas fa-arrow-left me-2"></i>Volver al Inicio
+                <i class="fas fa-arrow-left me-2"></i>Inicio
             </a>
         </div>
     </div>
@@ -34,7 +34,7 @@
         {% if notificaciones %}
             <div class="notifications-container">
                 {% for notificacion in notificaciones %}
-                    <div class="notification-card card mb-3 {% if not notificacion.leida %}notification-unread{% endif %}">
+                    <div id="n{{ notificacion.id }}" class="notification-card card mb-3 {% if not notificacion.leida %}notification-unread{% endif %}" data-id="{{ notificacion.id }}" style="cursor:pointer;">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="notification-content flex-grow-1">
@@ -85,28 +85,7 @@
                                     {% endif %}
                                 </div>
                                 
-                                <div class="notification-controls">
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle control-btn" type="button" data-bs-toggle="dropdown">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            {% if not notificacion.leida %}
-                                                <li>
-                                                    <a class="dropdown-item mark-read-item" href="{% url 'marcar_notificacion_leida' notificacion.id %}">
-                                                        <i class="fas fa-check me-2"></i>Marcar como leída
-                                                    </a>
-                                                </li>
-                                            {% else %}
-                                                <li>
-                                                    <span class="dropdown-item-text text-muted already-read">
-                                                        <i class="fas fa-check-circle me-2"></i>Ya leída
-                                                    </span>
-                                                </li>
-                                            {% endif %}
-                                        </ul>
-                                    </div>
-                                </div>
+                                <!-- Controles removidos: ahora se marca al hacer click -->
                             </div>
                         </div>
                     </div>
@@ -130,4 +109,40 @@
         {% endif %}
     </div>
 </div>
+<script>
+// Utilidad para CSRF
+function getCookie(name){let v=null;if(document.cookie&&document.cookie!==''){const cookies=document.cookie.split(';');for(let c of cookies){c=c.trim();if(c.substring(0,name.length+1)=== (name+'=')){v=decodeURIComponent(c.substring(name.length+1));break;}}}return v;}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const cards = document.querySelectorAll('.notification-card');
+  cards.forEach(card=>{
+    card.addEventListener('click', (e)=>{
+        // Evitar activar desde enlaces internos que ya navegan
+        if(e.target.closest('a') && !e.target.classList.contains('action-link')){ return; }
+        if(card.classList.contains('notification-unread')){
+            const id = card.dataset.id;
+            fetch(`/api/notificaciones/${id}/leer/`, {
+                method:'POST',
+                headers:{'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With':'XMLHttpRequest'}
+            }).then(r=>r.json()).then(data=>{
+                if(data.ok){
+                    card.classList.remove('notification-unread');
+                    const nueva = card.querySelector('.new-badge');
+                    if(nueva) nueva.remove();
+                    // Actualizar badge global si existe
+                    const badge = document.getElementById('badgeNotificaciones');
+                    if(badge){
+                        let current = badge.textContent === '9+' ? 9 : parseInt(badge.textContent || '0', 10);
+                        if(current>0){
+                            const nuevo = data.pendientes;
+                            if(nuevo>0){ badge.textContent = nuevo>9 ? '9+' : nuevo; }
+                            else { badge.remove(); }
+                        }
+                    }
+                }
+            }).catch(()=>{});
+        }
+    });
+  });
+});
+</script>
 {% endblock %}

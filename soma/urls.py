@@ -14,8 +14,13 @@ urlpatterns = [
     path('', views.index, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('perfil/', views.perfil_usuario, name='perfil_usuario'),
+    path('acciones-recientes/', views.acciones_recientes, name='acciones_recientes'),
     path('mis-notificaciones/', views.notificaciones_usuario, name='notificaciones_usuario'),
     path('notificaciones/<int:notificacion_id>/leida/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
+    # API / HTMX helpers
+    path('api/notificaciones/conteo/', views.api_conteo_notificaciones, name='api_conteo_notificaciones'),
+    path('htmx/notificaciones/dropdown/', views.dropdown_notificaciones, name='dropdown_notificaciones'),
+    path('api/notificaciones/<int:notificacion_id>/leer/', views.api_marcar_notificacion_leida, name='api_marcar_notificacion_leida'),
     path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticación
     # Redirige a RH para registro de empleados (flujo único)
     path('auth/register/', RedirectView.as_view(pattern_name='rh:registrar_empleado', permanent=False), name='registrar_empleado_redirect'),

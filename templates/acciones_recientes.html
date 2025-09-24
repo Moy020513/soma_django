@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Acciones recientes{% endblock %}
+{% block page_title %}Acciones recientes{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-clock me-2"></i>Últimas acciones del sistema</span>
+    <a href="{% url 'home' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Volver</a>
+  </div>
+  <div class="card-body p-0">
+    {% if acciones %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width:160px;">Fecha/Hora</th>
+            <th style="width:110px;">Tipo</th>
+            <th>Objeto</th>
+            <th style="width:180px;">Usuario</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in acciones %}
+          <tr>
+            <td class="text-muted small">{{ entry.action_time|date:"d/m/Y H:i" }}</td>
+            <td>
+              {% if entry.is_addition %}
+                <span class="badge bg-success">Agregado</span>
+              {% elif entry.is_change %}
+                <span class="badge bg-warning text-dark">Modificado</span>
+              {% elif entry.is_deletion %}
+                <span class="badge bg-danger">Eliminado</span>
+              {% else %}
+                <span class="badge bg-secondary">Otro</span>
+              {% endif %}
+            </td>
+            <td>"{{ entry.object_repr }}" <small class="text-muted d-block">{{ entry.content_type.app_label }}.{{ entry.content_type.model }}</small></td>
+            <td class="small">{{ entry.user.get_full_name|default:entry.user.username }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="p-4 text-center text-muted">No hay acciones recientes.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

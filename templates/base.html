@@ -1871,6 +1871,25 @@
                     
                     {% if user.is_authenticated %}
                     <div class="btn-toolbar mb-2 mb-md-0 px-4">
+                        {% if user.is_staff %}
+                        <a class="btn btn-sm btn-outline-primary me-2" href="{% url 'acciones_recientes' %}">
+                            <i class="fas fa-clock me-1"></i> Acciones recientes
+                        </a>
+                        {% endif %}
+                        {# Campana de notificaciones para cualquier usuario autenticado #}
+                        <div class="dropdown me-2" id="dropdownNotificacionesWrapper">
+                            <button id="btnDropdownNotificaciones" class="btn btn-outline-secondary position-relative notification-bell" data-bs-toggle="dropdown" aria-expanded="false" hx-get="{% url 'dropdown_notificaciones' %}" hx-trigger="click" hx-target="#dropdownNotificacionesMenu" hx-swap="innerHTML" title="Notificaciones">
+                                <i class="fas fa-bell"></i>
+                                {% if notificaciones_pendientes|default:0 > 0 %}
+                                    <span id="badgeNotificaciones" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;">
+                                        {% if notificaciones_pendientes > 9 %}9+{% else %}{{ notificaciones_pendientes }}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end p-0" aria-labelledby="btnDropdownNotificaciones" id="dropdownNotificacionesMenu" style="max-height:320px; overflow:auto;">
+                                <div class="text-center p-3 small text-muted">Cargando...</div>
+                            </div>
+                        </div>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user me-1"></i>{{ user.username }}
@@ -1912,8 +1931,12 @@
         </div>
     </div>
 
+            {# Modal de acciones recientes eliminado; ahora es una página dedicada #}
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     
         <!-- Flatpickr JS y localización ES -->
         <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -1953,5 +1976,62 @@
                 }
             });
         </script>
+        <script>
+            // Polling ligero cada 60s para actualizar sólo el badge si cambia el conteo
+            document.addEventListener('DOMContentLoaded', function(){
+                function actualizarBadge(){
+                    fetch('{% url 'api_conteo_notificaciones' %}', {headers: {'X-Requested-With':'XMLHttpRequest'}})
+                        .then(r=>r.json())
+                        .then(data=>{
+                            let badge = document.getElementById('badgeNotificaciones');
+                            if(data.pendientes > 0){
+                                if(!badge){
+                                    const btn = document.getElementById('btnDropdownNotificaciones');
+                                    badge = document.createElement('span');
+                                    badge.id = 'badgeNotificaciones';
+                                    badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                                    badge.style.fontSize = '0.65rem';
+                                    btn.appendChild(badge);
+                                }
+                                badge.textContent = data.pendientes > 9 ? '9+' : data.pendientes;
+                            } else if(badge) {
+                                badge.remove();
+                            }
+                        }).catch(()=>{});
+                }
+                setInterval(actualizarBadge, 60000);
+            });
+        </script>
+        <script>
+        // Delegación para marcar como leída desde el dropdown antes de navegar
+        document.addEventListener('click', function(e){
+            const a = e.target.closest('#dropdownNotificacionesMenu a.notif-item');
+            if(!a) return;
+            if(a.dataset.unread === '1'){
+                // Marcar rápido y ajustar UI
+                fetch(`/api/notificaciones/${a.dataset.id}/leer/`, {method:'POST', headers:{'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/)||[])[1] || ''}})
+                    .then(r=>r.json()).then(data=>{
+                        if(data.ok){
+                            a.dataset.unread = '0';
+                            const pill = a.querySelector('.badge');
+                            if(pill) pill.remove();
+                            a.classList.remove('fw-bold');
+                            const badge = document.getElementById('badgeNotificaciones');
+                            if(badge){
+                                const nuevo = data.pendientes;
+                                if(nuevo>0){ badge.textContent = nuevo>9 ? '9+' : nuevo; }
+                                else { badge.remove(); }
+                            }
+                        }
+                    }).catch(()=>{});
+            }
+        });
+        </script>
+        <style>
+            /* Color blanco para la campana */
+            .notification-bell i.fa-bell { color: #ffffff !important; }
+            .notification-bell { position: relative; }
+            .notification-bell:hover i.fa-bell { filter: brightness(1.1); }
+        </style>
 </body>
 </html>

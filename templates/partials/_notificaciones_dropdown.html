@@ -1,0 +1,18 @@
+<div class="list-group list-group-flush" style="min-width:260px;">
+    {% if notificaciones %}
+        {% for n in notificaciones %}
+            <a href="{% url 'notificaciones_usuario' %}#n{{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem;">
+                <div class="me-2 text-truncate" style="max-width:170px;">
+                    {{ n.titulo|truncatechars:40 }}
+                    <div class="small text-muted">{{ n.fecha_creacion|date:'d/m H:i' }}</div>
+                </div>
+                {% if not n.leida %}<span class="badge bg-danger rounded-pill" style="font-size:0.55rem;">NEW</span>{% endif %}
+            </a>
+        {% endfor %}
+        <div class="text-center py-1">
+            <a href="{% url 'notificaciones_usuario' %}" class="small">Ver todas</a>
+        </div>
+    {% else %}
+        <div class="p-3 text-center small text-muted">Sin notificaciones</div>
+    {% endif %}
+</div>

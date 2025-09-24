@@ -9,6 +9,9 @@ from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular
 from apps.herramientas.models import Herramienta
 from apps.notificaciones.models import Notificacion
+from django.contrib.admin.models import LogEntry
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
+from django.template.loader import render_to_string
 
 
 @login_required
@@ -109,3 +112,57 @@ def marcar_notificacion_leida(request, notificacion_id):
         messages.error(request, 'Notificación no encontrada.')
     
     return redirect('notificaciones_usuario')
+
+
+@login_required
+def api_conteo_notificaciones(request):
+    """Devuelve JSON con el conteo de notificaciones no leídas (para polling ligero)."""
+    count = Notificacion.objects.filter(usuario=request.user, leida=False).count()
+    return JsonResponse({'pendientes': count})
+
+
+@login_required
+def dropdown_notificaciones(request):
+    """Devuelve un fragmento HTML (HTMX) con las últimas notificaciones para el dropdown rápido."""
+    ultimas = (Notificacion.objects
+               .filter(usuario=request.user)
+               .order_by('-fecha_creacion')[:5])
+    html = render_to_string(
+        'partials/_notificaciones_dropdown.html',
+        {
+            'notificaciones': ultimas,
+            'pendientes': Notificacion.objects.filter(usuario=request.user, leida=False).count(),
+        },
+        request=request
+    )
+    return HttpResponse(html)
+
+
+@login_required
+def api_marcar_notificacion_leida(request, notificacion_id):
+    """Marca una notificación como leída vía AJAX (POST)."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Método no permitido')
+    try:
+        notif = Notificacion.objects.get(id=notificacion_id, usuario=request.user)
+        if not notif.leida:
+            notif.leida = True
+            notif.save(update_fields=['leida'])
+        pendientes = Notificacion.objects.filter(usuario=request.user, leida=False).count()
+        return JsonResponse({'ok': True, 'pendientes': pendientes, 'id': notif.id})
+    except Notificacion.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'No encontrada'}, status=404)
+
+
+@login_required
+def acciones_recientes(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.warning(request, 'No tienes permisos para ver esta página.')
+        return redirect('home')
+    acciones = (LogEntry.objects.select_related('user', 'content_type')
+                .order_by('-action_time')[:50])
+    context = {
+        'titulo': 'Acciones recientes',
+        'acciones': acciones,
+    }
+    return render(request, 'acciones_recientes.html', context)
