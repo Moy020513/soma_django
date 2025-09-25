@@ -12,7 +12,7 @@
           <th>Empleado</th>
           <th>Empresa</th>
           <th>Supervisor</th>
-          <th>Estado</th>
+          
           <th></th>
         </tr>
       </thead>
@@ -23,7 +23,7 @@
           <td>{{ a.empleado.nombre_completo }}</td>
           <td>{{ a.empresa.nombre }}</td>
           <td>{{ a.supervisor.nombre_completo|default:'-' }}</td>
-          <td>{% if a.completada %}Completada{% else %}Pendiente{% endif %}</td>
+          
           <td>
             <a class="btn btn-sm btn-outline-secondary" href="{% url 'asignaciones:editar' a.pk %}">Editar</a>
           </td>

@@ -27,6 +27,35 @@
         </div>
     </div>
 </div>
+{# Asignaciones debajo del saludo #}
+<div class="row mt-0">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Asignaciones de hoy</strong>
+                <a href="{% url 'asignaciones:mias' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+            <div class="card-body">
+                {% if asignaciones_hoy %}
+                    <div class="list-group">
+                        {% for a in asignaciones_hoy %}
+                            <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
+                                    <small>{{ a.fecha|date:'d/m/Y' }}</small>
+                                </div>
+                                <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
+                                <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">No tienes asignaciones para hoy.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endif %}
 
 {% if es_admin %}
@@ -97,21 +126,35 @@
     </div>
 </div>
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-6 col-lg-5 mb-4">
-        <div class="card h-100 text-center user-card">
+{# Asignaciones debajo del saludo para usuario estándar #}
+<div class="row mt-0">
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Asignaciones de hoy</strong>
+                <a href="{% url 'asignaciones:mias' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
             <div class="card-body">
-                <div class="user-icon-wrapper mb-3">
-                    <i class="fas fa-user fa-4x" style="color: var(--soma-orange);"></i>
-                </div>
-                <h5 class="card-title" style="color: var(--soma-blue);">Mi Perfil</h5>
-                <p class="card-text text-muted">Consulta y actualiza tu información personal, revisa tus permisos y configuraciones.</p>
-                <a href="{% url 'perfil_usuario' %}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-id-card me-2"></i>Ver Perfil
-                </a>
+                {% if asignaciones_hoy %}
+                    <div class="list-group">
+                        {% for a in asignaciones_hoy %}
+                            <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
+                                    <small>{{ a.fecha|date:'d/m/Y' }}</small>
+                                </div>
+                                <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
+                                <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">No tienes asignaciones para hoy.</div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
+
 {% endif %}
 {% endblock %}

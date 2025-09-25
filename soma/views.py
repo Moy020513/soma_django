@@ -12,16 +12,27 @@ from apps.notificaciones.models import Notificacion
 from django.contrib.admin.models import LogEntry
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.template.loader import render_to_string
+from datetime import date
+from apps.asignaciones.models import Asignacion
 
 
 @login_required
 def index(request):
     """Vista principal del sitio"""
     es_admin = request.user.is_staff or request.user.is_superuser
+    from datetime import date
+    from apps.asignaciones.models import Asignacion
+    asignaciones_hoy = []
+    if hasattr(request.user, 'empleado'):
+        asignaciones_hoy = (Asignacion.objects
+                            .filter(empleado=request.user.empleado, fecha=date.today())
+                            .select_related('empresa', 'supervisor')
+                            .order_by('-fecha'))
     context = {
         'titulo': 'Sistema SOMA',
         'descripcion': 'Sistema de Gestión Empresarial',
         'es_admin': es_admin,
+        'asignaciones_hoy': asignaciones_hoy,
     }
     if es_admin:
         # Proveer listado de apps del admin para renderizar en el Home
@@ -81,9 +92,16 @@ def admin_login_anyuser(request):
 @login_required
 def perfil_usuario(request):
     """Vista del perfil del usuario"""
+    asignaciones_hoy = []
+    if hasattr(request.user, 'empleado'):
+        asignaciones_hoy = (Asignacion.objects
+                            .filter(empleado=request.user.empleado, fecha=date.today())
+                            .select_related('empresa', 'supervisor')
+                            .order_by('-fecha'))
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
+        'asignaciones_hoy': asignaciones_hoy,
     }
     return render(request, 'perfil_usuario.html', context)
 

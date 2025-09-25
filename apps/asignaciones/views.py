@@ -33,14 +33,14 @@ class EsAdminMixin(UserPassesTestMixin):
 
 class AsignacionCreateView(LoginRequiredMixin, EsAdminMixin, CreateView):
     model = Asignacion
-    fields = ['fecha', 'empleado', 'empresa', 'supervisor', 'detalles', 'completada']
+    fields = ['fecha', 'empleado', 'empresa', 'supervisor', 'detalles']
     success_url = reverse_lazy('asignaciones:listar_admin')
     template_name = 'asignaciones/form.html'
 
 
 class AsignacionUpdateView(LoginRequiredMixin, EsAdminMixin, UpdateView):
     model = Asignacion
-    fields = ['fecha', 'empleado', 'empresa', 'supervisor', 'detalles', 'completada']
+    fields = ['fecha', 'empleado', 'empresa', 'supervisor', 'detalles']
     success_url = reverse_lazy('asignaciones:listar_admin')
     template_name = 'asignaciones/form.html'
 
