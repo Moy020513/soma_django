@@ -22,7 +22,7 @@ class EmpleadoRegistroForm(forms.Form):
     # Laborales
     fecha_ingreso = forms.DateField(label='Fecha de ingreso', required=True, widget=forms.DateInput(attrs={'type': 'date'}))
     puesto = forms.ModelChoiceField(queryset=Puesto.objects.filter(activo=True), required=True, label='Puesto')
-    es_supervisor = forms.BooleanField(required=False, label='Es supervisor')
+    # Eliminado campo de supervisor en registro de empleado
 
     def clean_telefono(self):
         tel = self.cleaned_data['telefono']

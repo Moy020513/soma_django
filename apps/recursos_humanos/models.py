@@ -23,6 +23,10 @@ class Puesto(models.Model):
     requisitos = models.TextField(blank=True, verbose_name="Requisitos")
     activo = models.BooleanField(default=True, verbose_name="Puesto activo")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
+    superior = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='puestos_subordinados', verbose_name='Puesto supervisor'
+    )
     
     class Meta:
         verbose_name = "Puesto"

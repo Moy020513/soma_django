@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Asignación{% endblock %}
+{% block page_title %}Asignación{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <div class="card">
+    <div class="card-header">
+      {{ asignacion.empresa.nombre }} — {{ asignacion.fecha|date:'d/m/Y' }}
+    </div>
+    <div class="card-body">
+      <p><strong>Empleado:</strong> {{ asignacion.empleado.nombre_completo }}</p>
+      <p><strong>Supervisor:</strong> {{ asignacion.supervisor.nombre_completo|default:'Sin asignar' }}</p>
+      <p><strong>Detalles:</strong></p>
+      <p>{{ asignacion.detalles|linebreaks }}</p>
+      <p><strong>Estado:</strong> {% if asignacion.completada %}Completada{% else %}Pendiente{% endif %}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

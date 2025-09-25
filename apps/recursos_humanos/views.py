@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from .forms import EmpleadoRegistroForm
-from apps.usuarios.models import Rol
 from .models import Empleado
 
 Usuario = get_user_model()
@@ -32,25 +31,8 @@ def registrar_empleado(request):
                 password=password,
             )
             user.telefono = cd['telefono']
-            user.tipo_usuario = 'supervisor' if cd.get('es_supervisor') else 'empleado'
-            # Asignar Rol Supervisor si aplica
-            if cd.get('es_supervisor'):
-                rol_sup, _ = Rol.objects.get_or_create(nombre__iexact='Supervisor', defaults={
-                    'nombre': 'Supervisor',
-                    'descripcion': 'Rol de supervisor con permisos intermedios',
-                    'permisos': ''
-                })
-                # get_or_create con nombre__iexact no permite defaults; manejar ambos casos
-                if isinstance(rol_sup, Rol):
-                    # Si la búsqueda con nombre__iexact devolvió un objeto, úsalo
-                    pass
-                else:
-                    # En caso raro, obtener/crear por nombre exacto
-                    rol_sup, _ = Rol.objects.get_or_create(nombre='Supervisor', defaults={
-                        'descripcion': 'Rol de supervisor con permisos intermedios',
-                        'permisos': ''
-                    })
-                user.rol = rol_sup
+            # Por defecto, todo nuevo empleado se crea como 'empleado'
+            user.tipo_usuario = 'empleado'
             user.save()
 
             # Crear empleado

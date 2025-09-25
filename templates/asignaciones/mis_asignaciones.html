@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Mis asignaciones{% endblock %}
+{% block page_title %}Mis asignaciones{% endblock %}
+{% block content %}
+<div class="container py-3">
+  {% if asignaciones %}
+  <div class="list-group">
+    {% for a in asignaciones %}
+      <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+          <h5 class="mb-1">{{ a.empresa.nombre }}</h5>
+          <small>{{ a.fecha|date:'d/m/Y' }}</small>
+        </div>
+        <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
+        <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="alert alert-info">No tienes asignaciones para hoy.</div>
+  {% endif %}
+</div>
+{% endblock %}
