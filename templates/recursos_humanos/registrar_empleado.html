@@ -21,6 +21,21 @@
               <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
 
+            <h5 class="mb-3">Cuenta</h5>
+            <div class="row g-3 mb-2">
+              <div class="col-md-6">
+                <label class="form-label">{{ form.usuario.label }}</label>
+                {{ form.usuario }}
+                <div class="form-text">Selecciona un usuario existente activo y sin empleado asignado.</div>
+                {{ form.usuario.errors }}
+              </div>
+              <div class="col-md-6 d-flex align-items-end">
+                <a href="{% url 'admin:usuarios_usuario_add' %}" class="btn btn-outline-secondary btn-sm">
+                  <i class="fas fa-user-plus me-1"></i> Crear usuario en Admin
+                </a>
+              </div>
+            </div>
+
             <h5 class="mb-3">Datos personales</h5>
             <div class="row g-3">
               <div class="col-md-4">

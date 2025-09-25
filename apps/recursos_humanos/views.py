@@ -20,20 +20,14 @@ def registrar_empleado(request):
         form = EmpleadoRegistroForm(request.POST)
         if form.is_valid():
             cd = form.cleaned_data
-            username = cd['username_sugerido']
-            password = cd['password_generada'].upper()
-
-            # Crear usuario
-            user = Usuario.objects.create_user(
-                username=username,
-                first_name=cd['nombre'].strip().title(),
-                last_name=f"{cd['apellido_paterno'].strip().title()} {cd.get('apellido_materno','').strip().title()}".strip(),
-                password=password,
-            )
+            user = cd['usuario']
+            # Actualizar datos básicos del usuario elegido (sin tocar credenciales)
+            user.first_name = cd['nombre'].strip().title()
+            user.last_name = f"{cd['apellido_paterno'].strip().title()} {cd.get('apellido_materno','').strip().title()}".strip()
             user.telefono = cd['telefono']
-            # Por defecto, todo nuevo empleado se crea como 'empleado'
-            user.tipo_usuario = 'empleado'
-            user.save()
+            if not getattr(user, 'tipo_usuario', None):
+                user.tipo_usuario = 'empleado'
+            user.save(update_fields=['first_name', 'last_name', 'telefono', 'tipo_usuario'])
 
             # Crear empleado
             empleado = Empleado(
@@ -60,7 +54,7 @@ def registrar_empleado(request):
             )
             empleado.save()
 
-            messages.success(request, f"Empleado creado correctamente. Usuario: {username} | Contraseña: {password}")
+            messages.success(request, f"Empleado creado correctamente y vinculado al usuario {user.username}.")
             return redirect(reverse('admin:recursos_humanos_empleado_changelist'))
     else:
         form = EmpleadoRegistroForm()

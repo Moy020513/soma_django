@@ -8,6 +8,13 @@ Usuario = get_user_model()
 
 
 class EmpleadoRegistroForm(forms.Form):
+    # Cuenta de usuario existente (obligatoria)
+    usuario = forms.ModelChoiceField(
+        queryset=Usuario.objects.filter(empleado__isnull=True, is_active=True).order_by('username'),
+        label='Usuario',
+        required=True,
+        help_text='Selecciona un usuario existente (que no esté vinculado a otro empleado).'
+    )
     # Personales
     nombre = forms.CharField(max_length=30, label='Nombre', required=True)
     apellido_paterno = forms.CharField(max_length=30, label='Apellido paterno', required=True)
@@ -28,8 +35,12 @@ class EmpleadoRegistroForm(forms.Form):
         tel = self.cleaned_data['telefono']
         if not re.fullmatch(r"\d{10}", tel):
             raise ValidationError('El teléfono debe tener exactamente 10 dígitos numéricos.')
-        # Unicidad en Usuario.telefono
-        if Usuario.objects.filter(telefono=tel).exists():
+        # Unicidad en Usuario.telefono, excluyendo al usuario seleccionado
+        usuario_sel = self.cleaned_data.get('usuario')
+        qs_usuarios = Usuario.objects.filter(telefono=tel)
+        if usuario_sel:
+            qs_usuarios = qs_usuarios.exclude(pk=usuario_sel.pk)
+        if qs_usuarios.exists():
             raise ValidationError('El teléfono ya está registrado en otro usuario.')
         # Unicidad en Empleado.telefono_personal
         if Empleado.objects.filter(telefono_personal=tel).exists():
@@ -44,37 +55,11 @@ class EmpleadoRegistroForm(forms.Form):
             raise ValidationError('La CURP ya está registrada.')
         return curp
 
-    def _suggest_username(self, nombre: str, ap_pat: str, ap_mat: str) -> str:
-        base = (nombre.split()[0] + (ap_pat[:1] if ap_pat else '') + (ap_mat[:1] if ap_mat else '')).upper()
-        return base
-
-    def _unique_username(self, base: str) -> str:
-        """Devuelve un username único. Si base existe, añade sufijos numéricos base1, base2, ..."""
-        if not Usuario.objects.filter(username=base).exists():
-            return base
-        # Buscar sufijos existentes
-        pattern = re.compile(rf'^{re.escape(base)}(\d+)$')
-        max_suffix = 0
-        for u in Usuario.objects.filter(username__startswith=base).values_list('username', flat=True):
-            m = pattern.match(u)
-            if m:
-                try:
-                    s = int(m.group(1))
-                    if s > max_suffix:
-                        max_suffix = s
-                except ValueError:
-                    continue
-        return f"{base}{max_suffix + 1}"
-
     def clean(self):
         cleaned = super().clean()
         if self.errors:
             return cleaned
-        nombre = cleaned.get('nombre', '').strip()
-        ap_pat = cleaned.get('apellido_paterno', '').strip()
-        ap_mat = cleaned.get('apellido_materno', '').strip()
-        base = self._suggest_username(nombre, ap_pat, ap_mat)
-        username = self._unique_username(base)
-        cleaned['username_sugerido'] = username
-        cleaned['password_generada'] = cleaned['curp'][:8]
+        usuario_sel = cleaned.get('usuario')
+        if not usuario_sel:
+            raise ValidationError('Debes seleccionar un usuario existente.')
         return cleaned
