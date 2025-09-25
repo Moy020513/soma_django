@@ -1,6 +1,10 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django import forms
 from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from django.core.exceptions import PermissionDenied
+from django.utils.translation import gettext as _
+from django.contrib.admin.utils import unquote
 from .models import Puesto, Empleado
 from apps.asignaciones.models import Asignacion
 
@@ -123,5 +127,43 @@ class EmpleadoAdmin(admin.ModelAdmin):
         return obj.usuario.get_full_name()
     nombre_completo.short_description = 'Nombre completo'
     nombre_completo.admin_order_field = 'usuario__first_name'
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """Vista de borrado personalizada que evita construir URLs con reverse
+        que están causando NoReverseMatch en la plantilla de confirmación.
+        """
+        opts = self.model._meta
+        obj = self.get_object(request, unquote(object_id))
+        if not self.has_delete_permission(request, obj):
+            raise PermissionDenied
+
+        if obj is None:
+            # Si no existe, volver al changelist
+            return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+
+        if request.method == "POST":
+            # Eliminar y redirigir al changelist
+            self.log_deletion(request, obj, str(obj))
+            obj_display = str(obj)
+            obj.delete()
+            messages.success(request, _(f'Se eliminó "{obj_display}" correctamente.'))
+            return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Are you sure?"),
+            "object_id": object_id,
+            "original": obj,
+            "object": obj,  # por compatibilidad con plantilla
+            "opts": opts,
+            "app_label": opts.app_label,
+            # Evitar cálculos de relaciones que puedan intentar hacer reverse
+            "deleted_objects": [],
+            "perms_lacking": [],
+            "protected": [],
+        }
+        if extra_context:
+            context.update(extra_context)
+        return TemplateResponse(request, "admin/delete_confirmation.html", context)
 
 
