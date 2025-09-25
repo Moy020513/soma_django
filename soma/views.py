@@ -12,8 +12,8 @@ from apps.notificaciones.models import Notificacion
 from django.contrib.admin.models import LogEntry
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.template.loader import render_to_string
-from datetime import date
 from apps.asignaciones.models import Asignacion
+from django.utils import timezone
 
 
 @login_required
@@ -23,16 +23,29 @@ def index(request):
     from datetime import date
     from apps.asignaciones.models import Asignacion
     asignaciones_hoy = []
-    if hasattr(request.user, 'empleado'):
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    asignaciones_recientes = []
+    if empleado:
+        qs_emp = (Asignacion.objects
+                  .filter(empleado=empleado)
+                  .select_related('empresa', 'supervisor')
+                  .order_by('-fecha', '-fecha_creacion'))
+        asignaciones_hoy = qs_emp.filter(fecha=timezone.localdate())
+        if not asignaciones_hoy.exists():
+            asignaciones_recientes = qs_emp[:5]
+    elif es_admin:
+        # Si es admin sin objeto Empleado propio, mostrar asignaciones del día de todos
         asignaciones_hoy = (Asignacion.objects
-                            .filter(empleado=request.user.empleado, fecha=date.today())
-                            .select_related('empresa', 'supervisor')
-                            .order_by('-fecha'))
+                            .filter(fecha=timezone.localdate())
+                            .select_related('empresa', 'supervisor', 'empleado__usuario')
+                            .order_by('empleado__numero_empleado'))
     context = {
         'titulo': 'Sistema SOMA',
         'descripcion': 'Sistema de Gestión Empresarial',
         'es_admin': es_admin,
-        'asignaciones_hoy': asignaciones_hoy,
+    'asignaciones_hoy': asignaciones_hoy,
+    'asignaciones_recientes': asignaciones_recientes,
+        'empleado': empleado,
     }
     if es_admin:
         # Proveer listado de apps del admin para renderizar en el Home
@@ -93,15 +106,27 @@ def admin_login_anyuser(request):
 def perfil_usuario(request):
     """Vista del perfil del usuario"""
     asignaciones_hoy = []
-    if hasattr(request.user, 'empleado'):
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    asignaciones_recientes = []
+    if empleado:
+        qs_emp = (Asignacion.objects
+                  .filter(empleado=empleado)
+                  .select_related('empresa', 'supervisor')
+                  .order_by('-fecha', '-fecha_creacion'))
+        asignaciones_hoy = qs_emp.filter(fecha=timezone.localdate())
+        if not asignaciones_hoy.exists():
+            asignaciones_recientes = qs_emp[:5]
+    elif request.user.is_staff or request.user.is_superuser:
         asignaciones_hoy = (Asignacion.objects
-                            .filter(empleado=request.user.empleado, fecha=date.today())
-                            .select_related('empresa', 'supervisor')
-                            .order_by('-fecha'))
+                            .filter(fecha=timezone.localdate())
+                            .select_related('empresa', 'supervisor', 'empleado__usuario')
+                            .order_by('empleado__numero_empleado'))
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
-        'asignaciones_hoy': asignaciones_hoy,
+    'asignaciones_hoy': asignaciones_hoy,
+    'asignaciones_recientes': asignaciones_recientes,
+        'empleado': empleado,
     }
     return render(request, 'perfil_usuario.html', context)
 

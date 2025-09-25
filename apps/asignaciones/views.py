@@ -13,15 +13,22 @@ class MisAsignacionesView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        if hasattr(user, 'empleado'):
-            from datetime import date
-            hoy = date.today()
-            return (
-                Asignacion.objects
-                .filter(empleado=user.empleado, fecha=hoy)
-                .select_related('empresa', 'supervisor', 'empleado')
-                .order_by('-fecha')
-            )
+        from apps.recursos_humanos.models import Empleado
+        empleado = Empleado.objects.filter(usuario=user).first()
+        if empleado:
+            qs = (Asignacion.objects
+                  .filter(empleado=empleado)
+                  .select_related('empresa', 'supervisor', 'empleado')
+                  .order_by('-fecha', '-fecha_creacion'))
+            fecha = self.request.GET.get('fecha')
+            if fecha:
+                try:
+                    from datetime import date
+                    y, m, d = map(int, fecha.split('-'))
+                    qs = qs.filter(fecha=date(y, m, d))
+                except Exception:
+                    pass
+            return qs
         return Asignacion.objects.none()
 
 
@@ -57,3 +64,34 @@ class AsignacionDetailView(LoginRequiredMixin, DetailView):
     model = Asignacion
     template_name = 'asignaciones/detalle.html'
     context_object_name = 'asignacion'
+
+
+class AsignacionesTodasView(LoginRequiredMixin, ListView):
+    """Listado de todas las asignaciones visibles para cualquier usuario autenticado.
+    - Usuarios estándar: ven todas las asignaciones, ordenadas por fecha desc.
+    - Admins: igual, con paginación.
+    Futuro: se pueden añadir filtros por fecha/empleado.
+    """
+    model = Asignacion
+    template_name = 'asignaciones/todas.html'
+    context_object_name = 'asignaciones'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = (Asignacion.objects
+              .select_related('empresa', 'supervisor', 'empleado')
+              .order_by('-fecha', '-fecha_creacion'))
+        # Filtros opcionales por querystring
+        empleado_id = self.request.GET.get('empleado')
+        fecha = self.request.GET.get('fecha')
+        if empleado_id:
+            qs = qs.filter(empleado_id=empleado_id)
+        if fecha:
+            # Formato esperado YYYY-MM-DD
+            try:
+                from datetime import date
+                y, m, d = map(int, fecha.split('-'))
+                qs = qs.filter(fecha=date(y, m, d))
+            except Exception:
+                pass
+        return qs

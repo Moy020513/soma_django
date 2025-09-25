@@ -2,6 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.shortcuts import redirect
 from .models import Puesto, Empleado
+from apps.asignaciones.models import Asignacion
 
 
 @admin.register(Puesto)
@@ -93,6 +94,16 @@ class EmpleadoAdmin(admin.ModelAdmin):
         }
 
     change_list_template = 'admin/recursos_humanos/empleado/change_list.html'
+
+    class AsignacionInline(admin.TabularInline):
+        model = Asignacion
+        fields = ('fecha', 'empresa', 'supervisor', 'detalles')
+        extra = 0
+        show_change_link = True
+        ordering = ('-fecha',)
+        fk_name = 'empleado'
+
+    inlines = [AsignacionInline]
 
     def has_add_permission(self, request):
         # Deshabilitar el alta estándar en admin para usar el nuevo flujo

@@ -12,6 +12,9 @@
                 <h5><i class="fas fa-user me-2" style="color: var(--soma-orange);"></i>Información Personal</h5>
             </div>
             <div class="card-body">
+                {% if not empleado %}
+                <div class="alert alert-warning">Tu usuario no está vinculado a un empleado. Pide al administrador que asocie tu cuenta para ver asignaciones.</div>
+                {% endif %}
                 <div class="row">
                     <div class="col-md-6">
                         <div class="profile-field mb-3">
@@ -53,7 +56,10 @@
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-tasks me-2" style="color: var(--soma-blue);"></i>Asignaciones de hoy</h5>
-                <a href="{% url 'asignaciones:mias' %}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+                <div class="btn-group btn-group-sm">
+                    <a href="{% url 'asignaciones:todas' %}" class="btn btn-outline-primary">Ver todas</a>
+                    <a href="{% url 'asignaciones:mias' %}" class="btn btn-outline-secondary">Mis asignaciones</a>
+                </div>
             </div>
             <div class="card-body">
                 {% if asignaciones_hoy %}
@@ -70,7 +76,23 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="alert alert-info mb-0">No tienes asignaciones para hoy.</div>
+                    {% if asignaciones_recientes %}
+                        <div class="alert alert-warning">No tienes asignaciones para hoy. Estas son las más recientes:</div>
+                        <div class="list-group">
+                            {% for a in asignaciones_recientes %}
+                                <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
+                                        <small>{{ a.fecha|date:'d/m/Y' }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ a.detalles|truncatechars:120 }}</p>
+                                    <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">No tienes asignaciones para hoy.</div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
