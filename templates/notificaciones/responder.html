@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h4>Responder Notificación</h4>
+        </div>
+        <div class="card-body">
+            <h5 class="mb-3">{{ notificacion.titulo }}</h5>
+            <p class="text-muted">{{ notificacion.mensaje }}</p>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_mensaje" class="form-label">Mensaje breve</label>
+                    {{ form.mensaje }}
+                </div>
+                <div class="mb-3">
+                    <label for="id_documento" class="form-label">Documento (opcional)</label>
+                    {{ form.documento }}
+                </div>
+                <button type="submit" class="btn btn-success">Enviar respuesta</button>
+                <a href="{% url 'notificaciones:index' %}" class="btn btn-secondary ms-2">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card { max-width: 600px; margin: auto; }
+    .card-header { border-bottom: 1px solid #eee; }
+</style>
+{% endblock %}

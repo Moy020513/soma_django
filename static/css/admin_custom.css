@@ -1,0 +1,4 @@
+/* Oculta el mensaje flash incorrecto de Django admin */
+.alert-success:has(:contains('ElNotificación')) {
+    display: none !important;
+}

@@ -7,8 +7,8 @@
     &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
     &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|title }}</a>
     {% comment %} Construir el enlace al change sin usar reverse para evitar NoReverseMatch cuando el ID llega vacío {% endcomment %}
-    {% with obj_id=object_id|default:original.pk|default:object.pk %}
-        &rsaquo; <a href="/admin/{{ opts.app_label }}/{{ opts.model_name }}/{{ obj_id }}/change/">{{ original|default:object|truncatewords:"18" }}</a>
+    {% with obj_id=object_id|default:object.pk %}
+        &rsaquo; <a href="/admin/{{ opts.app_label }}/{{ opts.model_name }}/{{ obj_id }}/change/">{{ object|truncatewords:"18" }}</a>
     {% endwith %}
     &rsaquo; {% trans 'Delete' %}
     </div>
@@ -16,14 +16,14 @@
 
 {% block content %}
 <div class="change-form-header">
-    <h1>{% blocktrans with name=object %}Delete {{ name }}{% endblocktrans %}</h1>
+    <h1>{% blocktrans with name=object %}Eliminar {{ name }}{% endblocktrans %}</h1>
 </div>
 
 <div class="change-form-content">
     <div class="form-container">
         {% if perms_lacking %}
             <div class="alert alert-warning">
-                <h4>{% trans "Deleting the selected objects will result in deleting related objects, but your account doesn't have permission to delete the following types of objects:" %}</h4>
+                <h4>{% trans "Eliminar los objetos seleccionados resultará en la eliminación de objetos relacionados, pero tu cuenta no tiene permiso para eliminar los siguientes tipos de objetos:" %}</h4>
                 <ul>
                     {% for obj in perms_lacking %}
                         <li>{{ obj }}</li>
@@ -32,17 +32,11 @@
             </div>
         {% else %}
             <div class="alert alert-danger">
-                <h4>{% trans "Are you sure?" %}</h4>
-                <p>{% blocktrans with name=object %}Are you sure you want to delete the {{ name }} "{{ object }}"? All of the following related items will be deleted:{% endblocktrans %}</p>
-
-                <ul class="related-objects">
-                    {% for obj in deleted_objects %}
-                        <li>{{ obj|unordered_list }}</li>
-                    {% endfor %}
-                </ul>
+                <h4>{% trans "¿Está seguro?" %}</h4>
+                <p>{% blocktrans with name=object %}¿Está seguro que desea eliminar la notificación "{{ object }}" y todos sus elementos asociados?{% endblocktrans %}</p>
 
                 <p class="text-danger font-weight-bold">
-                    {% trans "This action cannot be undone." %}
+                    {% trans "Esta acción no se puede deshacer." %}
                 </p>
             </div>
 
@@ -51,7 +45,7 @@
                 <div class="submit-row">
                     <input type="hidden" name="post" value="yes">
                     <input type="submit" value="{% trans "Sí, estoy seguro" %}" class="deletelink">
-                    {% with obj_id=object_id|default:original.pk|default:object.pk %}
+                    {% with obj_id=object_id|default:object.pk %}
                         <a href="/admin/{{ opts.app_label }}/{{ opts.model_name }}/{{ obj_id }}/change/" class="btn btn-secondary">{% trans "No, regresar" %}</a>
                     {% endwith %}
                 </div>

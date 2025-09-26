@@ -28,3 +28,20 @@ class Notificacion(models.Model):
     def marcar_como_leida(self):
         self.leida = True
         self.save()
+
+
+class RespuestaNotificacion(models.Model):
+    notificacion = models.ForeignKey(Notificacion, on_delete=models.CASCADE, related_name='respuestas')
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    mensaje = models.CharField(max_length=300)
+    documento = models.FileField(upload_to='notificaciones/respuestas/', null=True, blank=True)
+    fecha_respuesta = models.DateTimeField(auto_now_add=True)
+    revisada_admin = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Respuesta a Notificación'
+        verbose_name_plural = 'Respuestas a Notificaciones'
+        ordering = ['-fecha_respuesta']
+
+    def __str__(self):
+        return f"Respuesta de {self.usuario} a {self.notificacion}" 

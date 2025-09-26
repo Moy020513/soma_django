@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Notificación{% endblock %}
+
+{% block page_title %}Detalle de Notificación{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ notificacion.titulo }}</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-2"><strong>Mensaje:</strong> {{ notificacion.mensaje }}</p>
+            <p class="mb-2"><strong>Fecha:</strong> {{ notificacion.fecha_creacion|date:'d/m/Y H:i' }}</p>
+            {% if notificacion.respuestas.exists %}
+                <hr>
+                <h6>Respuestas asociadas:</h6>
+                {% for respuesta in notificacion.respuestas.all %}
+                    <div class="mb-3">
+                        <p><strong>Usuario:</strong> {{ respuesta.usuario.get_full_name|default:respuesta.usuario.username }}</p>
+                        <p><strong>Mensaje:</strong> {{ respuesta.mensaje }}</p>
+                        {% if respuesta.documento %}
+                            <p><strong>Documento:</strong> <a href="{{ respuesta.documento.url }}" target="_blank">Descargar</a></p>
+                        {% endif %}
+                        <p class="text-muted"><small>Fecha de respuesta: {{ respuesta.fecha_respuesta|date:'d/m/Y H:i' }}</small></p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">No hay respuesta asociada.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+        <a href="{% url 'notificaciones:index' %}" class="btn btn-secondary">Volver a notificaciones</a>
+    <a href="{% url 'notificaciones:responder_admin' notificacion.id %}" class="btn btn-success">Responder</a>
+    </div>
+</div>
+{% endblock %}

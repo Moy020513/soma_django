@@ -1,9 +1,27 @@
+
 {% extends 'base.html' %}
+{% block extrahead %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                document.querySelectorAll('.alert-success, .alert-info, .alert-warning').forEach(function(el) {
+                    if (/El\s?Notificaci[oó]n.*(eliminad[oa]|agregado correctamente)/i.test(el.textContent)) {
+                        el.style.display = 'none';
+                    }
+                });
+            }, 300);
+        });
+    </script>
+{% endblock %}
 
 {% load static %}
 {% load i18n %}
 
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+    <link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
+{% endblock %}
 
 {% block branding %}
 <div class="admin-branding">
