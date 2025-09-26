@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Vehiculo, AsignacionVehiculo, TransferenciaVehicular, RegistroUso
+from .models import (
+    Vehiculo, AsignacionVehiculo, TransferenciaVehicular, 
+    RegistroUso, TenenciaVehicular, VerificacionVehicular
+)
 
 
 @admin.register(Vehiculo)
@@ -7,7 +10,6 @@ class VehiculoAdmin(admin.ModelAdmin):
     list_display = ['placas', 'marca', 'modelo', 'año', 'tipo', 'estado', 'kilometraje_actual']
     list_filter = ['marca', 'tipo', 'estado', 'año']
     search_fields = ['placas', 'marca', 'modelo', 'numero_serie']
-    readonly_fields = ['fecha_adquisicion']
     list_editable = ['estado']
     
     fieldsets = (
@@ -20,17 +22,14 @@ class VehiculoAdmin(admin.ModelAdmin):
         ('Estado y Kilometraje', {
             'fields': ('estado', 'kilometraje_actual', 'observaciones')
         }),
-        ('Información Financiera', {
-            'fields': ('fecha_adquisicion', 'costo')
+        ('Seguro', {
+            'fields': ('aseguradora', 'contacto_aseguradora', 'numero_seguro')
         }),
         ('Documentación', {
-            'fields': ('tarjeta_circulacion', 'tenencia', 'verificacion_vehicular', 'seguro'),
+            'fields': ('tarjeta_circulacion',),
             'classes': ('collapse',)
         }),
     )
-    
-    def get_queryset(self, request):
-        return super().get_queryset(request)
 
 
 @admin.register(AsignacionVehiculo)
@@ -52,9 +51,6 @@ class AsignacionVehiculoAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('vehiculo', 'empleado')
 
 
 @admin.register(TransferenciaVehicular)
@@ -79,11 +75,6 @@ class TransferenciaVehicularAdmin(admin.ModelAdmin):
             'fields': ('aprobado_por',)
         }),
     )
-    
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            'vehiculo', 'empleado_origen', 'empleado_destino', 'aprobado_por'
-        )
     
     actions = ['aprobar_transferencias', 'rechazar_transferencias']
     
@@ -117,6 +108,81 @@ class RegistroUsoAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(TenenciaVehicular)
+class TenenciaVehicularAdmin(admin.ModelAdmin):
+    list_display = ['vehiculo', 'año_fiscal', 'fecha_vencimiento', 'estado', 'monto', 'fecha_pago']
+    list_filter = ['estado', 'año_fiscal', 'fecha_vencimiento']
+    search_fields = ['vehiculo__placas', 'vehiculo__marca', 'folio']
+    date_hierarchy = 'fecha_vencimiento'
+    list_editable = ['estado']
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('vehiculo', 'empleado')
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('vehiculo', 'año_fiscal', 'estado')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_vencimiento', 'fecha_pago')
+        }),
+        ('Información Financiera', {
+            'fields': ('monto', 'folio')
+        }),
+        ('Documentación', {
+            'fields': ('comprobante_pago', 'observaciones'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['marcar_como_pagada', 'marcar_como_vencida']
+    
+    def marcar_como_pagada(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.filter(estado='pendiente').update(
+            estado='vigente',
+            fecha_pago=timezone.now().date()
+        )
+        self.message_user(request, f'{updated} tenencias marcadas como pagadas.')
+    marcar_como_pagada.short_description = "Marcar como pagadas"
+    
+    def marcar_como_vencida(self, request, queryset):
+        updated = queryset.exclude(estado='vigente').update(estado='vencida')
+        self.message_user(request, f'{updated} tenencias marcadas como vencidas.')
+    marcar_como_vencida.short_description = "Marcar como vencidas"
+
+
+@admin.register(VerificacionVehicular)
+class VerificacionVehicularAdmin(admin.ModelAdmin):
+    list_display = ['vehiculo', 'tipo_verificacion', 'fecha_verificacion', 'fecha_vencimiento', 'estado', 'centro_verificacion']
+    list_filter = ['tipo_verificacion', 'estado', 'fecha_verificacion', 'centro_verificacion']
+    search_fields = ['vehiculo__placas', 'vehiculo__marca', 'numero_certificado', 'centro_verificacion']
+    date_hierarchy = 'fecha_verificacion'
+    list_editable = ['estado']
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('vehiculo', 'tipo_verificacion', 'estado')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_verificacion', 'fecha_vencimiento')
+        }),
+        ('Detalles de Verificación', {
+            'fields': ('numero_certificado', 'centro_verificacion', 'costo')
+        }),
+        ('Documentación', {
+            'fields': ('certificado', 'observaciones'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['marcar_como_aprobada', 'marcar_como_vencida']
+    
+    def marcar_como_aprobada(self, request, queryset):
+        updated = queryset.filter(estado='pendiente').update(estado='aprobada')
+        self.message_user(request, f'{updated} verificaciones marcadas como aprobadas.')
+    marcar_como_aprobada.short_description = "Marcar como aprobadas"
+    
+    def marcar_como_vencida(self, request, queryset):
+        updated = queryset.exclude(estado='aprobada').update(estado='vencida')
+        self.message_user(request, f'{updated} verificaciones marcadas como vencidas.')
+    marcar_como_vencida.short_description = "Marcar como vencidas"

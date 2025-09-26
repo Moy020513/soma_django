@@ -25,15 +25,14 @@ class Vehiculo(models.Model):
     tipo = models.CharField(max_length=20, choices=TIPOS_VEHICULO)
     kilometraje_actual = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     estado = models.CharField(max_length=20, choices=ESTADOS_VEHICULO, default='disponible')
-    fecha_adquisicion = models.DateField()
-    costo = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     observaciones = models.TextField(blank=True)
     
     # Documentación
     tarjeta_circulacion = models.FileField(upload_to='vehiculos/documentos/', null=True, blank=True)
-    tenencia = models.DateField(null=True, blank=True)
-    verificacion_vehicular = models.DateField(null=True, blank=True)
-    seguro = models.DateField(null=True, blank=True)
+
+    aseguradora = models.CharField(max_length=100, null=True, blank=True, verbose_name='Nombre de la aseguradora')
+    contacto_aseguradora = models.CharField(max_length=30, null=True, blank=True, verbose_name='Número de contacto de la aseguradora')
+    numero_seguro = models.CharField(max_length=50, null=True, blank=True, verbose_name='Número de póliza de seguro')
     
     class Meta:
         verbose_name = 'Vehículo'
@@ -107,3 +106,65 @@ class RegistroUso(models.Model):
     
     def __str__(self):
         return f"{self.vehiculo} - {self.empleado} - {self.fecha}"
+
+
+class TenenciaVehicular(models.Model):
+    ESTADOS_TENENCIA = [
+        ('vigente', 'Vigente'),
+        ('vencida', 'Vencida'),
+        ('pendiente', 'Pendiente de Pago'),
+        ('exenta', 'Exenta'),
+    ]
+    
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name='tenencias')
+    año_fiscal = models.IntegerField()
+    fecha_vencimiento = models.DateField()
+    fecha_pago = models.DateField(null=True, blank=True)
+    monto = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    folio = models.CharField(max_length=50, null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS_TENENCIA, default='pendiente')
+    comprobante_pago = models.FileField(upload_to='vehiculos/tenencias/', null=True, blank=True)
+    observaciones = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = 'Tenencia Vehicular'
+        verbose_name_plural = 'Tenencias Vehiculares'
+        unique_together = [['vehiculo', 'año_fiscal']]
+        ordering = ['-año_fiscal']
+    
+    def __str__(self):
+        return f"Tenencia {self.año_fiscal} - {self.vehiculo}"
+
+
+class VerificacionVehicular(models.Model):
+    TIPOS_VERIFICACION = [
+        ('primera', 'Primera Verificación'),
+        ('segunda', 'Segunda Verificación'),
+        ('extraordinaria', 'Verificación Extraordinaria'),
+    ]
+    
+    ESTADOS_VERIFICACION = [
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+        ('pendiente', 'Pendiente'),
+        ('vencida', 'Vencida'),
+    ]
+    
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name='verificaciones')
+    tipo_verificacion = models.CharField(max_length=20, choices=TIPOS_VERIFICACION)
+    fecha_verificacion = models.DateField()
+    fecha_vencimiento = models.DateField()
+    numero_certificado = models.CharField(max_length=50, unique=True)
+    centro_verificacion = models.CharField(max_length=200)
+    estado = models.CharField(max_length=20, choices=ESTADOS_VERIFICACION, default='pendiente')
+    costo = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    certificado = models.FileField(upload_to='vehiculos/verificaciones/', null=True, blank=True)
+    observaciones = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = 'Verificación Vehicular'
+        verbose_name_plural = 'Verificaciones Vehiculares'
+        ordering = ['-fecha_verificacion']
+    
+    def __str__(self):
+        return f"Verificación {self.get_tipo_verificacion_display()} - {self.vehiculo} ({self.fecha_verificacion.year})"
