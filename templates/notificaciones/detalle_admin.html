@@ -23,6 +23,7 @@
                         {% if respuesta.documento %}
                             <p><strong>Documento:</strong> <a href="{{ respuesta.documento.url }}" target="_blank">Descargar</a></p>
                         {% endif %}
+                        <span style="font-size:12px;color:#888;">[DEBUG: documento={{ respuesta.documento }} | url={{ respuesta.documento.url }}]</span>
                         <p class="text-muted"><small>Fecha de respuesta: {{ respuesta.fecha_respuesta|date:'d/m/Y H:i' }}</small></p>
                     </div>
                 {% endfor %}

@@ -1,8 +1,40 @@
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.generic.edit import UpdateView
+from .models import Notificacion, RespuestaNotificacion
+from django.views.generic import DetailView
+from .forms import RespuestaNotificacionForm
+
+# ...existing code...
+
+# Vista para que el usuario (empleado) modifique su propia respuesta
+class ModificarRespuestaUsuarioView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        from django.contrib import messages
+        messages.success(self.request, '¡Tu respuesta ha sido modificada con éxito!')
+        return response
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['notificacion'] = self.object.notificacion if self.object and self.object.notificacion else None
+        return context
+    model = RespuestaNotificacion
+    form_class = RespuestaNotificacionForm
+    template_name = 'notificaciones/responder.html'
+
+    def test_func(self):
+        # Solo el usuario dueño de la respuesta puede modificarla
+        return self.get_object().usuario == self.request.user
+
+    def get_success_url(self):
+        notificacion = getattr(self.object, 'notificacion', None)
+        if notificacion and notificacion.pk:
+            return reverse('notificaciones:detalle_usuario', args=[notificacion.pk])
+        return reverse('notificaciones:index')
 # from django.views.generic import DetailView
 # from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Notificacion, RespuestaNotificacion
 from django.views.generic import DetailView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 # Vista para detalle de notificación de usuario/empleado
 class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
     model = Notificacion
@@ -16,8 +48,23 @@ class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
             self.object.leida = True
             self.object.save()
         context = self.get_context_data(object=self.object)
-        respuesta_usuario = self.object.respuestas.filter(usuario=self.request.user).first()
-        context['respuesta_usuario'] = respuesta_usuario
+        if request.user.is_superuser:
+            # Si hay respuesta_id en la URL, buscar la respuesta globalmente
+            respuesta_id = request.GET.get('respuesta_id')
+            from .models import RespuestaNotificacion
+            if respuesta_id:
+                try:
+                    respuesta = RespuestaNotificacion.objects.get(pk=respuesta_id)
+                except RespuestaNotificacion.DoesNotExist:
+                    respuesta = None
+                context['todas_respuestas'] = [respuesta] if respuesta else []
+            else:
+                # Buscar la respuesta más reciente asociada a la notificación original del empleado
+                respuesta = RespuestaNotificacion.objects.filter(mensaje=self.object.mensaje).order_by('-fecha_respuesta').first()
+                context['todas_respuestas'] = [respuesta] if respuesta else []
+        else:
+            respuesta_usuario = self.object.respuestas.filter(usuario=self.request.user).first()
+            context['respuesta_usuario'] = respuesta_usuario
         return self.render_to_response(context)
 from django.views.generic.edit import UpdateView, CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -147,7 +194,7 @@ class ResponderNotificacionView(LoginRequiredMixin, CreateView):
         return response
 
     def get_success_url(self):
-        return reverse('notificaciones:index')
+        return reverse('notificaciones:detalle_usuario', args=[self.notificacion.id])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

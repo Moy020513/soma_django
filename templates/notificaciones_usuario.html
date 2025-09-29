@@ -77,7 +77,6 @@
                                     </div>
                                     
                                     <div class="notification-actions mt-3 d-flex gap-2">
-                                        <span style="font-size:12px;color:#888;">[DEBUG: leida={{ notificacion.leida }}]</span>
                                         <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-primary action-link">
                                             <i class="fas fa-external-link-alt me-1"></i>Ver más
                                         </a>
@@ -122,29 +121,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
     card.addEventListener('click', (e)=>{
         // Evitar activar desde enlaces internos que ya navegan
         if(e.target.closest('a') && !e.target.classList.contains('action-link')){ return; }
-        if(card.classList.contains('notification-unread')){
-            const id = card.dataset.id;
-            fetch(`/api/notificaciones/${id}/leer/`, {
-                method:'POST',
-                headers:{'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With':'XMLHttpRequest'}
-            }).then(r=>r.json()).then(data=>{
-                if(data.ok){
-                    card.classList.remove('notification-unread');
-                    const nueva = card.querySelector('.new-badge');
-                    if(nueva) nueva.remove();
-                    // Actualizar badge global si existe
-                    const badge = document.getElementById('badgeNotificaciones');
-                    if(badge){
-                        let current = badge.textContent === '9+' ? 9 : parseInt(badge.textContent || '0', 10);
-                        if(current>0){
-                            const nuevo = data.pendientes;
-                            if(nuevo>0){ badge.textContent = nuevo>9 ? '9+' : nuevo; }
-                            else { badge.remove(); }
-                        }
-                    }
-                }
-            }).catch(()=>{});
-        }
+        const id = card.dataset.id;
+        window.location.href = `/notificaciones/detalle/${id}/`;
     });
   });
 });

@@ -13,7 +13,20 @@
         <div class="card-body">
             <p class="mb-2"><strong>Mensaje:</strong> {{ notificacion.mensaje }}</p>
             <p class="mb-2"><strong>Fecha:</strong> {{ notificacion.fecha_creacion|date:'d/m/Y H:i' }}</p>
-            {% if respuesta_usuario %}
+            {% if request.user.is_superuser and todas_respuestas %}
+                <hr>
+                <h6>Respuestas de empleados:</h6>
+                {% for respuesta in todas_respuestas %}
+                    <div class="mb-3">
+                        <p><strong>Usuario:</strong> {{ respuesta.usuario.get_full_name|default:respuesta.usuario.username }}</p>
+                        <p><strong>Mensaje:</strong> {{ respuesta.mensaje }}</p>
+                        {% if respuesta.documento %}
+                            <p><strong>Documento:</strong> <a href="{{ respuesta.documento.url }}" target="_blank">Descargar</a></p>
+                        {% endif %}
+                        <p class="text-muted"><small>Fecha de respuesta: {{ respuesta.fecha_respuesta|date:'d/m/Y H:i' }}</small></p>
+                    </div>
+                {% endfor %}
+            {% elif respuesta_usuario %}
                 <hr>
                 <h6>Tu respuesta:</h6>
                 <div class="mb-3">
@@ -30,11 +43,15 @@
     </div>
     <div class="mt-3 d-flex gap-2">
     <a href="/mis-notificaciones/#n{{ notificacion.id }}" class="btn btn-secondary">Volver a notificaciones</a>
+    {% if request.user.is_superuser %}
+        {# El admin no puede responder ni modificar respuesta de empleado #}
+    {% else %}
         {% if not respuesta_usuario %}
             <a href="{% url 'notificaciones:responder' notificacion.id %}" class="btn btn-success">Responder</a>
         {% else %}
-            <a href="{% url 'notificaciones:modificar_respuesta' respuesta_usuario.id %}" class="btn btn-warning">Modificar respuesta</a>
+            <a href="{% url 'notificaciones:modificar_respuesta_usuario' respuesta_usuario.id %}" class="btn btn-warning">Modificar respuesta</a>
         {% endif %}
+    {% endif %}
     </div>
 </div>
 {% endblock %}
