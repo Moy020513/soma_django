@@ -19,7 +19,7 @@
                     {{ form.documento }}
                 </div>
                 <button type="submit" class="btn btn-success">Enviar respuesta</button>
-                <a href="{% url 'notificaciones:index' %}" class="btn btn-secondary ms-2">Cancelar</a>
+                <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-secondary ms-2">Cancelar</a>
             </form>
         </div>
     </div>

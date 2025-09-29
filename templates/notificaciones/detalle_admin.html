@@ -33,7 +33,13 @@
     </div>
     <div class="mt-3 d-flex gap-2">
         <a href="{% url 'notificaciones:index' %}" class="btn btn-secondary">Volver a notificaciones</a>
-    <a href="{% url 'notificaciones:responder_admin' notificacion.id %}" class="btn btn-success">Responder</a>
+        {% if not notificacion.respuestas.filter(usuario=request.user).exists %}
+            <a href="{% url 'notificaciones:responder_admin' notificacion.id %}" class="btn btn-success">Responder</a>
+        {% else %}
+            {% with respuesta=notificacion.respuestas.get(usuario=request.user) %}
+                <a href="{% url 'notificaciones:modificar_respuesta' respuesta.id %}" class="btn btn-warning">Modificar respuesta</a>
+            {% endwith %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}

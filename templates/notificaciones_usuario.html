@@ -76,13 +76,17 @@
                                         {% endif %}
                                     </div>
                                     
-                                    {% if notificacion.url %}
-                                        <div class="notification-actions mt-3">
-                                            <a href="{{ notificacion.url }}" class="btn btn-sm btn-outline-primary action-link">
-                                                <i class="fas fa-external-link-alt me-1"></i>Ver más
-                                            </a>
-                                        </div>
-                                    {% endif %}
+                                    <div class="notification-actions mt-3 d-flex gap-2">
+                                        <span style="font-size:12px;color:#888;">[DEBUG: leida={{ notificacion.leida }}]</span>
+                                        <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-primary action-link">
+                                            <i class="fas fa-external-link-alt me-1"></i>Ver más
+                                        </a>
+                                        {% if not notificacion.leida %}
+                                            <span class="btn btn-sm btn-secondary disabled">No leída</span>
+                                        {% else %}
+                                            <span class="btn btn-sm btn-success disabled">Leída</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 
                                 <!-- Controles removidos: ahora se marca al hacer click -->

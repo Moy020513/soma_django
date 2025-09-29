@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Notificación{% endblock %}
+
+{% block page_title %}Detalle de Notificación{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ notificacion.titulo }}</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-2"><strong>Mensaje:</strong> {{ notificacion.mensaje }}</p>
+            <p class="mb-2"><strong>Fecha:</strong> {{ notificacion.fecha_creacion|date:'d/m/Y H:i' }}</p>
+            {% if respuesta_usuario %}
+                <hr>
+                <h6>Tu respuesta:</h6>
+                <div class="mb-3">
+                    <p><strong>Mensaje:</strong> {{ respuesta_usuario.mensaje }}</p>
+                    {% if respuesta_usuario.documento %}
+                        <p><strong>Documento:</strong> <a href="{{ respuesta_usuario.documento.url }}" target="_blank">Descargar</a></p>
+                    {% endif %}
+                    <p class="text-muted"><small>Fecha de respuesta: {{ respuesta_usuario.fecha_respuesta|date:'d/m/Y H:i' }}</small></p>
+                </div>
+            {% else %}
+                <div class="alert alert-info">No has respondido esta notificación.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+    <a href="/mis-notificaciones/#n{{ notificacion.id }}" class="btn btn-secondary">Volver a notificaciones</a>
+        {% if not respuesta_usuario %}
+            <a href="{% url 'notificaciones:responder' notificacion.id %}" class="btn btn-success">Responder</a>
+        {% else %}
+            <a href="{% url 'notificaciones:modificar_respuesta' respuesta_usuario.id %}" class="btn btn-warning">Modificar respuesta</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

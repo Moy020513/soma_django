@@ -1,3 +1,24 @@
+# from django.views.generic import DetailView
+# from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import Notificacion, RespuestaNotificacion
+from django.views.generic import DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin
+# Vista para detalle de notificación de usuario/empleado
+class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
+    model = Notificacion
+    template_name = 'notificaciones/detalle_usuario.html'
+    context_object_name = 'notificacion'
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        # Marcar como leída si no lo está
+        if not self.object.leida:
+            self.object.leida = True
+            self.object.save()
+        context = self.get_context_data(object=self.object)
+        respuesta_usuario = self.object.respuestas.filter(usuario=self.request.user).first()
+        context['respuesta_usuario'] = respuesta_usuario
+        return self.render_to_response(context)
 from django.views.generic.edit import UpdateView, CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .models import Notificacion, RespuestaNotificacion
@@ -90,6 +111,13 @@ class ResponderNotificacionView(LoginRequiredMixin, CreateView):
 
     def dispatch(self, request, *args, **kwargs):
         self.notificacion = get_object_or_404(Notificacion, pk=kwargs['notificacion_id'])
+        # Verificar si el usuario ya respondió
+        ya_respondio = RespuestaNotificacion.objects.filter(notificacion=self.notificacion, usuario=request.user).exists()
+        if ya_respondio:
+            from django.contrib import messages
+            messages.warning(request, 'Ya has respondido esta notificación.')
+            from django.urls import reverse
+            return redirect(reverse('notificaciones:index'))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
