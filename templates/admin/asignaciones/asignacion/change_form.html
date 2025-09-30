@@ -1,0 +1,74 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+  .empleado-form-row { margin-bottom: 10px; }
+</style>
+{% endblock %}
+
+{% block after_field_sets %}
+  <h3>Empleados asignados</h3>
+  <div id="empleados-formset">
+    {% for form in empleados_formset.forms %}
+      <div class="empleado-form-row">
+        {{ form.empleado }}
+        <button type="button" class="remove-empleado btn btn-danger btn-sm">Eliminar</button>
+      </div>
+    {% endfor %}
+  </div>
+  <!-- Formulario vacío oculto para clonar -->
+  <div id="empleado-empty-form" style="display:none;">
+    <div class="empleado-form-row">
+      <label for="id_empleados-__prefix__-empleado">Empleado:</label>
+      <select name="empleados-__prefix__-empleado" id="id_empleados-__prefix__-empleado">
+        {% for emp in empleados_formset.forms.0.fields.empleado.queryset %}
+          <option value="{{ emp.pk }}">{{ emp }}</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="remove-empleado btn btn-danger btn-sm">Eliminar</button>
+    </div>
+  </div>
+  <button type="button" id="add-empleado" class="btn btn-success btn-sm">Agregar otro empleado</button>
+  <input type="hidden" name="empleados-TOTAL_FORMS" id="id_empleados-TOTAL_FORMS" value="{{ empleados_formset.total_form_count }}">
+  <input type="hidden" name="empleados-INITIAL_FORMS" value="{{ empleados_formset.initial_form_count }}">
+  <input type="hidden" name="empleados-MIN_NUM_FORMS" value="0">
+  <input type="hidden" name="empleados-MAX_NUM_FORMS" value="100">
+{% block footer %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(function() {
+    var formIdx = {{ empleados_formset.total_form_count }};
+    $('#add-empleado').click(function() {
+      var $template = $('#empleado-empty-form .empleado-form-row').clone();
+      // Actualizar todos los atributos name, id y for
+      $template.find('[name], [id], label').each(function() {
+        $.each(this.attributes, function(i, attr) {
+          if (attr.value && attr.value.indexOf('__prefix__') !== -1) {
+            var nuevo = attr.value.replace(/__prefix__/g, formIdx);
+            $(attr.ownerElement).attr(attr.name, nuevo);
+            // Depuración: mostrar el cambio realizado
+            console.log('Atributo actualizado:', attr.name, '->', nuevo);
+          }
+        });
+      });
+      $template.find('button.remove-empleado').show();
+      $('#empleados-formset').append($template);
+      formIdx++;
+      $('#id_empleados-TOTAL_FORMS').val(formIdx);
+      // Depuración: mostrar el valor de TOTAL_FORMS
+      console.log('TOTAL_FORMS actualizado:', formIdx);
+    });
+    $(document).on('click', '.remove-empleado', function() {
+      if ($('#empleados-formset .empleado-form-row').length > 1) {
+        $(this).parent().remove();
+        formIdx--;
+        $('#id_empleados-TOTAL_FORMS').val(formIdx);
+      }
+    });
+    $('.remove-empleado').first().hide();
+  });
+</script>
+{% endblock %}
+{% endblock %}

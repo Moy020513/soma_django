@@ -9,7 +9,7 @@ class Asignacion(models.Model):
     """Asignación de trabajo diaria para un empleado."""
 
     fecha = models.DateField(verbose_name="Fecha de asignación")
-    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='asignaciones', verbose_name='Empleado')
+    empleados = models.ManyToManyField(Empleado, related_name='asignaciones', verbose_name='Empleados')
     empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name='asignaciones', verbose_name='Empresa')
     supervisor = models.ForeignKey(
         Empleado,
@@ -27,37 +27,35 @@ class Asignacion(models.Model):
     class Meta:
         verbose_name = 'Asignación'
         verbose_name_plural = 'Asignaciones'
-        ordering = ['-fecha', 'empleado__numero_empleado']
+        ordering = ['-fecha']
         indexes = [
-            models.Index(fields=['fecha', 'empleado']),
+            models.Index(fields=['fecha']),
         ]
-        unique_together = (
-            ('fecha', 'empleado'),
-        )
 
     def __str__(self):
-        return f"{self.fecha} - {self.empleado} @ {self.empresa}"
+        empleados_str = ', '.join([str(e) for e in self.empleados.all()])
+        return f"{self.fecha} - {empleados_str} @ {self.empresa}"
 
     def get_absolute_url(self):
         return reverse('asignaciones:detalle', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
-        # Si no se especifica supervisor, intentar obtenerlo
-        # 1) desde el jefe directo del empleado
-        # 2) desde el puesto superior del empleado (primer empleado activo con ese puesto)
-        if self.supervisor is None and self.empleado:
-            if self.empleado.jefe_directo_id:
-                self.supervisor = self.empleado.jefe_directo
-            else:
-                puesto_sup = getattr(self.empleado.puesto, 'superior', None)
-                if puesto_sup:
-                    from apps.recursos_humanos.models import Empleado as Emp
-                    cand = (
-                        Emp.objects.filter(puesto=puesto_sup, activo=True)
-                        .select_related('usuario')
-                        .order_by('fecha_ingreso')
-                        .first()
-                    )
-                    if cand:
-                        self.supervisor = cand
+        # Si no se especifica supervisor, intentar obtenerlo del primer empleado seleccionado
+        if self.supervisor is None and self.pk:
+            primer_empleado = self.empleados.first()
+            if primer_empleado:
+                if primer_empleado.jefe_directo_id:
+                    self.supervisor = primer_empleado.jefe_directo
+                else:
+                    puesto_sup = getattr(primer_empleado.puesto, 'superior', None)
+                    if puesto_sup:
+                        from apps.recursos_humanos.models import Empleado as Emp
+                        cand = (
+                            Emp.objects.filter(puesto=puesto_sup, activo=True)
+                            .select_related('usuario')
+                            .order_by('fecha_ingreso')
+                            .first()
+                        )
+                        if cand:
+                            self.supervisor = cand
         super().save(*args, **kwargs)

@@ -99,15 +99,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
 
     change_list_template = 'admin/recursos_humanos/empleado/change_list.html'
 
-    class AsignacionInline(admin.TabularInline):
-        model = Asignacion
-        fields = ('fecha', 'empresa', 'supervisor', 'detalles')
-        extra = 0
-        show_change_link = True
-        ordering = ('-fecha',)
-        fk_name = 'empleado'
-
-    inlines = [AsignacionInline]
+    # Inline de asignaciones eliminado porque la relación ahora es ManyToMany
 
     def has_add_permission(self, request):
         # Deshabilitar el alta estándar en admin para usar el nuevo flujo

@@ -27,7 +27,7 @@ def index(request):
     asignaciones_recientes = []
     if empleado:
         qs_emp = (Asignacion.objects
-                  .filter(empleado=empleado)
+                  .filter(empleados=empleado)
                   .select_related('empresa', 'supervisor')
                   .order_by('-fecha', '-fecha_creacion'))
         asignaciones_hoy = qs_emp.filter(fecha=timezone.localdate())
@@ -37,8 +37,9 @@ def index(request):
         # Si es admin sin objeto Empleado propio, mostrar asignaciones del día de todos
         asignaciones_hoy = (Asignacion.objects
                             .filter(fecha=timezone.localdate())
-                            .select_related('empresa', 'supervisor', 'empleado__usuario')
-                            .order_by('empleado__numero_empleado'))
+                            .select_related('empresa', 'supervisor')
+                            .prefetch_related('empleados__usuario')
+                            .order_by('empleados__numero_empleado'))
     context = {
         'titulo': 'Sistema SOMA',
         'descripcion': 'Sistema de Gestión Empresarial',
@@ -110,7 +111,7 @@ def perfil_usuario(request):
     asignaciones_recientes = []
     if empleado:
         qs_emp = (Asignacion.objects
-                  .filter(empleado=empleado)
+                  .filter(empleados=empleado)
                   .select_related('empresa', 'supervisor')
                   .order_by('-fecha', '-fecha_creacion'))
         asignaciones_hoy = qs_emp.filter(fecha=timezone.localdate())
@@ -119,8 +120,9 @@ def perfil_usuario(request):
     elif request.user.is_staff or request.user.is_superuser:
         asignaciones_hoy = (Asignacion.objects
                             .filter(fecha=timezone.localdate())
-                            .select_related('empresa', 'supervisor', 'empleado__usuario')
-                            .order_by('empleado__numero_empleado'))
+                            .select_related('empresa', 'supervisor')
+                            .prefetch_related('empleados__usuario')
+                            .order_by('empleados__numero_empleado'))
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
