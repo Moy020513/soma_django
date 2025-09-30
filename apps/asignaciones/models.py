@@ -5,6 +5,19 @@ from apps.recursos_humanos.models import Empleado
 from apps.empresas.models import Empresa
 
 
+
+class ActividadAsignada(models.Model):
+    asignacion = models.ForeignKey('Asignacion', on_delete=models.CASCADE, related_name='actividades')
+    nombre = models.CharField(max_length=120, verbose_name='Actividad')
+    porcentaje = models.PositiveIntegerField(verbose_name='Porcentaje')
+
+    class Meta:
+        verbose_name = 'Actividad asignada'
+        verbose_name_plural = 'Actividades asignadas'
+
+    def __str__(self):
+        return f"{self.nombre} ({self.porcentaje}%)"
+
 class Asignacion(models.Model):
     """Asignación de trabajo diaria para un empleado."""
 
@@ -34,6 +47,8 @@ class Asignacion(models.Model):
         ]
 
     def __str__(self):
+        if not self.pk:
+            return f"Asignación nueva"
         empleados_str = ', '.join([str(e) for e in self.empleados.all()])
         return f"{self.fecha} - {empleados_str} @ {self.empresa}"
 
@@ -41,8 +56,8 @@ class Asignacion(models.Model):
         return reverse('asignaciones:detalle', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
-        # Si no se especifica supervisor, intentar obtenerlo del primer empleado seleccionado
-        if self.supervisor is None and self.pk:
+        # Solo ejecutar la lógica de supervisor al crear la asignación
+        if self.supervisor is None and not self.pk:
             primer_empleado = self.empleados.first()
             if primer_empleado:
                 if primer_empleado.jefe_directo_id:

@@ -18,7 +18,6 @@
       </div>
     {% endfor %}
   </div>
-  <!-- Formulario vacío oculto para clonar -->
   <div id="empleado-empty-form" style="display:none;">
     <div class="empleado-form-row">
       <label for="id_empleados-__prefix__-empleado">Empleado:</label>
@@ -35,21 +34,57 @@
   <input type="hidden" name="empleados-INITIAL_FORMS" value="{{ empleados_formset.initial_form_count }}">
   <input type="hidden" name="empleados-MIN_NUM_FORMS" value="0">
   <input type="hidden" name="empleados-MAX_NUM_FORMS" value="100">
+
+  <h3>Actividades asignadas</h3>
+  <div id="actividades-formset">
+    {% for form in actividades_formset.forms %}
+      <div class="actividad-form-row">
+        {{ form.nombre }}
+        {{ form.porcentaje }} %
+        <button type="button" class="remove-actividad btn btn-danger btn-sm">Eliminar</button>
+      </div>
+    {% endfor %}
+    {% if actividades_formset.non_form_errors %}
+      <div id="actividad-error-flash" class="alert alert-danger mt-2" role="alert">
+        {% for error in actividades_formset.non_form_errors %}
+          {{ error }}<br>
+        {% endfor %}
+      </div>
+      <script>
+        window.addEventListener('DOMContentLoaded', function() {
+          var errorDiv = document.getElementById('actividad-error-flash');
+          if (errorDiv) {
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        });
+      </script>
+    {% endif %}
+  </div>
+  <div id="actividad-empty-form" style="display:none;">
+    <div class="actividad-form-row">
+      <input type="text" name="actividades-__prefix__-nombre" placeholder="Actividad" />
+      <input type="number" name="actividades-__prefix__-porcentaje" min="1" max="100" placeholder="Porcentaje" /> %
+      <button type="button" class="remove-actividad btn btn-danger btn-sm">Eliminar</button>
+    </div>
+  </div>
+  <button type="button" id="add-actividad" class="btn btn-success btn-sm">Agregar actividad</button>
+  <input type="hidden" name="actividades-TOTAL_FORMS" id="id_actividades-TOTAL_FORMS" value="{{ actividades_formset.total_form_count }}">
+  <input type="hidden" name="actividades-INITIAL_FORMS" value="{{ actividades_formset.initial_form_count }}">
+  <input type="hidden" name="actividades-MIN_NUM_FORMS" value="0">
+  <input type="hidden" name="actividades-MAX_NUM_FORMS" value="100">
 {% block footer %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(function() {
+    // Empleados
     var formIdx = {{ empleados_formset.total_form_count }};
     $('#add-empleado').click(function() {
       var $template = $('#empleado-empty-form .empleado-form-row').clone();
-      // Actualizar todos los atributos name, id y for
       $template.find('[name], [id], label').each(function() {
         $.each(this.attributes, function(i, attr) {
           if (attr.value && attr.value.indexOf('__prefix__') !== -1) {
             var nuevo = attr.value.replace(/__prefix__/g, formIdx);
             $(attr.ownerElement).attr(attr.name, nuevo);
-            // Depuración: mostrar el cambio realizado
-            console.log('Atributo actualizado:', attr.name, '->', nuevo);
           }
         });
       });
@@ -57,8 +92,6 @@
       $('#empleados-formset').append($template);
       formIdx++;
       $('#id_empleados-TOTAL_FORMS').val(formIdx);
-      // Depuración: mostrar el valor de TOTAL_FORMS
-      console.log('TOTAL_FORMS actualizado:', formIdx);
     });
     $(document).on('click', '.remove-empleado', function() {
       if ($('#empleados-formset .empleado-form-row').length > 1) {
@@ -68,6 +101,31 @@
       }
     });
     $('.remove-empleado').first().hide();
+
+    // Actividades
+    var actIdx = {{ actividades_formset.total_form_count }};
+    $('#add-actividad').click(function() {
+      var $template = $('#actividad-empty-form .actividad-form-row').clone();
+      $template.find('[name]').each(function() {
+        var name = $(this).attr('name');
+        if (name && name.indexOf('__prefix__') !== -1) {
+          var nuevo = name.replace(/__prefix__/g, actIdx);
+          $(this).attr('name', nuevo);
+        }
+      });
+      $template.find('button.remove-actividad').show();
+      $('#actividades-formset').append($template);
+      actIdx++;
+      $('#id_actividades-TOTAL_FORMS').val(actIdx);
+    });
+    $(document).on('click', '.remove-actividad', function() {
+      if ($('#actividades-formset .actividad-form-row').length > 1) {
+        $(this).parent().remove();
+        actIdx--;
+        $('#id_actividades-TOTAL_FORMS').val(actIdx);
+      }
+    });
+    $('.remove-actividad').first().hide();
   });
 </script>
 {% endblock %}
