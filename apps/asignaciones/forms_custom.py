@@ -25,7 +25,10 @@ class ActividadAsignadaBaseFormSet(forms.BaseFormSet):
         if total != 100:
             raise ValidationError('La suma de los porcentajes de actividades debe ser 100%.')
 
-ActividadAsignadaFormSet = formset_factory(ActividadAsignadaForm, formset=ActividadAsignadaBaseFormSet, extra=1, can_delete=True)
+def ActividadAsignadaFormSetFactory(extra=1):
+    return formset_factory(ActividadAsignadaForm, formset=ActividadAsignadaBaseFormSet, extra=extra, can_delete=True)
+
+ActividadAsignadaFormSet = ActividadAsignadaFormSetFactory()
 
 class EmpleadoAsignacionForm(forms.Form):
     empleado = forms.ModelChoiceField(
@@ -34,12 +37,16 @@ class EmpleadoAsignacionForm(forms.Form):
         required=True
     )
 
-EmpleadoAsignacionFormSet = formset_factory(EmpleadoAsignacionForm, extra=1, can_delete=True)
+def EmpleadoAsignacionFormSetFactory(extra=1):
+    return formset_factory(EmpleadoAsignacionForm, extra=extra, can_delete=True)
+
+EmpleadoAsignacionFormSet = EmpleadoAsignacionFormSetFactory()
 
 class AsignacionCustomForm(forms.ModelForm):
     class Meta:
         model = Asignacion
         exclude = ['empleados']
+
 
     archivos = forms.FileField(required=False, label='Archivos adjuntos')
 
@@ -47,9 +54,15 @@ class AsignacionCustomForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['empresa'].queryset = self.fields['empresa'].queryset.filter(activa=True)
         self.fields['supervisor'].queryset = self.fields['supervisor'].queryset.filter(activo=True)
+        # Configura el widget para mostrar la fecha en formato DD/MM/YYYY
+        self.fields['fecha'].widget = forms.DateInput(format='%d/%m/%Y', attrs={'type': 'text'})
+        # Inicializa la fecha en formato DD/MM/YYYY si estamos editando y no hay datos POST
+        if self.instance.pk and self.instance.fecha and not self.data:
+            self.fields['fecha'].initial = self.instance.fecha.strftime('%d/%m/%Y')
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Los empleados se asignan en la vista
-        # El guardado se realiza en el admin
+        # Asegura que la fecha de asignación se mantenga al editar
+        if self.instance.pk and 'fecha' in self.cleaned_data:
+            instance.fecha = self.cleaned_data['fecha']
         return instance

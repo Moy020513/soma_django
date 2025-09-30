@@ -28,12 +28,20 @@ class AsignacionAdmin(admin.ModelAdmin):
     get_empleados.short_description = 'Empleados'
 
     def render_change_form(self, request, context, *args, **kwargs):
+        obj = context.get('original')
         if request.method == 'POST':
             empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados')
             actividades_formset = ActividadAsignadaFormSet(request.POST, prefix='actividades')
         else:
-            empleados_formset = EmpleadoAsignacionFormSet(prefix='empleados')
-            actividades_formset = ActividadAsignadaFormSet(prefix='actividades')
+            # Inicializa los empleados y actividades registrados, sin campos extra
+            empleados_initial = []
+            actividades_initial = []
+            if obj:
+                empleados_initial = [{'empleado': e.pk} for e in obj.empleados.all()]
+                actividades_initial = [{'nombre': a.nombre, 'porcentaje': a.porcentaje} for a in obj.actividades.all()]
+            from .forms_custom import EmpleadoAsignacionFormSetFactory, ActividadAsignadaFormSetFactory
+            empleados_formset = EmpleadoAsignacionFormSetFactory(extra=0 if empleados_initial else 1)(initial=empleados_initial, prefix='empleados')
+            actividades_formset = ActividadAsignadaFormSetFactory(extra=0 if actividades_initial else 1)(initial=actividades_initial, prefix='actividades')
         context = dict(context)  # Copia el contexto para modificarlo
         context['empleados_formset'] = empleados_formset
         context['actividades_formset'] = actividades_formset
@@ -45,7 +53,11 @@ class AsignacionAdmin(admin.ModelAdmin):
             # Asegura que 'form' esté en el contexto
             form = context.get('form')
             if form is None and 'adminform' not in context:
-                form = self.get_form(request)(initial=context.get('initial', {}))
+                initial = dict(context.get('initial', {}))
+                # Si estamos editando, usa la fecha del objeto
+                if obj and obj.fecha:
+                    initial['fecha'] = obj.fecha.strftime('%Y-%m-%d')
+                form = self.get_form(request)(initial=initial)
                 context['form'] = form
             fieldsets = self.get_fieldsets(request, context.get('original'))
             prepopulated_fields = self.get_prepopulated_fields(request, context.get('original'))
