@@ -12,7 +12,8 @@ class AsignacionAdmin(admin.ModelAdmin):
         return form.save(commit=False)
     form = AsignacionCustomForm
     change_form_template = 'admin/asignaciones/asignacion/change_form.html'
-    list_display = ('fecha', 'get_empleados', 'empresa', 'supervisor')
+    change_list_template = 'admin/asignaciones/asignacion/change_list.html'
+    list_display = ('fecha', 'get_empleados', 'empresa', 'supervisor', 'detalles')
     list_filter = ('fecha', 'empresa')
     search_fields = (
         'empleados__usuario__first_name',

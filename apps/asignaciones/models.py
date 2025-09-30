@@ -19,6 +19,19 @@ class ActividadAsignada(models.Model):
         return f"{self.nombre} ({self.porcentaje}%)"
 
 class Asignacion(models.Model):
+    @property
+    def archivo_nombre(self):
+        return self.archivos.name.split('/')[-1] if self.archivos else ''
+
+    @property
+    def actividades_total(self):
+        return self.actividades.count()
+    @property
+    def empleados_str(self):
+        return ', '.join([str(e) for e in self.empleados.all()])
+    def get_admin_url(self):
+        from django.urls import reverse
+        return reverse('admin:asignaciones_asignacion_change', args=[self.pk])
     """Asignación de trabajo diaria para un empleado."""
 
     fecha = models.DateField(verbose_name="Fecha de asignación")
