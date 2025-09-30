@@ -17,6 +17,8 @@ class AsignacionCustomForm(forms.ModelForm):
         model = Asignacion
         exclude = ['empleados']
 
+    archivos = forms.FileField(required=False, label='Archivos adjuntos')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['empresa'].queryset = self.fields['empresa'].queryset.filter(activa=True)

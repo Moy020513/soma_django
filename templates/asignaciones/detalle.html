@@ -8,10 +8,24 @@
       {{ asignacion.empresa.nombre }} — {{ asignacion.fecha|date:'d/m/Y' }}
     </div>
     <div class="card-body">
-      <p><strong>Empleado:</strong> {{ asignacion.empleado.nombre_completo }}</p>
+      <p><strong>Empleados:</strong>
+        {% for empleado in asignacion.empleados.all %}
+          {{ empleado.nombre_completo }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+          <span class="text-muted">Sin empleados asignados</span>
+        {% endfor %}
+      </p>
       <p><strong>Supervisor:</strong> {{ asignacion.supervisor.nombre_completo|default:'Sin asignar' }}</p>
       <p><strong>Detalles:</strong></p>
       <p>{{ asignacion.detalles|linebreaks }}</p>
+
+        {% if asignacion.archivos %}
+          <p><strong>Archivo adjunto:</strong>
+            <a href="{{ asignacion.archivos.url }}" target="_blank">Descargar / Ver archivo</a>
+          </p>
+        {% else %}
+          <p class="text-muted">No hay archivo adjunto</p>
+        {% endif %}
       
     </div>
   </div>

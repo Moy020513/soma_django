@@ -20,6 +20,7 @@ class Asignacion(models.Model):
         verbose_name='Supervisor'
     )
     detalles = models.TextField(verbose_name='Detalles de la asignación')
+    archivos = models.FileField(upload_to='asignaciones/archivos/', blank=True, null=True, verbose_name='Archivos adjuntos')
     completada = models.BooleanField(default=False, verbose_name='Completada')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
