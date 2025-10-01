@@ -27,14 +27,32 @@
 {% block content %}
   <div id="content-main">
     {% block object-tools %}
-    <ul class="object-tools">
-      <li>
-        <a href="{% url 'home' %}" class="btn btn-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Volver al inicio
-        </a>
-      </li>
+    <div class="object-tools d-flex justify-content-end gap-2" style="margin-bottom: 1rem;">
+      <a href="{% url 'home' %}" class="btn btn-main"><i class="fas fa-arrow-left me-2"></i>Volver al inicio</a>
       {% change_list_object_tools %}
-    </ul>
+    </div>
+    <style>
+      .btn-main {
+        background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
+        color: #fff !important;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 28px;
+        font-size: 16px;
+        font-weight: 600;
+        margin-left: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.2s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      }
+      .btn-main:hover {
+        background: linear-gradient(45deg, var(--soma-orange-dark), var(--soma-orange));
+        opacity: 0.9;
+        text-decoration: underline;
+      }
+    </style>
     {% endblock %}
 
     {% include "admin/change_list_htmx.html" %}

@@ -2,30 +2,70 @@
 
 <!-- HTMX Response: Only return changelist content -->
 <div class="module{% if cl.has_filters %} filtered{% endif %}" id="changelist">
-  {% if cl.has_filters %}
-    <div id="changelist-filter"
-      hx-boost="true"
-      hx-target="#changelist-results"
-      hx-select="#changelist-results, #changelist-filter"
-      hx-swap="outerHTML"
-      hx-push-url="true"
-      hx-swap-oob="true">
-      <details class="filters-collapse">
-        <summary>
-          <span><i class="fas fa-filter me-2"></i>Filtros</span>
-          {% if cl.has_active_filters %}
-            <a href="{{ cl.clear_all_filters_qs }}" class="btn-clear-filters ms-auto">&#10006; Limpiar</a>
-          {% endif %}
-        </summary>
-        <div class="filters-body">
-          {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
-        </div>
-      </details>
-    </div>
-  {% endif %}
-
   <div class="changelist-form-container">
-    {% search_form cl %}
+    <!-- Filtros arriba eliminados -->
+    <div class="d-flex align-items-center" style="margin-bottom: 1rem; gap: 1rem;">
+      <div style="flex:1; max-width: 500px;">
+        <style>
+          #searchbar, .searchbar, input[type='search'] {
+            border: 2px solid var(--soma-orange) !important;
+            box-shadow: 0 0 0 0.1rem rgba(243, 148, 62, 0.15);
+            height: 36px !important;
+            font-size: 16px !important;
+            padding-left: 40px !important;
+          }
+          .search-wrapper {
+            position: static;
+          }
+            #searchbar, .searchbar, input[type='search'] {
+              border: 2px solid var(--soma-orange) !important;
+              box-shadow: 0 0 0 0.1rem rgba(243, 148, 62, 0.15);
+              height: 36px !important;
+              font-size: 16px !important;
+              padding-left: 40px !important;
+            }
+        </style>
+        <div>
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              var searchInput = document.querySelector('.searchbar, #searchbar, input[type="search"]');
+              if (searchInput) {
+                searchInput.setAttribute('placeholder', 'Buscar...');
+                searchInput.addEventListener('input', function() {
+                  if (this.value.length > 0) {
+                    this.setAttribute('placeholder', '');
+                  } else {
+                    this.setAttribute('placeholder', 'Buscar...');
+                  }
+                });
+              }
+            });
+          </script>
+          {% search_form cl %}
+        </div>
+      </div>
+      {% if cl.has_filters %}
+      <div id="changelist-filter" style="max-width: 300px;"
+        hx-boost="true"
+        hx-target="#changelist-results"
+        hx-select="#changelist-results, #changelist-filter"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-swap-oob="true">
+        <details class="filters-collapse">
+          <summary>
+            <span><i class="fas fa-filter me-2"></i>Filtros</span>
+            {% if cl.has_active_filters %}
+              <a href="{{ cl.clear_all_filters_qs }}" class="btn-clear-filters ms-auto">&#10006; Limpiar</a>
+            {% endif %}
+          </summary>
+          <div class="filters-body">
+            {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+          </div>
+        </details>
+      </div>
+      {% endif %}
+    </div>
     <form id="changelist-form" method="post" novalidate>{% csrf_token %}
       <div id="changelist-results">
         {% result_list cl %}
