@@ -5,6 +5,49 @@
 {% block page_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
+{% if es_admin %}
+<!-- Botón de módulos con mejor posicionamiento -->
+<div class="mb-3">
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownModulos" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-th-large me-2"></i>Módulos
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownModulos" style="min-width: 320px;">
+            {% if app_list %}
+                {% for app in app_list %}
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="{{ app.app_url }}">
+                            <span class="me-2">
+                                <i class="
+                                    {% if app.app_label == 'auth' %}fas fa-user-shield
+                                    {% elif app.app_label == 'usuarios' %}fas fa-users-cog
+                                    {% elif app.app_label == 'empresas' %}fas fa-building
+                                    {% elif app.app_label == 'flota_vehicular' %}fas fa-car
+                                    {% elif app.app_label == 'herramientas' %}fas fa-tools
+                                    {% elif app.app_label == 'notificaciones' %}fas fa-bell
+                                    {% elif app.app_label == 'recursos_humanos' %}fas fa-users
+                                    {% else %}fas fa-cube{% endif %}"></i>
+                            </span>
+                            <span>
+                                {% if app.app_label == 'auth' %}Autenticación y Autorización
+                                {% elif app.app_label == 'usuarios' %}Gestión de Usuarios
+                                {% elif app.app_label == 'empresas' %}Empresas
+                                {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
+                                {% elif app.app_label == 'herramientas' %}Herramientas
+                                {% elif app.app_label == 'notificaciones' %}Notificaciones
+                                {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                                {% else %}{{ app.name }}{% endif %}
+                            </span>
+                        </a>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <li><span class="dropdown-item text-muted">No hay módulos disponibles.</span></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
 <!-- Mostrar mensajes si los hay -->
 {% if messages %}
     {% for message in messages %}
@@ -15,8 +58,7 @@
     {% endfor %}
 {% endif %}
 
-{# Mensaje de bienvenida simplificado (se eliminaron los datos de cuenta detallados) #}
-{% if es_admin %}
+{# Mensaje de bienvenida simplificado #}
 <div class="row mt-0">
     <div class="col-12">
         <div class="card user-info-card mb-3">
@@ -27,6 +69,7 @@
         </div>
     </div>
 </div>
+
 {# Asignaciones debajo del saludo #}
 <div class="row mt-0">
     <div class="col-12">
@@ -38,11 +81,11 @@
                     <a href="{% url 'asignaciones:mias' %}" class="btn btn-outline-secondary">Mis asignaciones</a>
                 </div>
             </div>
-                    <div class="card-body">
-                        {% if not empleado and not es_admin %}
-                            <div class="alert alert-warning">Tu usuario no está vinculado a un empleado. Pide al administrador que asocie tu cuenta a un empleado para ver asignaciones.</div>
-                        {% endif %}
-                        {% if asignaciones_hoy %}
+            <div class="card-body">
+                {% if not empleado and not es_admin %}
+                    <div class="alert alert-warning">Tu usuario no está vinculado a un empleado. Pide al administrador que asocie tu cuenta a un empleado para ver asignaciones.</div>
+                {% endif %}
+                {% if asignaciones_hoy %}
                     <div class="list-group">
                         {% for a in asignaciones_hoy %}
                             <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
@@ -60,89 +103,31 @@
                             </a>
                         {% endfor %}
                     </div>
-                        {% else %}
-                            {% if asignaciones_recientes %}
-                                <div class="alert alert-warning">No tienes asignaciones para hoy. Estas son las más recientes:</div>
-                                <div class="list-group">
-                                    {% for a in asignaciones_recientes %}
-                                        <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
-                                                <small>{{ a.fecha|date:'d/m/Y' }}</small>
-                                            </div>
-                                            <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
-                                            <small>
-                                                {% if es_admin and not user.empleado %}Empleado: {{ a.empleado.nombre_completo }} · {% endif %}
-                                                Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
-                                            </small>
-                                        </a>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="alert alert-info mb-0">No tienes asignaciones para hoy.</div>
-                            {% endif %}
-                        {% endif %}
+                {% else %}
+                    {% if asignaciones_recientes %}
+                        <div class="alert alert-warning">No tienes asignaciones para hoy. Estas son las más recientes:</div>
+                        <div class="list-group">
+                            {% for a in asignaciones_recientes %}
+                                <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
+                                        <small>{{ a.fecha|date:'d/m/Y' }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
+                                    <small>
+                                        {% if es_admin and not user.empleado %}Empleado: {{ a.empleado.nombre_completo }} · {% endif %}
+                                        Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">No tienes asignaciones para hoy.</div>
+                    {% endif %}
+                {% endif %}
             </div>
         </div>
     </div>
-</div>
-{% endif %}
-
-{% if es_admin %}
-            <div class="card mt-0">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <strong>Módulos</strong>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#modulosGrid" aria-expanded="true" aria-controls="modulosGrid">
-                        Mostrar/Ocultar
-                    </button>
-                </div>
-                <div id="modulosGrid" class="collapse show">
-                    <div class="card-body">
-                        {% if app_list %}
-                            <div class="row g-3">
-                                {% for app in app_list %}
-                                <div class="col-sm-6 col-lg-4">
-                                    <div class="card h-100 admin-card">
-                                        <div class="card-body d-flex flex-column">
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="user-icon-wrapper me-3" style="width:56px;height:56px;">
-                                                    <i class="
-                                                        {% if app.app_label == 'auth' %}fas fa-user-shield
-                                                        {% elif app.app_label == 'usuarios' %}fas fa-users-cog
-                                                        {% elif app.app_label == 'empresas' %}fas fa-building
-                                                        {% elif app.app_label == 'flota_vehicular' %}fas fa-car
-                                                        {% elif app.app_label == 'herramientas' %}fas fa-tools
-                                                        {% elif app.app_label == 'notificaciones' %}fas fa-bell
-                                                        {% elif app.app_label == 'recursos_humanos' %}fas fa-users
-                                                        {% else %}fas fa-cube{% endif %}"></i>
-                                                </div>
-                                                <h5 class="card-title mb-0" style="color: var(--soma-blue);">
-                                                    {% if app.app_label == 'auth' %}Autenticación y Autorización
-                                                    {% elif app.app_label == 'usuarios' %}Gestión de Usuarios
-                                                    {% elif app.app_label == 'empresas' %}Empresas
-                                                    {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
-                                                    {% elif app.app_label == 'herramientas' %}Herramientas
-                                                    {% elif app.app_label == 'notificaciones' %}Notificaciones
-                                                    {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
-                                                    {% else %}{{ app.name }}{% endif %}
-                                                </h5>
-                                            </div>
-                                            <div class="mt-auto d-flex gap-2">
-                                                <a href="{{ app.app_url }}" class="btn btn-primary w-100">
-                                                    <i class="fas fa-sliders-h me-2"></i>Administrar
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted">No hay módulos disponibles.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
 </div>
 {% else %}
 {# Mensaje de bienvenida para usuario estándar #}
@@ -204,6 +189,5 @@
         </div>
     </div>
 </div>
-
 {% endif %}
 {% endblock %}
