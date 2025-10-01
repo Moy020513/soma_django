@@ -12,33 +12,47 @@
         <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownModulos" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-th-large me-2"></i>Módulos
         </button>
-        <ul class="dropdown-menu" aria-labelledby="dropdownModulos" style="min-width: 320px;">
+        <ul class="dropdown-menu" aria-labelledby="dropdownModulos" style="min-width: 320px; max-height: 500px; overflow-y: auto;">
             {% if app_list %}
                 {% for app in app_list %}
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center" href="{{ app.app_url }}">
-                            <span class="me-2">
-                                <i class="
-                                    {% if app.app_label == 'auth' %}fas fa-user-shield
-                                    {% elif app.app_label == 'usuarios' %}fas fa-users-cog
-                                    {% elif app.app_label == 'empresas' %}fas fa-building
-                                    {% elif app.app_label == 'flota_vehicular' %}fas fa-car
-                                    {% elif app.app_label == 'herramientas' %}fas fa-tools
-                                    {% elif app.app_label == 'notificaciones' %}fas fa-bell
-                                    {% elif app.app_label == 'recursos_humanos' %}fas fa-users
-                                    {% else %}fas fa-cube{% endif %}"></i>
-                            </span>
-                            <span>
-                                {% if app.app_label == 'auth' %}Autenticación y Autorización
-                                {% elif app.app_label == 'usuarios' %}Gestión de Usuarios
-                                {% elif app.app_label == 'empresas' %}Empresas
-                                {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
-                                {% elif app.app_label == 'herramientas' %}Herramientas
-                                {% elif app.app_label == 'notificaciones' %}Notificaciones
-                                {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
-                                {% else %}{{ app.name }}{% endif %}
-                            </span>
+                    <li class="dropdown-submenu">
+                        <a class="dropdown-item d-flex align-items-center justify-content-between submenu-toggle" href="#" data-app="{{ app.app_label }}">
+                            <div class="d-flex align-items-center">
+                                <span class="me-2">
+                                    <i class="
+                                        {% if app.app_label == 'auth' %}fas fa-user-shield
+                                        {% elif app.app_label == 'usuarios' %}fas fa-users-cog
+                                        {% elif app.app_label == 'empresas' %}fas fa-building
+                                        {% elif app.app_label == 'flota_vehicular' %}fas fa-car
+                                        {% elif app.app_label == 'herramientas' %}fas fa-tools
+                                        {% elif app.app_label == 'notificaciones' %}fas fa-bell
+                                        {% elif app.app_label == 'recursos_humanos' %}fas fa-users
+                                        {% else %}fas fa-cube{% endif %}"></i>
+                                </span>
+                                <span>
+                                    {% if app.app_label == 'auth' %}Autenticación y Autorización
+                                    {% elif app.app_label == 'usuarios' %}Gestión de Usuarios
+                                    {% elif app.app_label == 'empresas' %}Empresas
+                                    {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
+                                    {% elif app.app_label == 'herramientas' %}Herramientas
+                                    {% elif app.app_label == 'notificaciones' %}Notificaciones
+                                    {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                                    {% else %}{{ app.name }}{% endif %}
+                                </span>
+                            </div>
+                            <i class="fas fa-chevron-down chevron-icon" style="font-size: 0.75rem; transition: transform 0.2s;"></i>
                         </a>
+                        {% if app.models %}
+                        <ul class="list-unstyled submenu-list" style="display:none; padding-left: 0; margin: 0;">
+                            {% for model in app.models %}
+                                <li>
+                                    <a class="dropdown-item ps-5 py-2" href="{{ model.admin_url }}" style="font-size: 0.9rem;">
+                                        <i class="fas fa-caret-right me-2 text-muted"></i>{{ model.name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
                     </li>
                 {% endfor %}
             {% else %}
@@ -47,6 +61,93 @@
         </ul>
     </div>
 </div>
+
+<style>
+    .dropdown-submenu {
+        position: relative;
+    }
+    
+    .dropdown-submenu .submenu-list {
+        background: #f8f9fa;
+        border-left: 3px solid var(--soma-orange, #ff6b35);
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+    
+    .dropdown-submenu .submenu-toggle {
+        cursor: pointer;
+        user-select: none;
+    }
+    
+    .dropdown-submenu .submenu-toggle:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .dropdown-submenu .submenu-list .dropdown-item:hover {
+        background-color: #e9ecef;
+        padding-left: 3.5rem !important;
+        transition: padding-left 0.15s ease;
+    }
+    
+    .chevron-icon.rotated {
+        transform: rotate(180deg);
+    }
+    
+    /* Evitar que se cierre el dropdown al hacer clic en los submenús */
+    .dropdown-menu {
+        padding: 8px 0;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejar el clic en los toggles de submenú
+    document.querySelectorAll('.dropdown-submenu .submenu-toggle').forEach(function(toggle) {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Obtener el submenú correspondiente
+            var submenu = this.parentElement.querySelector('.submenu-list');
+            var chevron = this.querySelector('.chevron-icon');
+            
+            if (submenu) {
+                var isVisible = submenu.style.display !== 'none';
+                
+                // Cerrar todos los otros submenús
+                document.querySelectorAll('.submenu-list').forEach(function(otherSubmenu) {
+                    if (otherSubmenu !== submenu) {
+                        otherSubmenu.style.display = 'none';
+                    }
+                });
+                
+                // Resetear todos los chevrons
+                document.querySelectorAll('.chevron-icon').forEach(function(otherChevron) {
+                    if (otherChevron !== chevron) {
+                        otherChevron.classList.remove('rotated');
+                    }
+                });
+                
+                // Toggle del submenú actual
+                if (isVisible) {
+                    submenu.style.display = 'none';
+                    chevron.classList.remove('rotated');
+                } else {
+                    submenu.style.display = 'block';
+                    chevron.classList.add('rotated');
+                }
+            }
+        });
+    });
+    
+    // Evitar que el menú principal se cierre al hacer clic dentro de él
+    document.querySelector('.dropdown-menu')?.addEventListener('click', function(e) {
+        if (e.target.closest('.submenu-toggle') || e.target.closest('.submenu-list')) {
+            e.stopPropagation();
+        }
+    });
+});
+</script>
 
 <!-- Mostrar mensajes si los hay -->
 {% if messages %}
