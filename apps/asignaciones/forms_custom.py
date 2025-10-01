@@ -54,11 +54,11 @@ class AsignacionCustomForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['empresa'].queryset = self.fields['empresa'].queryset.filter(activa=True)
         self.fields['supervisor'].queryset = self.fields['supervisor'].queryset.filter(activo=True)
-        # Configura el widget para mostrar la fecha en formato DD/MM/YYYY
-        self.fields['fecha'].widget = forms.DateInput(format='%d/%m/%Y', attrs={'type': 'text'})
-        # Inicializa la fecha en formato DD/MM/YYYY si estamos editando y no hay datos POST
+        # Configura el widget para mostrar el calendario nativo del navegador
+        self.fields['fecha'].widget = forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'})
+        # Inicializa la fecha en formato HTML5 si estamos editando y no hay datos POST
         if self.instance.pk and self.instance.fecha and not self.data:
-            self.fields['fecha'].initial = self.instance.fecha.strftime('%d/%m/%Y')
+            self.fields['fecha'].initial = self.instance.fecha.strftime('%Y-%m-%d')
 
     def save(self, commit=True):
         instance = super().save(commit=False)
