@@ -1838,37 +1838,17 @@
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
-                <div class="position-sticky pt-3">
-                    <div class="text-center mb-4">
-                        <div class="logo-container mb-3">
-                            <!-- Replace logo.png with your actual SOMA logo file -->
-                            <img src="{% static 'images/logo.png' %}" alt="SOMA Logo" class="soma-logo">
-                        </div>
-                        <small class="text-muted">Sistema de Gestión</small>
+            <!-- Main content, ahora ocupa todo el ancho -->
+            <main class="col-12 px-md-4">
+                <!-- Header con logo y navegación -->
+                <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom py-4" style="min-height:100px; display: flex; align-items: center;">
+                    <div class="d-flex align-items-center px-4">
+                        <a href="{% url 'home' %}" class="me-3" title="Inicio">
+                            <i class="fas fa-home fa-lg" style="color: var(--soma-blue);"></i>
+                        </a>
+                        <img src="{% static 'images/logo.png' %}" alt="SOMA Logo" class="soma-logo" style="max-height:40px;">
+                        <h1 class="h2 ms-3 mb-0">{% block page_title %}Dashboard{% endblock %}</h1>
                     </div>
-                    
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'home' %}">
-                                <i class="fas fa-home me-2"></i>Inicio
-                            </a>
-                        </li>
-                        
-                        {# Enlace al Admin eliminado a petición del usuario #}
-                    </ul>
-                </div>
-            </nav>
-
-            <!-- Main content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <!-- Header -->
-                <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom">
-                    <div class="px-4">
-                        <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
-                    </div>
-                    
                     {% if user.is_authenticated %}
                     <div class="btn-toolbar mb-2 mb-md-0 px-4">
                         {% if user.is_staff %}
@@ -1876,7 +1856,6 @@
                             <i class="fas fa-clock me-1"></i> Acciones recientes
                         </a>
                         {% endif %}
-                        {# Campana de notificaciones para cualquier usuario autenticado #}
                         <div class="dropdown me-2" id="dropdownNotificacionesWrapper">
                             <button id="btnDropdownNotificaciones" class="btn btn-outline-secondary position-relative notification-bell" data-bs-toggle="dropdown" aria-expanded="false" hx-get="{% url 'dropdown_notificaciones' %}" hx-trigger="click" hx-target="#dropdownNotificacionesMenu" hx-swap="innerHTML" title="Notificaciones">
                                 <i class="fas fa-bell"></i>
