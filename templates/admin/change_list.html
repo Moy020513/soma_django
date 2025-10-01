@@ -29,8 +29,8 @@
     {% block object-tools %}
     <ul class="object-tools">
       <li>
-        <a href="{% url 'admin:app_list' app_label=cl.opts.app_label %}" class="btn btn-secondary">
-          <i class="fas fa-arrow-left me-2"></i>{% translate 'Volver' %}
+        <a href="{% url 'home' %}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Volver al inicio
         </a>
       </li>
       {% change_list_object_tools %}

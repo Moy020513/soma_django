@@ -46,7 +46,7 @@
                     <input type="hidden" name="post" value="yes">
                     <input type="submit" value="{% trans "Sí, estoy seguro" %}" class="deletelink">
                     {% with obj_id=object_id|default:object.pk %}
-                        <a href="/admin/{{ opts.app_label }}/{{ opts.model_name }}/{{ obj_id }}/change/" class="btn btn-secondary">{% trans "No, regresar" %}</a>
+                        <a href="{% url 'home' %}" class="btn btn-secondary">Volver al inicio</a>
                     {% endwith %}
                 </div>
             </form>
