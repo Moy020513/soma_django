@@ -53,7 +53,7 @@
                                 <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
                                 <small>
                                     {% if es_admin and not user.empleado %}
-                                        Empleado: {{ a.empleado.nombre_completo }} ·
+                                        Empleado: {{ a.empleado_resumen }} ·
                                     {% endif %}
                                     Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
                                 </small>

@@ -8,23 +8,48 @@
       {{ asignacion.empresa.nombre }} — {{ asignacion.fecha|date:'d/m/Y' }}
     </div>
     <div class="card-body">
-      <p><strong>Empleados:</strong>
-        {% for empleado in asignacion.empleados.all %}
-          {{ empleado.nombre_completo }}{% if not forloop.last %}, {% endif %}
-        {% empty %}
-          <span class="text-muted">Sin empleados asignados</span>
-        {% endfor %}
-      </p>
-      <p><strong>Supervisor:</strong> {{ asignacion.supervisor.nombre_completo|default:'Sin asignar' }}</p>
-      <p><strong>Detalles:</strong></p>
-      <p>{{ asignacion.detalles|linebreaks }}</p>
+      <div class="row mb-2">
+        <div class="col-md-6 mb-2">
+          <strong>Empleados:</strong>
+          <span class="badge bg-primary" style="font-size:15px;">
+            {% for empleado in asignacion.empleados.all %}
+              {{ empleado.nombre_completo }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+              <span class="text-muted">Sin empleados asignados</span>
+            {% endfor %}
+          </span>
+        </div>
+        <div class="col-md-6 mb-2">
+          <strong>Supervisor:</strong>
+          <span class="badge bg-secondary" style="font-size:15px;">{{ asignacion.supervisor.nombre_completo|default:'Sin asignar' }}</span>
+        </div>
+      </div>
 
+      <div class="mb-3">
+        <strong>Detalles:</strong>
+        <div class="border rounded p-2 bg-light">{{ asignacion.detalles|linebreaks }}</div>
+      </div>
+
+      {% if asignacion.actividades_total > 0 %}
+        <div class="mb-3">
+          <strong>Actividades asignadas <span class="badge bg-info text-dark">{{ asignacion.actividades_total }}</span>:</strong>
+          <ul class="list-group mt-2 mb-2">
+            {% for act in asignacion.actividades_detalle %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span style="font-weight:500;">{{ act.nombre }}</span>
+                <span class="badge bg-success">{{ act.porcentaje }}%</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="mb-2">
         {% if asignacion.archivos %}
-          <p><strong>Archivo adjunto:</strong>
-            <a href="{{ asignacion.archivos.url }}" target="_blank">Descargar / Ver archivo</a>
-          </p>
+          <strong>Archivo adjunto:</strong>
+          <a href="{{ asignacion.archivos.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">Descargar / Ver archivo</a>
         {% else %}
-          <p class="text-muted">No hay archivo adjunto</p>
+          <span class="text-muted">No hay archivo adjunto</span>
         {% endif %}
       
     </div>

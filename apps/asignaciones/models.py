@@ -20,6 +20,26 @@ class ActividadAsignada(models.Model):
 
 class Asignacion(models.Model):
     @property
+    def actividades_detalle(self):
+        actividades = self.actividades.all()
+        if not actividades:
+            return []
+        return [
+            {
+                'nombre': a.nombre,
+                'porcentaje': a.porcentaje
+            } for a in actividades
+        ]
+    @property
+    def empleado_resumen(self):
+        empleados = list(self.empleados.all())
+        if not empleados:
+            return ''
+        primero = empleados[0].nombre_completo if hasattr(empleados[0], 'nombre_completo') else str(empleados[0])
+        if len(empleados) == 1:
+            return primero
+        return f"{primero} + {len(empleados)-1}"
+    @property
     def archivo_nombre(self):
         return self.archivos.name.split('/')[-1] if self.archivos else ''
 
