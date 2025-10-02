@@ -10,13 +10,23 @@ class ActividadAsignada(models.Model):
     asignacion = models.ForeignKey('Asignacion', on_delete=models.CASCADE, related_name='actividades')
     nombre = models.CharField(max_length=120, verbose_name='Actividad')
     porcentaje = models.PositiveIntegerField(verbose_name='Porcentaje')
+    completada = models.BooleanField(default=False, verbose_name='Completada')
+    fecha_completada = models.DateTimeField(null=True, blank=True, verbose_name='Fecha de finalización')
+    completada_por = models.ForeignKey(
+        'recursos_humanos.Empleado',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Completada por'
+    )
 
     class Meta:
         verbose_name = 'Actividad asignada'
         verbose_name_plural = 'Actividades asignadas'
 
     def __str__(self):
-        return f"{self.nombre} ({self.porcentaje}%)"
+        status = "✓" if self.completada else "○"
+        return f"{status} {self.nombre} ({self.porcentaje}%)"
 
 class Asignacion(models.Model):
     @property
@@ -27,9 +37,24 @@ class Asignacion(models.Model):
         return [
             {
                 'nombre': a.nombre,
-                'porcentaje': a.porcentaje
+                'porcentaje': a.porcentaje,
+                'completada': a.completada,
+                'fecha_completada': a.fecha_completada,
+                'completada_por': a.completada_por
             } for a in actividades
         ]
+    
+    @property
+    def porcentaje_completado(self):
+        actividades = self.actividades.all()
+        if not actividades:
+            return 0
+        total_completado = sum(a.porcentaje for a in actividades if a.completada)
+        return total_completado
+    
+    @property
+    def todas_actividades_completadas(self):
+        return self.actividades.exists() and not self.actividades.filter(completada=False).exists()
     @property
     def empleado_resumen(self):
         empleados = list(self.empleados.all())

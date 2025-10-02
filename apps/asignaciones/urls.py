@@ -10,4 +10,6 @@ urlpatterns = [
     path('admin/nueva/', views.AsignacionCreateView.as_view(), name='crear'),
     path('admin/<int:pk>/editar/', views.AsignacionUpdateView.as_view(), name='editar'),
     path('<int:pk>/', views.AsignacionDetailView.as_view(), name='detalle'),
+    path('supervisor/<int:pk>/', views.SupervisorAsignacionDetailView.as_view(), name='supervisor_detalle'),
+    path('ajax/actividad/<int:actividad_id>/completar/', views.marcar_actividad_completada, name='marcar_actividad_completada'),
 ]

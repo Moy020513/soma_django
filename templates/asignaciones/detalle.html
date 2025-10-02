@@ -44,14 +44,25 @@
         </div>
       {% endif %}
 
-      <div class="mb-2">
-        {% if asignacion.archivos %}
-          <strong>Archivo adjunto:</strong>
-          <a href="{{ asignacion.archivos.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">Descargar / Ver archivo</a>
-        {% else %}
-          <span class="text-muted">No hay archivo adjunto</span>
-        {% endif %}
+      {% if asignacion.archivos %}
+      <div class="mb-3">
+        <strong>Documento adjunto:</strong>
+        <div class="mt-2">
+          <a href="{{ asignacion.archivos.url }}" 
+             target="_blank" 
+             class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-download me-2"></i>
+            Descargar: {{ asignacion.archivo_nombre }}
+          </a>
+        </div>
+      </div>
+      {% endif %}
       
+      <div class="mt-4">
+        <a href="/" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-2"></i>Volver
+        </a>
+      </div>
     </div>
   </div>
 </div>

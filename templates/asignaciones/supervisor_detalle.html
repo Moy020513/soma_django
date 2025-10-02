@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% csrf_token %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-tasks text-primary me-2"></i>
+                    Supervisión de Asignación - {{ asignacion.fecha }}
+                </h2>
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </a>
+            </div>
+
+            <!-- Información de la asignación -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información General
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Fecha:</strong> {{ asignacion.fecha|date:"d/m/Y" }}</p>
+                            <p><strong>Empresa:</strong> {{ asignacion.empresa.nombre }}</p>
+                            <p><strong>Supervisor:</strong> {{ asignacion.supervisor.nombre_completo }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Empleados asignados:</strong> {{ asignacion.empleados.count }}</p>
+                            <p><strong>Actividades:</strong> {{ asignacion.actividades.count }}</p>
+                            <div class="mb-2">
+                                <strong>Progreso:</strong>
+                                <div class="progress mt-1" style="height: 25px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ asignacion.porcentaje_completado }}%"
+                                         aria-valuenow="{{ asignacion.porcentaje_completado }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ asignacion.porcentaje_completado }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if asignacion.detalles %}
+                    <div class="mt-3">
+                        <strong>Detalles:</strong>
+                        <p class="mt-2">{{ asignacion.detalles }}</p>
+                    </div>
+                    {% endif %}
+                    {% if asignacion.archivos %}
+                    <div class="mt-3">
+                        <strong>Documento adjunto:</strong>
+                        <div class="mt-2">
+                            <a href="{{ asignacion.archivos.url }}" 
+                               target="_blank" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-download me-2"></i>
+                                Descargar: {{ asignacion.archivo_nombre }}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Empleados asignados -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Empleados Asignados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for empleado in asignacion.empleados.all %}
+                        <div class="col-md-4 mb-2">
+                            <div class="border rounded p-2 bg-light">
+                                <i class="fas fa-user me-2"></i>{{ empleado.nombre_completo }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de actividades -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-check-square me-2"></i>
+                        Control de Actividades
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Actividad</th>
+                                    <th>Porcentaje</th>
+                                    <th>Estado</th>
+                                    <th>Completada por</th>
+                                    <th>Fecha completada</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="actividades-tbody">
+                                {% for actividad_asignada in asignacion.actividades.all %}
+                                <tr data-actividad-id="{{ actividad_asignada.id }}">
+                                    <td>
+                                        <strong>{{ actividad_asignada.nombre }}</strong>
+                                    </td>
+                                    <td>{{ actividad_asignada.porcentaje }}%</td>
+                                    <td>
+                                        <span class="badge {% if actividad_asignada.completada %}bg-success{% else %}bg-warning{% endif %} estado-badge">
+                                            {% if actividad_asignada.completada %}
+                                                <i class="fas fa-check me-1"></i>Completada
+                                            {% else %}
+                                                <i class="fas fa-clock me-1"></i>Pendiente
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="completada-por">
+                                        {% if actividad_asignada.completada_por %}
+                                            {{ actividad_asignada.completada_por.nombre_completo }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="fecha-completada">
+                                        {% if actividad_asignada.fecha_completada %}
+                                            {{ actividad_asignada.fecha_completada|date:"d/m/Y H:i" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input actividad-checkbox" 
+                                                   type="checkbox" 
+                                                   id="actividad_{{ actividad_asignada.id }}"
+                                                   data-actividad-id="{{ actividad_asignada.id }}"
+                                                   {% if actividad_asignada.completada %}checked{% endif %}>
+                                            <label class="form-check-label" for="actividad_{{ actividad_asignada.id }}">
+                                                Completada
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if asignacion.todas_actividades_completadas %}
+                    <div class="alert alert-success mt-3" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>¡Excelente!</strong> Todas las actividades han sido completadas.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar acción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmButton">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.actividad-checkbox');
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    let currentCheckbox = null;
+    let currentAction = null;
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            currentCheckbox = this;
+            const actividadId = this.dataset.actividadId;
+            const completada = this.checked;
+            currentAction = { actividadId, completada };
+
+            const message = completada ? 
+                '¿Está seguro de marcar esta actividad como completada?' : 
+                '¿Está seguro de marcar esta actividad como pendiente?';
+            
+            document.getElementById('confirmMessage').textContent = message;
+            confirmModal.show();
+        });
+    });
+
+    document.getElementById('confirmButton').addEventListener('click', function() {
+        if (currentAction) {
+            marcarActividad(currentAction.actividadId, currentAction.completada);
+            confirmModal.hide();
+        }
+    });
+
+    // Si se cancela, revertir el checkbox
+    document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function() {
+        if (currentCheckbox && currentAction) {
+            currentCheckbox.checked = !currentAction.completada;
+        }
+        currentCheckbox = null;
+        currentAction = null;
+    });
+
+    function marcarActividad(actividadId, completada) {
+        fetch(`/asignaciones/ajax/actividad/${actividadId}/completar/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            },
+            body: JSON.stringify({ completada: completada })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Actualizar la fila de la tabla
+                const row = document.querySelector(`tr[data-actividad-id="${actividadId}"]`);
+                const estadoBadge = row.querySelector('.estado-badge');
+                const completadaPor = row.querySelector('.completada-por');
+                const fechaCompletada = row.querySelector('.fecha-completada');
+
+                if (completada) {
+                    estadoBadge.className = 'badge bg-success estado-badge';
+                    estadoBadge.innerHTML = '<i class="fas fa-check me-1"></i>Completada';
+                    completadaPor.textContent = '{{ asignacion.supervisor.nombre_completo }}';
+                    if (data.fecha_completada) {
+                        const fecha = new Date(data.fecha_completada);
+                        fechaCompletada.textContent = fecha.toLocaleString('es-ES');
+                    }
+                } else {
+                    estadoBadge.className = 'badge bg-warning estado-badge';
+                    estadoBadge.innerHTML = '<i class="fas fa-clock me-1"></i>Pendiente';
+                    completadaPor.textContent = '-';
+                    fechaCompletada.textContent = '-';
+                }
+
+                // Actualizar barra de progreso
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = `${data.porcentaje_asignacion}%`;
+                    progressBar.textContent = `${data.porcentaje_asignacion}%`;
+                    progressBar.setAttribute('aria-valuenow', data.porcentaje_asignacion);
+                }
+
+                // Mostrar mensaje de éxito
+                showAlert(completada ? 'Actividad marcada como completada' : 'Actividad marcada como pendiente', 'success');
+            } else {
+                // Revertir checkbox en caso de error
+                currentCheckbox.checked = !completada;
+                showAlert(data.error || 'Error al actualizar la actividad', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            currentCheckbox.checked = !completada;
+            showAlert('Error de conexión', 'danger');
+        });
+    }
+
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

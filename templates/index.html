@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% if asignaciones_hoy %}
                     <div class="list-group">
                         {% for a in asignaciones_hoy %}
-                            <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
+                            <a href="{% if a.supervisor == empleado %}{% url 'asignaciones:supervisor_detalle' a.pk %}{% else %}{% url 'asignaciones:detalle' a.pk %}{% endif %}" class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
                                     <small>{{ a.fecha|date:'d/m/Y' }}</small>
@@ -200,7 +200,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                         Empleado: {{ a.empleado_resumen }} ·
                                     {% endif %}
                                     {% if a.supervisor == empleado %}
-                                        <span class="badge bg-warning text-dark">Supervisando</span> ·
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-eye me-1"></i>Supervisando
+                                        </span> ·
+                                    {% endif %}
+                                    {% if a.archivos %}
+                                        <span class="badge bg-info text-dark">
+                                            <i class="fas fa-paperclip me-1"></i>Documento
+                                        </span> ·
                                     {% endif %}
                                     Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
                                 </small>
@@ -220,6 +227,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
                                     <small>
                                         {% if es_admin and not user.empleado %}Empleado: {{ a.empleado.nombre_completo }} · {% endif %}
+                                        {% if a.archivos %}
+                                            <span class="badge bg-info text-dark">
+                                                <i class="fas fa-paperclip me-1"></i>Documento
+                                            </span> ·
+                                        {% endif %}
                                         Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
                                     </small>
                                 </a>
@@ -260,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% if asignaciones_hoy %}
                     <div class="list-group">
                         {% for a in asignaciones_hoy %}
-                            <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
+                            <a href="{% if a.supervisor == empleado %}{% url 'asignaciones:supervisor_detalle' a.pk %}{% else %}{% url 'asignaciones:detalle' a.pk %}{% endif %}" class="list-group-item list-group-item-action">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
                                     <small>{{ a.fecha|date:'d/m/Y' }}</small>
@@ -268,7 +280,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
                                 <small>
                                     {% if a.supervisor == empleado %}
-                                        <span class="badge bg-warning text-dark">Supervisando</span> ·
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-eye me-1"></i>Supervisando
+                                        </span> ·
+                                    {% endif %}
+                                    {% if a.archivos %}
+                                        <span class="badge bg-info text-dark">
+                                            <i class="fas fa-paperclip me-1"></i>Documento
+                                        </span> ·
                                     {% endif %}
                                     Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
                                 </small>
@@ -286,7 +305,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <small>{{ a.fecha|date:'d/m/Y' }}</small>
                                     </div>
                                     <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
-                                    <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+                                    <small>
+                                        {% if a.archivos %}
+                                            <span class="badge bg-info text-dark">
+                                                <i class="fas fa-paperclip me-1"></i>Documento
+                                            </span> ·
+                                        {% endif %}
+                                        Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
+                                    </small>
                                 </a>
                             {% endfor %}
                         </div>
