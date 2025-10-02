@@ -12,4 +12,5 @@ urlpatterns = [
     path('<int:pk>/', views.AsignacionDetailView.as_view(), name='detalle'),
     path('supervisor/<int:pk>/', views.SupervisorAsignacionDetailView.as_view(), name='supervisor_detalle'),
     path('ajax/actividad/<int:actividad_id>/completar/', views.marcar_actividad_completada, name='marcar_actividad_completada'),
+    path('admin/exportar-hoy-pdf/', views.exportar_asignaciones_hoy_pdf, name='exportar_hoy_pdf'),
 ]

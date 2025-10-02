@@ -180,6 +180,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="btn-group btn-group-sm">
                     <a href="{% url 'asignaciones:todas' %}" class="btn btn-outline-primary">Ver todas</a>
                     <a href="{% url 'asignaciones:mias' %}" class="btn btn-outline-secondary">Mis asignaciones</a>
+                    {% if user.is_staff %}
+                        <a href="{% url 'asignaciones:exportar_hoy_pdf' %}" class="btn btn-outline-success" title="Exportar asignaciones de hoy a PDF">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a>
+                    {% endif %}
                 </div>
             </div>
             <div class="card-body">

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Asignaciones - {{ hoy|date:"d/m/Y" }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .header h2 {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 16px;
+            font-weight: normal;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .asignacion {
+            margin-bottom: 25px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .asignacion-header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+        }
+
+        .asignacion-info {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .empleados {
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .empleados h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+            font-size: 11px;
+        }
+
+        .empleado-item {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 2px 4px 2px 0;
+            font-size: 9px;
+        }
+
+        .actividades {
+            padding: 15px;
+        }
+
+        .actividades h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-size: 11px;
+        }
+
+        .actividades-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+        }
+
+        .actividades-table th {
+            background: #e9ecef;
+            padding: 6px 8px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .actividades-table td {
+            padding: 6px 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .actividades-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: bold;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            border-top: 1px solid #dee2e6;
+            padding-top: 10px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📋 REPORTE DE ASIGNACIONES</h1>
+        <h2>{{ hoy|date:"d/m/Y" }} - {{ hoy|date:"l" }}</h2>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number">{{ total_asignaciones }}</span>
+            <div class="stat-label">Total Asignaciones</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ progreso_general }}%</span>
+            <div class="stat-label">Progreso General</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ tiempo_total_estimado }}</span>
+            <div class="stat-label">Días Estimados Total</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ total_actividades }}</span>
+            <div class="stat-label">Total Actividades</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ actividades_completadas }}</span>
+            <div class="stat-label">Actividades Completadas</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ tiempo_completado }}</span>
+            <div class="stat-label">Días Completados</div>
+        </div>
+    </div>
+
+    {% if asignaciones %}
+        <!-- Asignaciones -->
+        {% for asignacion in asignaciones %}
+        <div class="asignacion">
+            <div class="asignacion-header">
+                🏢 {{ asignacion.empresa.nombre }}
+                <span style="float: right;">Progreso: {{ asignacion.porcentaje_completado }}%</span>
+            </div>
+
+            <div class="asignacion-info">
+                <div class="info-row">
+                    <span class="info-label">👤 Supervisor:</span>
+                    <span>{{ asignacion.supervisor.nombre_completo|default:"Sin asignar" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">📅 Fecha:</span>
+                    <span>{{ asignacion.fecha|date:"d/m/Y" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">⏱️ Tiempo Estimado:</span>
+                    <span>{{ asignacion.tiempo_estimado_total }} día{{ asignacion.tiempo_estimado_total|pluralize }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ asignacion.porcentaje_completado }}%;"></div>
+                </div>
+            </div>
+
+            {% if asignacion.empleados.all %}
+            <div class="empleados">
+                <h4>👥 Empleados Asignados ({{ asignacion.empleados.count }})</h4>
+                {% for empleado in asignacion.empleados.all %}
+                <span class="empleado-item">{{ empleado.nombre_completo }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if asignacion.actividades.all %}
+            <div class="actividades">
+                <h4>📋 Actividades ({{ asignacion.actividades.count }})</h4>
+                <table class="actividades-table">
+                    <thead>
+                        <tr>
+                            <th>Actividad</th>
+                            <th>%</th>
+                            <th>⏱️ Días</th>
+                            <th>Estado</th>
+                            <th>Completada por</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for actividad in asignacion.actividades.all %}
+                        <tr>
+                            <td>{{ actividad.nombre }}</td>
+                            <td>{{ actividad.porcentaje }}%</td>
+                            <td>{{ actividad.tiempo_estimado_dias }}</td>
+                            <td>
+                                {% if actividad.completada %}
+                                    <span class="badge badge-success">✅ Completada</span>
+                                {% else %}
+                                    <span class="badge badge-warning">⏳ Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ actividad.completada_por.nombre_completo|default:"-" }}</td>
+                            <td>{{ actividad.fecha_completada|date:"d/m H:i"|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if asignacion.detalles %}
+            <div style="padding: 10px 15px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
+                <strong>📝 Detalles:</strong> {{ asignacion.detalles }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-data">
+            📭 No hay asignaciones programadas para hoy.
+        </div>
+    {% endif %}
+
+    <div class="footer">
+        Reporte generado por {{ usuario.get_full_name|default:usuario.username }} el {{ fecha_generacion|date:"d/m/Y H:i" }}
+        <br>
+        Sistema SOMA - Gestión de Asignaciones
+    </div>
+</body>
+</html>

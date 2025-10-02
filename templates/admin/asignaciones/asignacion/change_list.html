@@ -1,4 +1,42 @@
 {% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.btn-export-pdf {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    border: 1px solid #dc3545 !important;
+    color: white !important;
+    padding: 8px 16px !important;
+    border-radius: 4px !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2) !important;
+    transition: all 0.2s ease !important;
+}
+.btn-export-pdf:hover {
+    background: linear-gradient(135deg, #c82333, #a71e2a) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
+    color: white !important;
+    text-decoration: none !important;
+}
+</style>
+{% endblock %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="{% url 'asignaciones:exportar_hoy_pdf' %}" class="btn-export-pdf" target="_blank">
+            📄 Exportar Hoy a PDF
+        </a>
+    </li>
+    <!-- Template Debug: Si ves esto, el template se está cargando -->
+    <li style="color: green; font-weight: bold;">
+        TEMPLATE FUNCIONANDO ✅
+    </li>
+{% endblock %}
+
 {% block result_list %}
     {% include "admin/asignaciones/asignacion/change_list_results.html" %}
 {% endblock %}
