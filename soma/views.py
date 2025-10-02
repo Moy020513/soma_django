@@ -26,13 +26,23 @@ def index(request):
     empleado = Empleado.objects.filter(usuario=request.user).first()
     asignaciones_recientes = []
     asignaciones_supervisadas_hoy = []
-    if empleado:
+    
+    if es_admin:
+        # Si es admin, mostrar todas las asignaciones del día sin duplicados
+        asignaciones_hoy = list(Asignacion.objects
+                               .filter(fecha=timezone.localdate())
+                               .select_related('empresa', 'supervisor')
+                               .prefetch_related('empleados__usuario')
+                               .distinct()
+                               .order_by('empresa__nombre', 'id'))
+    elif empleado:
+        # Si no es admin pero tiene registro de empleado
         # Asignaciones como empleado
         qs_emp = (Asignacion.objects
                   .filter(empleados=empleado)
                   .select_related('empresa', 'supervisor')
                   .order_by('-fecha', '-fecha_creacion'))
-        asignaciones_hoy = list(qs_emp.filter(fecha=timezone.localdate()))
+        asignaciones_empleado_hoy = list(qs_emp.filter(fecha=timezone.localdate()))
         
         # Asignaciones como supervisor
         qs_sup = (Asignacion.objects
@@ -42,18 +52,23 @@ def index(request):
                   .order_by('-fecha', '-fecha_creacion'))
         asignaciones_supervisadas_hoy = list(qs_sup.filter(fecha=timezone.localdate()))
         
-        # Combinar ambas listas para asignaciones de hoy
-        asignaciones_hoy.extend(asignaciones_supervisadas_hoy)
+        # Combinar ambas listas eliminando duplicados por ID
+        asignaciones_ids_vistas = set()
+        asignaciones_hoy = []
+        
+        for asignacion in asignaciones_empleado_hoy + asignaciones_supervisadas_hoy:
+            if asignacion.id not in asignaciones_ids_vistas:
+                asignaciones_ids_vistas.add(asignacion.id)
+                asignaciones_hoy.append(asignacion)
         
         if not asignaciones_hoy:
-            asignaciones_recientes = list(qs_emp[:3]) + list(qs_sup[:2])
-    elif es_admin:
-        # Si es admin sin objeto Empleado propio, mostrar asignaciones del día de todos
-        asignaciones_hoy = (Asignacion.objects
-                            .filter(fecha=timezone.localdate())
-                            .select_related('empresa', 'supervisor')
-                            .prefetch_related('empleados__usuario')
-                            .order_by('empleados__numero_empleado'))
+            # Para recientes también evitar duplicados
+            asignaciones_recientes_ids = set()
+            asignaciones_recientes = []
+            for asignacion in list(qs_emp[:3]) + list(qs_sup[:2]):
+                if asignacion.id not in asignaciones_recientes_ids:
+                    asignaciones_recientes_ids.add(asignacion.id)
+                    asignaciones_recientes.append(asignacion)
     context = {
         'titulo': 'Sistema SOMA',
         'descripcion': 'Sistema de Gestión Empresarial',
@@ -131,7 +146,7 @@ def perfil_usuario(request):
                   .filter(empleados=empleado)
                   .select_related('empresa', 'supervisor')
                   .order_by('-fecha', '-fecha_creacion'))
-        asignaciones_hoy = list(qs_emp.filter(fecha=timezone.localdate()))
+        asignaciones_empleado_hoy = list(qs_emp.filter(fecha=timezone.localdate()))
         
         # Asignaciones como supervisor
         qs_sup = (Asignacion.objects
@@ -141,11 +156,23 @@ def perfil_usuario(request):
                   .order_by('-fecha', '-fecha_creacion'))
         asignaciones_supervisadas_hoy = list(qs_sup.filter(fecha=timezone.localdate()))
         
-        # Combinar ambas listas para asignaciones de hoy
-        asignaciones_hoy.extend(asignaciones_supervisadas_hoy)
+        # Combinar ambas listas eliminando duplicados por ID
+        asignaciones_ids_vistas = set()
+        asignaciones_hoy = []
+        
+        for asignacion in asignaciones_empleado_hoy + asignaciones_supervisadas_hoy:
+            if asignacion.id not in asignaciones_ids_vistas:
+                asignaciones_ids_vistas.add(asignacion.id)
+                asignaciones_hoy.append(asignacion)
         
         if not asignaciones_hoy:
-            asignaciones_recientes = list(qs_emp[:3]) + list(qs_sup[:2])
+            # Para recientes también evitar duplicados
+            asignaciones_recientes_ids = set()
+            asignaciones_recientes = []
+            for asignacion in list(qs_emp[:3]) + list(qs_sup[:2]):
+                if asignacion.id not in asignaciones_recientes_ids:
+                    asignaciones_recientes_ids.add(asignacion.id)
+                    asignaciones_recientes.append(asignacion)
     elif request.user.is_staff or request.user.is_superuser:
         asignaciones_hoy = (Asignacion.objects
                             .filter(fecha=timezone.localdate())
