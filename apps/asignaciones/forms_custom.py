@@ -9,21 +9,37 @@ class ActividadAsignadaForm(forms.Form):
 from django.core.exceptions import ValidationError
 
 class ActividadAsignadaBaseFormSet(forms.BaseFormSet):
+    def __init__(self, *args, **kwargs):
+        self.actividades_completadas_porcentaje = kwargs.pop('actividades_completadas_porcentaje', 0)
+        super().__init__(*args, **kwargs)
+    
     def clean(self):
         import django.http
         from django.core.exceptions import ValidationError
         super().clean()
         # Solo valida si no es petición POST (para permitir solo el flash en admin)
         request = getattr(self, 'request', None)
-        total = 0
+        total_pendientes = 0
         for form in self.forms:
             if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
-                total += form.cleaned_data.get('porcentaje', 0)
+                total_pendientes += form.cleaned_data.get('porcentaje', 0)
+        
+        # Sumar el porcentaje de actividades ya completadas
+        total_general = total_pendientes + self.actividades_completadas_porcentaje
+        
         # Si el formset fue marcado para saltar la validación, no lanzar error
         if hasattr(self, '_skip_clean') and self._skip_clean:
             return
-        if total != 100:
-            raise ValidationError('La suma de los porcentajes de actividades debe ser 100%.')
+        if total_general != 100:
+            if self.actividades_completadas_porcentaje > 0:
+                raise ValidationError(
+                    f'La suma de los porcentajes debe ser 100%. '
+                    f'Actividades completadas: {self.actividades_completadas_porcentaje}%, '
+                    f'Actividades pendientes: {total_pendientes}%, '
+                    f'Total actual: {total_general}%'
+                )
+            else:
+                raise ValidationError('La suma de los porcentajes de actividades debe ser 100%.')
 
 def ActividadAsignadaFormSetFactory(extra=1):
     return formset_factory(ActividadAsignadaForm, formset=ActividadAsignadaBaseFormSet, extra=extra, can_delete=True)
