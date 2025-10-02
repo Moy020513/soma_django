@@ -199,6 +199,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     {% if es_admin and not user.empleado %}
                                         Empleado: {{ a.empleado_resumen }} ·
                                     {% endif %}
+                                    {% if a.supervisor == empleado %}
+                                        <span class="badge bg-warning text-dark">Supervisando</span> ·
+                                    {% endif %}
                                     Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
                                 </small>
                             </a>
@@ -263,7 +266,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <small>{{ a.fecha|date:'d/m/Y' }}</small>
                                 </div>
                                 <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
-                                <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+                                <small>
+                                    {% if a.supervisor == empleado %}
+                                        <span class="badge bg-warning text-dark">Supervisando</span> ·
+                                    {% endif %}
+                                    Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}
+                                </small>
                             </a>
                         {% endfor %}
                     </div>

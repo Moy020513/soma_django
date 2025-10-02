@@ -76,6 +76,28 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(function() {
+    // Filtrar empleados cuando cambia el supervisor
+    function filterEmpleados() {
+      var supervisorId = $('#id_supervisor').val();
+      $('#empleados-formset select[name*="empleado"]').each(function() {
+        var $select = $(this);
+        var currentValue = $select.val();
+        $select.find('option').show();
+        if (supervisorId) {
+          $select.find('option[value="' + supervisorId + '"]').hide();
+          if (currentValue === supervisorId) {
+            $select.val('');
+          }
+        }
+      });
+    }
+    
+    // Aplicar filtro cuando cambia el supervisor
+    $('#id_supervisor').change(filterEmpleados);
+    
+    // Aplicar filtro al cargar la página
+    filterEmpleados();
+
     // Empleados
     var formIdx = {{ empleados_formset.total_form_count }};
     $('#add-empleado').click(function() {
@@ -92,6 +114,8 @@
       $('#empleados-formset').append($template);
       formIdx++;
       $('#id_empleados-TOTAL_FORMS').val(formIdx);
+      // Aplicar filtro al nuevo formulario
+      filterEmpleados();
     });
     $(document).on('click', '.remove-empleado', function() {
       if ($('#empleados-formset .empleado-form-row').length > 1) {

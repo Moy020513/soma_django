@@ -25,14 +25,28 @@ def index(request):
     asignaciones_hoy = []
     empleado = Empleado.objects.filter(usuario=request.user).first()
     asignaciones_recientes = []
+    asignaciones_supervisadas_hoy = []
     if empleado:
+        # Asignaciones como empleado
         qs_emp = (Asignacion.objects
                   .filter(empleados=empleado)
                   .select_related('empresa', 'supervisor')
                   .order_by('-fecha', '-fecha_creacion'))
-        asignaciones_hoy = qs_emp.filter(fecha=timezone.localdate())
-        if not asignaciones_hoy.exists():
-            asignaciones_recientes = qs_emp[:5]
+        asignaciones_hoy = list(qs_emp.filter(fecha=timezone.localdate()))
+        
+        # Asignaciones como supervisor
+        qs_sup = (Asignacion.objects
+                  .filter(supervisor=empleado)
+                  .select_related('empresa', 'supervisor')
+                  .prefetch_related('empleados')
+                  .order_by('-fecha', '-fecha_creacion'))
+        asignaciones_supervisadas_hoy = list(qs_sup.filter(fecha=timezone.localdate()))
+        
+        # Combinar ambas listas para asignaciones de hoy
+        asignaciones_hoy.extend(asignaciones_supervisadas_hoy)
+        
+        if not asignaciones_hoy:
+            asignaciones_recientes = list(qs_emp[:3]) + list(qs_sup[:2])
     elif es_admin:
         # Si es admin sin objeto Empleado propio, mostrar asignaciones del día de todos
         asignaciones_hoy = (Asignacion.objects
@@ -44,8 +58,9 @@ def index(request):
         'titulo': 'Sistema SOMA',
         'descripcion': 'Sistema de Gestión Empresarial',
         'es_admin': es_admin,
-    'asignaciones_hoy': asignaciones_hoy,
-    'asignaciones_recientes': asignaciones_recientes,
+        'asignaciones_hoy': asignaciones_hoy,
+        'asignaciones_recientes': asignaciones_recientes,
+        'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
         'empleado': empleado,
     }
     if es_admin:
@@ -109,14 +124,28 @@ def perfil_usuario(request):
     asignaciones_hoy = []
     empleado = Empleado.objects.filter(usuario=request.user).first()
     asignaciones_recientes = []
+    asignaciones_supervisadas_hoy = []
     if empleado:
+        # Asignaciones como empleado
         qs_emp = (Asignacion.objects
                   .filter(empleados=empleado)
                   .select_related('empresa', 'supervisor')
                   .order_by('-fecha', '-fecha_creacion'))
-        asignaciones_hoy = qs_emp.filter(fecha=timezone.localdate())
-        if not asignaciones_hoy.exists():
-            asignaciones_recientes = qs_emp[:5]
+        asignaciones_hoy = list(qs_emp.filter(fecha=timezone.localdate()))
+        
+        # Asignaciones como supervisor
+        qs_sup = (Asignacion.objects
+                  .filter(supervisor=empleado)
+                  .select_related('empresa', 'supervisor')
+                  .prefetch_related('empleados')
+                  .order_by('-fecha', '-fecha_creacion'))
+        asignaciones_supervisadas_hoy = list(qs_sup.filter(fecha=timezone.localdate()))
+        
+        # Combinar ambas listas para asignaciones de hoy
+        asignaciones_hoy.extend(asignaciones_supervisadas_hoy)
+        
+        if not asignaciones_hoy:
+            asignaciones_recientes = list(qs_emp[:3]) + list(qs_sup[:2])
     elif request.user.is_staff or request.user.is_superuser:
         asignaciones_hoy = (Asignacion.objects
                             .filter(fecha=timezone.localdate())
@@ -126,8 +155,9 @@ def perfil_usuario(request):
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
-    'asignaciones_hoy': asignaciones_hoy,
-    'asignaciones_recientes': asignaciones_recientes,
+        'asignaciones_hoy': asignaciones_hoy,
+        'asignaciones_recientes': asignaciones_recientes,
+        'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
         'empleado': empleado,
     }
     return render(request, 'perfil_usuario.html', context)

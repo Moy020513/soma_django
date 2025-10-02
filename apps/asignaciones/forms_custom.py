@@ -36,9 +36,25 @@ class EmpleadoAsignacionForm(forms.Form):
         label='Empleado',
         required=True
     )
+    
+    def __init__(self, *args, **kwargs):
+        supervisor_id = kwargs.pop('supervisor_id', None)
+        super().__init__(*args, **kwargs)
+        if supervisor_id:
+            # Excluir el supervisor de la lista de empleados
+            self.fields['empleado'].queryset = self.fields['empleado'].queryset.exclude(id=supervisor_id)
+
+class EmpleadoAsignacionBaseFormSet(forms.BaseFormSet):
+    def __init__(self, *args, **kwargs):
+        self.form_kwargs = kwargs.pop('form_kwargs', {})
+        super().__init__(*args, **kwargs)
+    
+    def _construct_form(self, i, **kwargs):
+        kwargs.update(self.form_kwargs)
+        return super()._construct_form(i, **kwargs)
 
 def EmpleadoAsignacionFormSetFactory(extra=1):
-    return formset_factory(EmpleadoAsignacionForm, extra=extra, can_delete=True)
+    return formset_factory(EmpleadoAsignacionForm, formset=EmpleadoAsignacionBaseFormSet, extra=extra, can_delete=True)
 
 EmpleadoAsignacionFormSet = EmpleadoAsignacionFormSetFactory()
 

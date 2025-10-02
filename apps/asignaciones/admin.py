@@ -30,8 +30,12 @@ class AsignacionAdmin(admin.ModelAdmin):
 
     def render_change_form(self, request, context, *args, **kwargs):
         obj = context.get('original')
+        supervisor_id = None
+        
+        # Obtener supervisor_id del POST o del objeto existente
         if request.method == 'POST':
-            empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados')
+            supervisor_id = request.POST.get('supervisor')
+            empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados', form_kwargs={'supervisor_id': supervisor_id})
             actividades_formset = ActividadAsignadaFormSet(request.POST, prefix='actividades')
         else:
             # Inicializa los empleados y actividades registrados, sin campos extra
@@ -40,8 +44,10 @@ class AsignacionAdmin(admin.ModelAdmin):
             if obj:
                 empleados_initial = [{'empleado': e.pk} for e in obj.empleados.all()]
                 actividades_initial = [{'nombre': a.nombre, 'porcentaje': a.porcentaje} for a in obj.actividades.all()]
+                supervisor_id = obj.supervisor_id if obj.supervisor else None
             from .forms_custom import EmpleadoAsignacionFormSetFactory, ActividadAsignadaFormSetFactory
-            empleados_formset = EmpleadoAsignacionFormSetFactory(extra=0 if empleados_initial else 1)(initial=empleados_initial, prefix='empleados')
+            EmpleadoFormSetClass = EmpleadoAsignacionFormSetFactory(extra=0 if empleados_initial else 1)
+            empleados_formset = EmpleadoFormSetClass(initial=empleados_initial, prefix='empleados', form_kwargs={'supervisor_id': supervisor_id})
             actividades_formset = ActividadAsignadaFormSetFactory(extra=0 if actividades_initial else 1)(initial=actividades_initial, prefix='actividades')
         context = dict(context)  # Copia el contexto para modificarlo
         context['empleados_formset'] = empleados_formset
@@ -78,7 +84,8 @@ class AsignacionAdmin(admin.ModelAdmin):
 
     def response_add(self, request, obj, post_url_continue=None):
         from django.contrib import messages
-        empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados')
+        supervisor_id = request.POST.get('supervisor')
+        empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados', form_kwargs={'supervisor_id': supervisor_id})
         actividades_formset = ActividadAsignadaFormSet(request.POST, prefix='actividades')
         if not actividades_formset.is_valid():
             # Marca el formset para saltar la validación y evitar error de formulario
@@ -109,7 +116,8 @@ class AsignacionAdmin(admin.ModelAdmin):
 
     def response_change(self, request, obj):
         from django.contrib import messages
-        empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados')
+        supervisor_id = request.POST.get('supervisor')
+        empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados', form_kwargs={'supervisor_id': supervisor_id})
         actividades_formset = ActividadAsignadaFormSet(request.POST, prefix='actividades')
         if not actividades_formset.is_valid():
             error_msg = actividades_formset.non_form_errors()
@@ -124,7 +132,8 @@ class AsignacionAdmin(admin.ModelAdmin):
         return super().response_change(request, obj)
 
     def save_model(self, request, obj, form, change):
-        empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados')
+        supervisor_id = request.POST.get('supervisor')
+        empleados_formset = EmpleadoAsignacionFormSet(request.POST, prefix='empleados', form_kwargs={'supervisor_id': supervisor_id})
         actividades_formset = ActividadAsignadaFormSet(request.POST, prefix='actividades')
         if not actividades_formset.is_valid():
             # No guardar si hay error
