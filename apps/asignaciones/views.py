@@ -175,8 +175,57 @@ def enviar_notificacion_admin_actividad_completada(actividad, supervisor):
         admins = Usuario.objects.filter(is_staff=True, is_active=True)
         print(f"Admins encontrados: {admins.count()}")
         
+        # Obtener información detallada de la asignación
+        asignacion = actividad.asignacion
+        todas_actividades = asignacion.actividades.all()
+        actividades_completadas = todas_actividades.filter(completada=True)
+        actividades_pendientes = todas_actividades.filter(completada=False)
+        porcentaje_total = asignacion.porcentaje_completado
+        
         titulo = f"✅ Actividad completada por {supervisor.nombre_completo}"
-        mensaje = f"La actividad '{actividad.nombre}' de la asignación del {actividad.asignacion.fecha.strftime('%d/%m/%Y')} para la empresa {actividad.asignacion.empresa.nombre} ha sido marcada como completada por {supervisor.nombre_completo}."
+        
+        # Crear mensaje estructurado con iconos
+        lineas = []
+        lineas.append(f"🎯 ACTIVIDAD: {actividad.nombre} ({actividad.porcentaje}%)")
+        lineas.append("=" * 45)
+        lineas.append(f"📊 PROGRESO: {porcentaje_total}% ({actividades_completadas.count()}/{todas_actividades.count()} completadas)")
+        lineas.append("")
+        lineas.append(f"👤 Supervisor: {supervisor.nombre_completo}")
+        lineas.append(f"🏢 Empresa: {asignacion.empresa.nombre}")
+        lineas.append(f"📅 Fecha: {asignacion.fecha.strftime('%d/%m/%Y')}")
+
+        # Actividades completadas (máximo 3)
+        if actividades_completadas.exists():
+            lineas.append("")
+            lineas.append("✅ COMPLETADAS:")
+            for act in actividades_completadas[:3]:
+                lineas.append(f"   ✓ {act.nombre} ({act.porcentaje}%)")
+            if actividades_completadas.count() > 3:
+                lineas.append(f"   ➕ ... y {actividades_completadas.count() - 3} mas")
+        
+        # Actividades pendientes (máximo 3)
+        if actividades_pendientes.exists():
+            lineas.append("")
+            lineas.append("⏳ PENDIENTES:")
+            for act in actividades_pendientes[:3]:
+                lineas.append(f"   ⭕ {act.nombre} ({act.porcentaje}%)")
+            if actividades_pendientes.count() > 3:
+                lineas.append(f"   ➕ ... y {actividades_pendientes.count() - 3} mas")
+        else:
+            lineas.append("")
+            lineas.append("🎉 ¡ASIGNACION COMPLETADA AL 100%!")
+        
+        # Empleados (máximo 2)
+        empleados = asignacion.empleados.all()
+        if empleados.count() > 0:
+            lineas.append("")
+            lineas.append("EQUIPO:")
+            for emp in empleados[:2]:
+                lineas.append(f"  - {emp.nombre_completo}")
+            if empleados.count() > 2:
+                lineas.append(f"  - ... y {empleados.count() - 2} mas")
+        
+        mensaje = "\n".join(lineas)
         
         # Crear notificación para cada admin
         notificaciones_creadas = 0

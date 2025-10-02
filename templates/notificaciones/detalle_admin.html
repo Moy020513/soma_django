@@ -11,7 +11,7 @@
             <h5 class="mb-0">{{ notificacion.titulo }}</h5>
         </div>
         <div class="card-body">
-            <p class="mb-2"><strong>Mensaje:</strong> {{ notificacion.mensaje }}</p>
+            <div class="mb-2"><strong>Mensaje:</strong><br><div style="white-space: pre-line; font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px;">{{ notificacion.mensaje }}</div></div>
             <p class="mb-2"><strong>Fecha:</strong> {{ notificacion.fecha_creacion|date:'d/m/Y H:i' }}</p>
             {% if notificacion.respuestas.exists %}
                 <hr>

@@ -107,7 +107,7 @@
                     {% for notificacion in notificaciones_recientes %}
                     <div class="alert alert-{{ notificacion.tipo }} alert-dismissible fade show">
                         <strong>{{ notificacion.titulo }}</strong><br>
-                        {{ notificacion.mensaje }}
+                        <div style="white-space: pre-line; font-family: monospace; font-size: 0.85em;">{{ notificacion.mensaje }}</div>
                         <small class="text-muted d-block">{{ notificacion.fecha_creacion|timesince }}</small>
                     </div>
                     {% endfor %}
