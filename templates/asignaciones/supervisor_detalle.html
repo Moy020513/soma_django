@@ -216,20 +216,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Variable para rastrear si la acción fue confirmada
+    let accionConfirmada = false;
+    
     document.getElementById('confirmButton').addEventListener('click', function() {
         if (currentAction) {
+            accionConfirmada = true;
             marcarActividad(currentAction.actividadId, currentAction.completada);
             confirmModal.hide();
         }
     });
 
-    // Si se cancela, revertir el checkbox
+    // Si se cancela el modal, revertir el checkbox solo si no se confirmó la acción
     document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function() {
-        if (currentCheckbox && currentAction) {
+        if (currentCheckbox && currentAction && !accionConfirmada) {
+            // Solo revertir si se canceló, no si se confirmó
             currentCheckbox.checked = !currentAction.completada;
         }
         currentCheckbox = null;
         currentAction = null;
+        accionConfirmada = false;
     });
 
     function marcarActividad(actividadId, completada) {
@@ -273,17 +279,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     progressBar.setAttribute('aria-valuenow', data.porcentaje_asignacion);
                 }
 
-                // Mostrar mensaje de éxito
-                showAlert(completada ? 'Actividad marcada como completada' : 'Actividad marcada como pendiente', 'success');
+                // Mostrar mensaje de éxito - mantener el checkbox en su estado actual
+                const mensaje = completada ? 
+                    'Actividad marcada como completada. Se ha enviado notificación al administrador.' : 
+                    'Actividad marcada como pendiente';
+                showAlert(mensaje, 'success');
             } else {
                 // Revertir checkbox en caso de error
-                currentCheckbox.checked = !completada;
+                if (currentCheckbox) {
+                    currentCheckbox.checked = !completada;
+                }
                 showAlert(data.error || 'Error al actualizar la actividad', 'danger');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            currentCheckbox.checked = !completada;
+            if (currentCheckbox) {
+                currentCheckbox.checked = !completada;
+            }
             showAlert('Error de conexión', 'danger');
         });
     }

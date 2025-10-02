@@ -140,7 +140,10 @@ def marcar_actividad_completada(request, actividad_id):
         
         # Enviar notificación al admin si la actividad se marca como completada
         if completada:
+            print(f"Enviando notificación para actividad completada: {actividad.nombre}")
             enviar_notificacion_admin_actividad_completada(actividad, empleado)
+        else:
+            print(f"Actividad marcada como pendiente: {actividad.nombre}")
         
         return JsonResponse({
             'success': True,
@@ -160,27 +163,41 @@ def enviar_notificacion_admin_actividad_completada(actividad, supervisor):
     """
     Envía notificación al admin cuando se completa una actividad.
     """
+    print(f"=== INICIANDO ENVÍO DE NOTIFICACIÓN ===")
+    print(f"Actividad: {actividad.nombre}")
+    print(f"Supervisor: {supervisor.nombre_completo}")
+    
     try:
         from apps.notificaciones.models import Notificacion
-        from django.contrib.auth.models import User
+        from apps.usuarios.models import Usuario
         
-        # Obtener todos los usuarios admin
-        admins = User.objects.filter(is_staff=True, is_active=True)
+        # Obtener todos los usuarios admin (usando el modelo personalizado Usuario)
+        admins = Usuario.objects.filter(is_staff=True, is_active=True)
+        print(f"Admins encontrados: {admins.count()}")
         
-        titulo = f"Actividad completada por {supervisor.nombre}"
-        mensaje = f"La actividad '{actividad.actividad.nombre}' de la asignación del {actividad.asignacion.fecha} ha sido marcada como completada por {supervisor.nombre}."
+        titulo = f"✅ Actividad completada por {supervisor.nombre_completo}"
+        mensaje = f"La actividad '{actividad.nombre}' de la asignación del {actividad.asignacion.fecha.strftime('%d/%m/%Y')} para la empresa {actividad.asignacion.empresa.nombre} ha sido marcada como completada por {supervisor.nombre_completo}."
         
         # Crear notificación para cada admin
+        notificaciones_creadas = 0
         for admin in admins:
-            Notificacion.objects.create(
+            notificacion = Notificacion.objects.create(
                 usuario=admin,
                 titulo=titulo,
                 mensaje=mensaje,
-                tipo='actividad_completada'
+                tipo='success'
             )
+            notificaciones_creadas += 1
+            print(f"✅ Notificación #{notificacion.id} creada para {admin.username}")
+            
+        print(f"🎉 Total notificaciones enviadas: {notificaciones_creadas}")
+        return True
             
     except Exception as e:
-        print(f"Error enviando notificación: {e}")
+        print(f"❌ Error enviando notificación: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 
 class SupervisorAsignacionDetailView(LoginRequiredMixin, DetailView):
