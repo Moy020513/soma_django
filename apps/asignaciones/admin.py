@@ -55,7 +55,11 @@ class AsignacionAdmin(admin.ModelAdmin):
                         actividades_completadas.append(a)
                         porcentaje_completadas += a.porcentaje
                     else:
-                        actividades_initial.append({'nombre': a.nombre, 'porcentaje': a.porcentaje})
+                        actividades_initial.append({
+                            'nombre': a.nombre, 
+                            'porcentaje': a.porcentaje,
+                            'tiempo_estimado_dias': a.tiempo_estimado_dias
+                        })
                 supervisor_id = obj.supervisor_id if obj.supervisor else None
             from .forms_custom import EmpleadoAsignacionFormSetFactory, ActividadAsignadaFormSetFactory
             EmpleadoFormSetClass = EmpleadoAsignacionFormSetFactory(extra=0 if empleados_initial else 1)
@@ -182,7 +186,11 @@ class AsignacionAdmin(admin.ModelAdmin):
                     actividades.append(f.cleaned_data)
             obj.actividades.all().delete()
             for act in actividades:
-                obj.actividades.create(nombre=act['nombre'], porcentaje=act['porcentaje'])
+                obj.actividades.create(
+                    nombre=act['nombre'], 
+                    porcentaje=act['porcentaje'],
+                    tiempo_estimado_dias=act.get('tiempo_estimado_dias', 1)
+                )
 
     def _actualizar_actividades_preservando_completadas(self, obj, actividades_formset, supervisor_anterior):
         """
@@ -221,7 +229,8 @@ class AsignacionAdmin(admin.ModelAdmin):
                 # Es una actividad nueva o pendiente, crearla
                 obj.actividades.create(
                     nombre=nombre, 
-                    porcentaje=nueva_act['porcentaje']
+                    porcentaje=nueva_act['porcentaje'],
+                    tiempo_estimado_dias=nueva_act.get('tiempo_estimado_dias', 1)
                 )
         
         # Si había actividades completadas y cambió el supervisor, notificar al admin

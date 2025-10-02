@@ -108,6 +108,7 @@
                                 <tr>
                                     <th>Actividad</th>
                                     <th>Porcentaje</th>
+                                    <th>⏱️ Tiempo Est.</th>
                                     <th>Estado</th>
                                     <th>Completada por</th>
                                     <th>Fecha completada</th>
@@ -121,6 +122,11 @@
                                         <strong>{{ actividad_asignada.nombre }}</strong>
                                     </td>
                                     <td>{{ actividad_asignada.porcentaje }}%</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ actividad_asignada.tiempo_estimado_dias }} día{{ actividad_asignada.tiempo_estimado_dias|pluralize }}
+                                        </span>
+                                    </td>
                                     <td>
                                         <span class="badge {% if actividad_asignada.completada %}bg-success{% else %}bg-warning{% endif %} estado-badge">
                                             {% if actividad_asignada.completada %}

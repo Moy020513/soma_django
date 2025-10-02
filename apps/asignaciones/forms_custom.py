@@ -5,6 +5,7 @@ from .models import Asignacion, ActividadAsignada
 class ActividadAsignadaForm(forms.Form):
     nombre = forms.CharField(max_length=120, label='Actividad')
     porcentaje = forms.IntegerField(min_value=1, max_value=100, label='Porcentaje')
+    tiempo_estimado_dias = forms.IntegerField(min_value=1, max_value=365, initial=1, label='Días estimados')
 
 from django.core.exceptions import ValidationError
 

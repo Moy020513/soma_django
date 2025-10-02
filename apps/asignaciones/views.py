@@ -199,7 +199,8 @@ def enviar_notificacion_admin_actividad_completada(actividad, supervisor):
             lineas.append("")
             lineas.append("✅ COMPLETADAS:")
             for act in actividades_completadas[:3]:
-                lineas.append(f"   ✓ {act.nombre} ({act.porcentaje}%)")
+                dias_texto = f"{act.tiempo_estimado_dias} día{'s' if act.tiempo_estimado_dias != 1 else ''}"
+                lineas.append(f"   ✓ {act.nombre} ({act.porcentaje}% - {dias_texto})")
             if actividades_completadas.count() > 3:
                 lineas.append(f"   ➕ ... y {actividades_completadas.count() - 3} mas")
         
@@ -208,7 +209,8 @@ def enviar_notificacion_admin_actividad_completada(actividad, supervisor):
             lineas.append("")
             lineas.append("⏳ PENDIENTES:")
             for act in actividades_pendientes[:3]:
-                lineas.append(f"   ⭕ {act.nombre} ({act.porcentaje}%)")
+                dias_texto = f"{act.tiempo_estimado_dias} día{'s' if act.tiempo_estimado_dias != 1 else ''}"
+                lineas.append(f"   ⭕ {act.nombre} ({act.porcentaje}% - {dias_texto})")
             if actividades_pendientes.count() > 3:
                 lineas.append(f"   ➕ ... y {actividades_pendientes.count() - 3} mas")
         else:

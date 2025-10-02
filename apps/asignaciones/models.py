@@ -10,6 +10,7 @@ class ActividadAsignada(models.Model):
     asignacion = models.ForeignKey('Asignacion', on_delete=models.CASCADE, related_name='actividades')
     nombre = models.CharField(max_length=120, verbose_name='Actividad')
     porcentaje = models.PositiveIntegerField(verbose_name='Porcentaje')
+    tiempo_estimado_dias = models.PositiveIntegerField(default=1, verbose_name='Tiempo estimado (días)')
     completada = models.BooleanField(default=False, verbose_name='Completada')
     fecha_completada = models.DateTimeField(null=True, blank=True, verbose_name='Fecha de finalización')
     completada_por = models.ForeignKey(
@@ -26,7 +27,8 @@ class ActividadAsignada(models.Model):
 
     def __str__(self):
         status = "✓" if self.completada else "○"
-        return f"{status} {self.nombre} ({self.porcentaje}%)"
+        dias_texto = f"{self.tiempo_estimado_dias} día{'s' if self.tiempo_estimado_dias != 1 else ''}"
+        return f"{status} {self.nombre} ({self.porcentaje}% - {dias_texto})"
 
 class Asignacion(models.Model):
     @property
@@ -55,6 +57,27 @@ class Asignacion(models.Model):
     @property
     def todas_actividades_completadas(self):
         return self.actividades.exists() and not self.actividades.filter(completada=False).exists()
+    
+    @property
+    def tiempo_estimado_total(self):
+        """Retorna el tiempo total estimado en días para todas las actividades"""
+        return self.actividades.aggregate(
+            total=models.Sum('tiempo_estimado_dias')
+        )['total'] or 0
+    
+    @property
+    def tiempo_estimado_pendiente(self):
+        """Retorna el tiempo estimado en días para actividades pendientes"""
+        return self.actividades.filter(completada=False).aggregate(
+            total=models.Sum('tiempo_estimado_dias')
+        )['total'] or 0
+    
+    @property
+    def tiempo_estimado_completado(self):
+        """Retorna el tiempo de actividades ya completadas"""
+        return self.actividades.filter(completada=True).aggregate(
+            total=models.Sum('tiempo_estimado_dias')
+        )['total'] or 0
     @property
     def empleado_resumen(self):
         empleados = list(self.empleados.all())
