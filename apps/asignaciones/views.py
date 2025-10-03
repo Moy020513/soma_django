@@ -24,24 +24,35 @@ class MisAsignacionesView(LoginRequiredMixin, ListView):
     template_name = 'asignaciones/mis_asignaciones.html'
     context_object_name = 'asignaciones'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from apps.recursos_humanos.models import Empleado
+        context['empleado'] = Empleado.objects.filter(usuario=self.request.user).first()
+        return context
+
     def get_queryset(self):
         user = self.request.user
         from apps.recursos_humanos.models import Empleado
+        from django.db.models import Q
         empleado = Empleado.objects.filter(usuario=user).first()
         if empleado:
-                qs = (Asignacion.objects
-                      .filter(empleados=empleado)
-                      .select_related('empresa', 'supervisor')
-                      .order_by('-fecha', '-fecha_creacion'))
-                fecha = self.request.GET.get('fecha')
-                if fecha:
-                    try:
-                        from datetime import date
-                        y, m, d = map(int, fecha.split('-'))
-                        qs = qs.filter(fecha=date(y, m, d))
-                    except Exception:
-                        pass
-                return qs
+            # Incluir asignaciones donde el usuario es empleado O supervisor
+            qs = (Asignacion.objects
+                  .filter(Q(empleados=empleado) | Q(supervisor=empleado))
+                  .select_related('empresa', 'supervisor')
+                  .prefetch_related('empleados')
+                  .distinct()  # Evitar duplicados si es empleado Y supervisor de la misma asignación
+                  .order_by('-fecha', '-fecha_creacion'))
+            
+            fecha = self.request.GET.get('fecha')
+            if fecha:
+                try:
+                    from datetime import date
+                    y, m, d = map(int, fecha.split('-'))
+                    qs = qs.filter(fecha=date(y, m, d))
+                except Exception:
+                    pass
+            return qs
         return Asignacion.objects.none()
 
 

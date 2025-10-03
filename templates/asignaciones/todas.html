@@ -33,13 +33,15 @@
               {% endfor %}
             </span>
             
-            <!-- Indicador de progreso -->
-            {% if a.porcentaje_completado == 100 %}
-              <span class="badge bg-success ms-2">✅ COMPLETADA</span>
-            {% elif a.porcentaje_completado > 0 %}
-              <span class="badge bg-warning text-dark ms-2">📊 {{ a.porcentaje_completado }}%</span>
-            {% else %}
-              <span class="badge bg-secondary ms-2">⭕ 0% - Pendiente</span>
+            <!-- Indicador de progreso (solo para admins) -->
+            {% if user.is_staff %}
+              {% if a.porcentaje_completado == 100 %}
+                <span class="badge bg-success ms-2">✅ COMPLETADA</span>
+              {% elif a.porcentaje_completado > 0 %}
+                <span class="badge bg-warning text-dark ms-2">📊 {{ a.porcentaje_completado }}%</span>
+              {% else %}
+                <span class="badge bg-secondary ms-2">⭕ 0% - Pendiente</span>
+              {% endif %}
             {% endif %}
           </div>
           <small>{{ a.fecha|date:'d/m/Y' }}</small>
@@ -50,15 +52,15 @@
         <div class="d-flex justify-content-between align-items-center">
           <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
           
-          {% if a.porcentaje_completado < 100 and a.actividades.count > 0 %}
+          {% if user.is_staff and a.porcentaje_completado < 100 and a.actividades.count > 0 %}
             <small class="text-muted">
               {{ a.actividades_completadas }}/{{ a.actividades.count }} actividades completadas
             </small>
           {% endif %}
         </div>
         
-        <!-- Barra de progreso visual -->
-        {% if a.actividades.count > 0 %}
+        <!-- Barra de progreso visual (solo para admins) -->
+        {% if user.is_staff and a.actividades.count > 0 %}
           <div class="progress mt-2" style="height: 6px;">
             <div class="progress-bar 
               {% if a.porcentaje_completado == 100 %}bg-success

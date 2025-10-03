@@ -201,10 +201,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                         {{ a.empresa.nombre }}
                                         {% if a.fecha != today and a.supervisor == empleado and a.porcentaje_completado < 100 %}
                                             <span class="badge bg-danger ms-2">📋 PENDIENTE</span>
-                                        {% elif a.porcentaje_completado == 100 %}
-                                            <span class="badge bg-success ms-2">✅ COMPLETADA</span>
-                                        {% elif a.porcentaje_completado > 0 %}
-                                            <span class="badge bg-warning text-dark ms-2">📊 {{ a.porcentaje_completado }}%</span>
+                                        {% elif user.is_staff %}
+                                            {% if a.porcentaje_completado == 100 %}
+                                                <span class="badge bg-success ms-2">✅ COMPLETADA</span>
+                                            {% elif a.porcentaje_completado > 0 %}
+                                                <span class="badge bg-warning text-dark ms-2">📊 {{ a.porcentaje_completado }}%</span>
+                                            {% endif %}
                                         {% endif %}
                                     </h6>
                                     <small>
