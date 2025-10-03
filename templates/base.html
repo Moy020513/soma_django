@@ -65,6 +65,11 @@
                                 <li><a class="dropdown-item" href="{% url 'perfil_usuario' %}">
                                     <i class="fas fa-id-card me-2"></i>Mi Perfil
                                 </a></li>
+                                {% if vehiculo_menu %}
+                                <li><a class="dropdown-item" href="{% url 'mi_vehiculo' %}">
+                                    <i class="fas fa-car me-2"></i>Mi Vehículo ({{ vehiculo_menu.placas }})
+                                </a></li>
+                                {% endif %}
                                 <li><a class="dropdown-item" href="{% url 'notificaciones_usuario' %}">
                                     <i class="fas fa-bell me-2"></i>Notificaciones
                                 </a></li>

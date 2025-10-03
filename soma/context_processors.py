@@ -1,4 +1,26 @@
 from django.contrib.admin.models import LogEntry
+from apps.recursos_humanos.models import Empleado
+from apps.flota_vehicular.models import AsignacionVehiculo
+
+def vehiculo_asignado_context(request):
+    """Retorna el vehículo asignado del usuario autenticado si existe"""
+    if not request.user.is_authenticated:
+        return {}
+    
+    try:
+        empleado = Empleado.objects.filter(usuario=request.user).first()
+        if empleado:
+            asignacion_vehiculo = AsignacionVehiculo.objects.filter(
+                empleado=empleado, 
+                estado='activa'
+            ).select_related('vehiculo').first()
+            
+            if asignacion_vehiculo:
+                return {'vehiculo_menu': asignacion_vehiculo.vehiculo}
+        
+        return {'vehiculo_menu': None}
+    except:
+        return {'vehiculo_menu': None}
 
 def recent_admin_actions(request):
     """Retorna las últimas 10 acciones del admin para usuarios staff.

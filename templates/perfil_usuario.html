@@ -120,6 +120,93 @@
             </div>
         </div>
         
+        {% if vehiculo_asignado %}
+        <div class="card mt-3" id="mi-vehiculo">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-car me-2" style="color: var(--soma-orange);"></i>Mi Vehículo</h5>
+                <a href="{% url 'mi_vehiculo' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-external-link-alt me-1"></i>Ver Detalles
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="vehicle-info">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="text-muted mb-0">{{ vehiculo_asignado.marca }} {{ vehiculo_asignado.modelo }}</h6>
+                                <span class="badge bg-success">{{ vehiculo_asignado.get_estado_display }}</span>
+                            </div>
+                            
+                            <div class="vehicle-details">
+                                <div class="detail-item mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt me-1"></i>Año:
+                                    </small>
+                                    <span class="fw-semibold">{{ vehiculo_asignado.año }}</span>
+                                </div>
+                                
+                                <div class="detail-item mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-palette me-1"></i>Color:
+                                    </small>
+                                    <span class="fw-semibold">{{ vehiculo_asignado.color }}</span>
+                                </div>
+                                
+                                <div class="detail-item mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-id-card me-1"></i>Placas:
+                                    </small>
+                                    <span class="fw-semibold">{{ vehiculo_asignado.placas }}</span>
+                                </div>
+                                
+                                <div class="detail-item mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-truck me-1"></i>Tipo:
+                                    </small>
+                                    <span class="fw-semibold">{{ vehiculo_asignado.get_tipo_display }}</span>
+                                </div>
+                                
+                                <div class="detail-item mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-tachometer-alt me-1"></i>Kilometraje:
+                                    </small>
+                                    <span class="fw-semibold">{{ vehiculo_asignado.kilometraje_actual|floatformat:0 }} km</span>
+                                </div>
+                                
+                                {% if vehiculo_asignado.aseguradora %}
+                                <div class="detail-item mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-shield-alt me-1"></i>Aseguradora:
+                                    </small>
+                                    <span class="fw-semibold">{{ vehiculo_asignado.aseguradora }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if vehiculo_asignado.contacto_aseguradora %}
+                                <div class="detail-item mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-phone me-1"></i>Tel. Aseguradora:
+                                    </small>
+                                    <span class="fw-semibold">{{ vehiculo_asignado.contacto_aseguradora }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if vehiculo_asignado.observaciones %}
+                                <div class="detail-item">
+                                    <small class="text-muted">
+                                        <i class="fas fa-comment me-1"></i>Observaciones:
+                                    </small>
+                                    <p class="small mt-1 mb-0">{{ vehiculo_asignado.observaciones|truncatechars:100 }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
         <div class="card mt-3 permissions-card">
             <div class="card-header">
                 <h5><i class="fas fa-shield-alt me-2" style="color: var(--soma-blue);"></i>Estado de la Cuenta</h5>

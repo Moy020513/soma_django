@@ -14,6 +14,7 @@ urlpatterns = [
     path('', views.index, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('perfil/', views.perfil_usuario, name='perfil_usuario'),
+    path('mi-vehiculo/', views.mi_vehiculo, name='mi_vehiculo'),
     path('acciones-recientes/', views.acciones_recientes, name='acciones_recientes'),
     path('mis-notificaciones/', views.notificaciones_usuario, name='notificaciones_usuario'),
     path('notificaciones/<int:notificacion_id>/leida/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),

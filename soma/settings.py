@@ -115,6 +115,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
                 'soma.context_processors.recent_admin_actions',
+                'soma.context_processors.vehiculo_asignado_context',
                 'apps.notificaciones.context_processors.notificaciones',
             ],
         },

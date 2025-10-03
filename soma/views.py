@@ -6,7 +6,7 @@ from django.contrib.auth import login as auth_login
 from django.urls import reverse
 from django.contrib import admin as djadmin
 from apps.recursos_humanos.models import Empleado
-from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular
+from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular, AsignacionVehiculo
 from apps.herramientas.models import Herramienta
 from apps.notificaciones.models import Notificacion
 from django.contrib.admin.models import LogEntry
@@ -158,6 +158,8 @@ def perfil_usuario(request):
     asignaciones_recientes = []
     asignaciones_supervisadas_hoy = []
     asignaciones_supervisadas_pendientes_perfil = []
+    vehiculo_asignado = None
+    
     if empleado:
         # Asignaciones como empleado
         qs_emp = (Asignacion.objects
@@ -211,6 +213,16 @@ def perfil_usuario(request):
                             .select_related('empresa', 'supervisor')
                             .prefetch_related('empleados__usuario')
                             .order_by('empleados__numero_empleado'))
+    
+    # Obtener vehículo asignado activo si el usuario tiene empleado
+    if empleado:
+        asignacion_vehiculo = AsignacionVehiculo.objects.filter(
+            empleado=empleado, 
+            estado='activa'
+        ).select_related('vehiculo').first()
+        if asignacion_vehiculo:
+            vehiculo_asignado = asignacion_vehiculo.vehiculo
+    
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
@@ -219,9 +231,40 @@ def perfil_usuario(request):
         'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
         'asignaciones_pendientes': asignaciones_supervisadas_pendientes_perfil if empleado else [],
         'empleado': empleado,
+        'vehiculo_asignado': vehiculo_asignado,
         'today': timezone.localdate(),
     }
     return render(request, 'perfil_usuario.html', context)
+
+
+@login_required
+def mi_vehiculo(request):
+    """Vista dedicada para mostrar el vehículo asignado al usuario"""
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    vehiculo_asignado = None
+    asignacion_vehiculo = None
+    
+    if empleado:
+        asignacion_vehiculo = AsignacionVehiculo.objects.filter(
+            empleado=empleado, 
+            estado='activa'
+        ).select_related('vehiculo').first()
+        
+        if asignacion_vehiculo:
+            vehiculo_asignado = asignacion_vehiculo.vehiculo
+    
+    # Si no tiene vehículo asignado, redirigir al perfil
+    if not vehiculo_asignado:
+        messages.info(request, 'No tienes vehículo asignado actualmente.')
+        return redirect('perfil_usuario')
+    
+    context = {
+        'titulo': 'Mi Vehículo',
+        'vehiculo': vehiculo_asignado,
+        'asignacion': asignacion_vehiculo,
+        'empleado': empleado,
+    }
+    return render(request, 'mi_vehiculo.html', context)
 
 
 @login_required

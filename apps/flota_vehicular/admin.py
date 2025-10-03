@@ -36,7 +36,7 @@ class VehiculoAdmin(admin.ModelAdmin):
 class AsignacionVehiculoAdmin(admin.ModelAdmin):
     list_display = ['vehiculo', 'empleado', 'fecha_asignacion', 'fecha_finalizacion', 'estado']
     list_filter = ['estado', 'fecha_asignacion']
-    search_fields = ['vehiculo__placas', 'empleado__nombre', 'empleado__apellidos']
+    search_fields = ['vehiculo__placas', 'empleado__usuario__username', 'empleado__usuario__first_name', 'empleado__usuario__last_name']
     date_hierarchy = 'fecha_asignacion'
     
     fieldsets = (
@@ -51,6 +51,36 @@ class AsignacionVehiculoAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def get_empleado_info(self, obj):
+        """Muestra información más completa del empleado"""
+        if obj.empleado:
+            return f"{obj.empleado.numero_empleado} - {obj.empleado.usuario.get_full_name()}"
+        return "Sin empleado"
+    get_empleado_info.short_description = "Empleado"
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Actualiza automáticamente el estado del vehículo cuando se asigna o finaliza la asignación
+        """
+        super().save_model(request, obj, form, change)
+        
+        # Si la asignación está activa, marcar el vehículo como asignado
+        if obj.estado == 'activa':
+            obj.vehiculo.estado = 'asignado'
+            obj.vehiculo.save()
+        
+        # Si la asignación se finaliza, marcar el vehículo como disponible
+        elif obj.estado == 'finalizada':
+            # Verificar que no hay otras asignaciones activas para este vehículo
+            otras_asignaciones_activas = AsignacionVehiculo.objects.filter(
+                vehiculo=obj.vehiculo,
+                estado='activa'
+            ).exclude(id=obj.id).exists()
+            
+            if not otras_asignaciones_activas:
+                obj.vehiculo.estado = 'disponible'
+                obj.vehiculo.save()
 
 
 @admin.register(TransferenciaVehicular)
