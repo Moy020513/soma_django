@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-search me-2" style="color: var(--soma-blue);"></i>
+                    Inspeccionar Vehículo para Transferencia
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Información del vehículo -->
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-car me-2"></i>Vehículo a inspeccionar:</h6>
+                    <strong>{{ transferencia.vehiculo.marca }} {{ transferencia.vehiculo.modelo }}</strong> - {{ transferencia.vehiculo.placas }}<br>
+                    <small class="text-muted">
+                        Año: {{ transferencia.vehiculo.año }} | 
+                        Color: {{ transferencia.vehiculo.color }} | 
+                        Kilometraje registrado: {{ transferencia.vehiculo.kilometraje_actual|floatformat:0 }} km
+                    </small>
+                </div>
+                
+                <!-- Información del propietario actual -->
+                <div class="alert alert-light">
+                    <h6><i class="fas fa-user me-2"></i>Propietario actual:</h6>
+                    <strong>{{ transferencia.empleado_origen.usuario.get_full_name }}</strong><br>
+                    <small class="text-muted">{{ transferencia.empleado_origen.numero_empleado }}</small>
+                </div>
+                
+                <!-- Observaciones de la solicitud -->
+                {% if transferencia.observaciones_solicitud %}
+                <div class="mb-3">
+                    <h6><i class="fas fa-comment-dots me-2"></i>Observaciones del propietario:</h6>
+                    <div class="alert alert-warning">
+                        {{ transferencia.observaciones_solicitud|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.kilometraje_transferencia.id_for_label }}" class="form-label">
+                            {{ form.kilometraje_transferencia.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.kilometraje_transferencia }}
+                        {% if form.kilometraje_transferencia.help_text %}
+                            <div class="form-text">{{ form.kilometraje_transferencia.help_text }}</div>
+                        {% endif %}
+                        {% if form.kilometraje_transferencia.errors %}
+                            <div class="text-danger">
+                                {% for error in form.kilometraje_transferencia.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.observaciones_inspeccion.id_for_label }}" class="form-label">
+                            {{ form.observaciones_inspeccion.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.observaciones_inspeccion }}
+                        {% if form.observaciones_inspeccion.help_text %}
+                            <div class="form-text">{{ form.observaciones_inspeccion.help_text }}</div>
+                        {% endif %}
+                        {% if form.observaciones_inspeccion.errors %}
+                            <div class="text-danger">
+                                {% for error in form.observaciones_inspeccion.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Instrucciones de inspección:</strong><br>
+                        • Verifica el estado general del vehículo (carrocería, interiores, motor)<br>
+                        • Documenta cualquier daño visible (rayones, golpes, manchas)<br>
+                        • Revisa que esté completo (llanta de refacción, herramientas, documentos)<br>
+                        • Registra el kilometraje exacto del odómetro<br>
+                        • Sé específico y detallado en tus observaciones
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Importante:</strong> Una vez enviada la inspección, el propietario actual revisará tus observaciones y decidirá si acepta o rechaza la transferencia. Asegúrate de ser preciso y honesto en tu reporte.
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-check me-2"></i>Enviar Inspección
+                        </button>
+                        <a href="{% url 'flota:transferencia_detalle' transferencia.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

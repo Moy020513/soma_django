@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exchange-alt me-2" style="color: var(--soma-orange);"></i>
+                    Solicitar Transferencia de Vehículo
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Información del vehículo actual -->
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-car me-2"></i>Vehículo a transferir:</h6>
+                    <strong>{{ vehiculo.marca }} {{ vehiculo.modelo }}</strong> - {{ vehiculo.placas }}<br>
+                    <small class="text-muted">Kilometraje actual: {{ vehiculo.kilometraje_actual|floatformat:0 }} km</small>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.empleado_destino.id_for_label }}" class="form-label">
+                            {{ form.empleado_destino.label }}
+                        </label>
+                        {{ form.empleado_destino }}
+                        {% if form.empleado_destino.help_text %}
+                            <div class="form-text">{{ form.empleado_destino.help_text }}</div>
+                        {% endif %}
+                        {% if form.empleado_destino.errors %}
+                            <div class="text-danger">
+                                {% for error in form.empleado_destino.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.observaciones_solicitud.id_for_label }}" class="form-label">
+                            {{ form.observaciones_solicitud.label }}
+                        </label>
+                        {{ form.observaciones_solicitud }}
+                        {% if form.observaciones_solicitud.help_text %}
+                            <div class="form-text">{{ form.observaciones_solicitud.help_text }}</div>
+                        {% endif %}
+                        {% if form.observaciones_solicitud.errors %}
+                            <div class="text-danger">
+                                {% for error in form.observaciones_solicitud.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Importante:</strong> Una vez enviada la solicitud, el empleado destinatario deberá inspeccionar el vehículo y reportar su estado. Tú tendrás la oportunidad de revisar sus observaciones antes de aprobar la transferencia.
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
+                        </button>
+                        <a href="{% url 'mi_vehiculo' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

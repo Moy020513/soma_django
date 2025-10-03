@@ -153,6 +153,14 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-3">
+                    <a href="{% url 'flota:solicitar_transferencia' %}" class="btn btn-warning">
+                        <i class="fas fa-exchange-alt me-2"></i>Transferir Vehículo
+                    </a>
+                    
+                    <a href="{% url 'flota:mis_transferencias' %}" class="btn btn-outline-info">
+                        <i class="fas fa-list me-2"></i>Mis Transferencias
+                    </a>
+                    
                     <a href="{% url 'perfil_usuario' %}" class="btn btn-outline-primary">
                         <i class="fas fa-user me-2"></i>Volver a Mi Perfil
                     </a>

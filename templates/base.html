@@ -69,6 +69,9 @@
                                 <li><a class="dropdown-item" href="{% url 'mi_vehiculo' %}">
                                     <i class="fas fa-car me-2"></i>Mi Vehículo ({{ vehiculo_menu.placas }})
                                 </a></li>
+                                <li><a class="dropdown-item" href="{% url 'flota:mis_transferencias' %}">
+                                    <i class="fas fa-exchange-alt me-2"></i>Transferencias
+                                </a></li>
                                 {% endif %}
                                 <li><a class="dropdown-item" href="{% url 'notificaciones_usuario' %}">
                                     <i class="fas fa-bell me-2"></i>Notificaciones

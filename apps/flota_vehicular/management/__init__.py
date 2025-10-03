@@ -1,0 +1,1 @@
+# Management commands directory for flota_vehicular

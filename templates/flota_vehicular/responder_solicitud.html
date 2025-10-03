@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-reply me-2"></i>
+                    Responder Solicitud de Transferencia
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Información del vehículo -->
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-car me-2"></i>Vehículo Solicitado:</h6>
+                    <strong>{{ transferencia.vehiculo.marca }} {{ transferencia.vehiculo.modelo }}</strong> - {{ transferencia.vehiculo.placa }}<br>
+                    <small class="text-muted">Año: {{ transferencia.vehiculo.año }} | Color: {{ transferencia.vehiculo.color }}</small>
+                </div>
+                
+                <!-- Información del solicitante -->
+                <div class="mb-4">
+                    <h6><i class="fas fa-user me-2"></i>Solicitante:</h6>
+                    <p><strong>{{ transferencia.empleado_origen.usuario.get_full_name }}</strong><br>
+                    <small class="text-muted">{{ transferencia.empleado_origen.numero_empleado }}</small></p>
+                </div>
+                
+                <!-- Observaciones de la solicitud -->
+                {% if transferencia.observaciones_solicitud %}
+                <div class="mb-4">
+                    <h6><i class="fas fa-comment me-2"></i>Mensaje del solicitante:</h6>
+                    <div class="alert alert-light">
+                        {{ transferencia.observaciones_solicitud|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Fecha de solicitud -->
+                <div class="mb-4">
+                    <h6><i class="fas fa-calendar me-2"></i>Fecha de Solicitud:</h6>
+                    <p>{{ transferencia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                </div>
+                
+                <!-- Formulario de respuesta -->
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="observaciones" class="form-label">
+                            <i class="fas fa-comment me-2"></i>Observaciones (Opcional)
+                        </label>
+                        <textarea class="form-control" name="observaciones" id="observaciones" rows="4" 
+                                  placeholder="Agrega cualquier comentario sobre tu decisión..."></textarea>
+                        <small class="form-text text-muted">
+                            Estas observaciones se compartirán con el solicitante.
+                        </small>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>¡Importante!</strong> Si aceptas esta transferencia, el vehículo será asignado automáticamente a ti 
+                        y el empleado actual perderá acceso al mismo.
+                    </div>
+                    
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="submit" name="accion" value="rechazar" class="btn btn-outline-danger">
+                            <i class="fas fa-times me-2"></i>Rechazar Transferencia
+                        </button>
+                        <button type="submit" name="accion" value="aceptar" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Aceptar Transferencia
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar con información -->
+    <div class="col-md-4">
+        <!-- Detalles del vehículo -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle me-2"></i>Detalles del Vehículo</h6>
+            </div>
+            <div class="card-body">
+                {% if transferencia.vehiculo.numero_motor %}
+                <p><strong>Motor:</strong> {{ transferencia.vehiculo.numero_motor }}</p>
+                {% endif %}
+                {% if transferencia.vehiculo.numero_seguro %}
+                <p><strong>Seguro:</strong> {{ transferencia.vehiculo.numero_seguro }}</p>
+                {% endif %}
+                {% if transferencia.vehiculo.aseguradora %}
+                <p><strong>Aseguradora:</strong> {{ transferencia.vehiculo.aseguradora }}</p>
+                {% endif %}
+                {% if transferencia.vehiculo.contacto_aseguradora %}
+                <p><strong>Contacto:</strong> {{ transferencia.vehiculo.contacto_aseguradora }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Acciones adicionales -->
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-cogs me-2"></i>Otras Opciones</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    ¿Prefieres inspeccionar el vehículo antes de decidir?
+                </p>
+                
+                <a href="{% url 'flota:inspeccionar_vehiculo' transferencia.pk %}" class="btn btn-info w-100 mb-2">
+                    <i class="fas fa-search me-2"></i>Inspeccionar Primero
+                </a>
+                
+                <a href="{% url 'flota:transferencia_detalle' transferencia.pk %}" class="btn btn-outline-secondary w-100 mb-2">
+                    <i class="fas fa-arrow-left me-2"></i>Volver al Detalle
+                </a>
+                
+                <a href="{% url 'flota:mis_transferencias' %}" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-list me-2"></i>Mis Transferencias
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

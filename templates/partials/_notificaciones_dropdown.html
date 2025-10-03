@@ -1,8 +1,37 @@
 <div class="list-group list-group-flush" style="min-width:260px;">
     {% if notificaciones %}
         {% for n in notificaciones %}
-            <a href="/notificaciones/detalle/{{ n.id }}/" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem;">
+            {% if n.url and 'transferencia' in n.titulo|lower %}
+                {% if 'inspección' in n.titulo|lower %}
+                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #ffc107;">
+                {% elif 'aceptada' in n.titulo|lower or 'aprobada' in n.titulo|lower %}
+                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                {% elif 'rechazada' in n.titulo|lower %}
+                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #dc3545;">
+                {% elif 'cancelada' in n.titulo|lower %}
+                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #6c757d;">
+                {% else %}
+                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                {% endif %}
+            {% else %}
+                <a href="/notificaciones/detalle/{{ n.id }}/" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem;">
+            {% endif %}
                 <div class="me-2 text-truncate" style="max-width:170px;">
+                    {% if 'transferencia' in n.titulo|lower %}
+                        {% if 'inspección' in n.titulo|lower %}
+                            <i class="fas fa-search text-warning me-1"></i>
+                        {% elif 'aceptada' in n.titulo|lower or 'aprobada' in n.titulo|lower %}
+                            <i class="fas fa-check-circle text-success me-1"></i>
+                        {% elif 'rechazada' in n.titulo|lower %}
+                            <i class="fas fa-times-circle text-danger me-1"></i>
+                        {% elif 'cancelada' in n.titulo|lower %}
+                            <i class="fas fa-ban text-secondary me-1"></i>
+                        {% elif 'solicitud' in n.titulo|lower %}
+                            <i class="fas fa-car text-success me-1"></i>
+                        {% else %}
+                            <i class="fas fa-exchange-alt text-primary me-1"></i>
+                        {% endif %}
+                    {% endif %}
                     {{ n.titulo|truncatechars:40 }}
                     <div class="small text-muted">{{ n.fecha_creacion|date:'d/m H:i' }}</div>
                 </div>

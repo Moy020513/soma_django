@@ -4,6 +4,12 @@
 
 {% block page_title %}{{ titulo }}{% endblock %}
 
+{% block extra_css %}
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -77,9 +83,18 @@
                                     </div>
                                     
                                     <div class="notification-actions mt-3 d-flex gap-2">
-                                        <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-primary action-link">
-                                            <i class="fas fa-external-link-alt me-1"></i>Ver más
-                                        </a>
+                                        {% if notificacion.url %}
+                                            <a href="{{ notificacion.url }}?from_notification={{ notificacion.id }}" class="btn btn-sm btn-primary action-link">
+                                                <i class="fas fa-reply me-1"></i>Responder
+                                            </a>
+                                            <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-secondary action-link">
+                                                <i class="fas fa-external-link-alt me-1"></i>Ver más
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-primary action-link">
+                                                <i class="fas fa-external-link-alt me-1"></i>Ver más
+                                            </a>
+                                        {% endif %}
                                         {% if not notificacion.leida %}
                                             <span class="btn btn-sm btn-secondary disabled">No leída</span>
                                         {% else %}

@@ -66,10 +66,10 @@ class TransferenciaVehicular(models.Model):
     ESTADOS_TRANSFERENCIA = [
         ('solicitada', 'Solicitada'),
         ('inspeccion', 'En Inspección'),
-        ('observaciones', 'Con Observaciones'),
         ('aprobada', 'Aprobada'),
         ('rechazada', 'Rechazada'),
         ('completada', 'Completada'),
+        ('cancelada', 'Cancelada'),
     ]
     
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE)
@@ -77,7 +77,9 @@ class TransferenciaVehicular(models.Model):
     empleado_destino = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='transferencias_destino')
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_transferencia = models.DateTimeField(null=True, blank=True)
-    estado = models.CharField(max_length=20, choices=ESTADOS_TRANSFERENCIA, default='solicitada')
+    fecha_inspeccion = models.DateTimeField(null=True, blank=True)
+    fecha_respuesta = models.DateTimeField(null=True, blank=True)
+    estado = models.CharField(max_length=30, choices=ESTADOS_TRANSFERENCIA, default='solicitada')
     kilometraje_transferencia = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     observaciones_solicitud = models.TextField(blank=True)
     observaciones_inspeccion = models.TextField(blank=True)

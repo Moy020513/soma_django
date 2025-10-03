@@ -12,7 +12,7 @@ class Notificacion(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=200)
     mensaje = models.TextField()
-    tipo = models.CharField(max_length=20, choices=TIPOS_NOTIFICACION, default='info')
+    tipo = models.CharField(max_length=30, choices=TIPOS_NOTIFICACION, default='info')
     leida = models.BooleanField(default=False)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     url = models.URLField(blank=True)

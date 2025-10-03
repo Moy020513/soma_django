@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Transferencia de Vehículo
+                </h5>
+                {% if transferencia.estado == 'solicitada' %}
+                    <span class="badge bg-warning fs-6">Pendiente</span>
+                {% elif transferencia.estado == 'inspeccion' %}
+                    <span class="badge bg-info fs-6">En Inspección</span>
+                {% elif transferencia.estado == 'aprobada' %}
+                    <span class="badge bg-success fs-6">Aprobada</span>
+                {% elif transferencia.estado == 'rechazada' %}
+                    <span class="badge bg-danger fs-6">Rechazada</span>
+                {% elif transferencia.estado == 'completada' %}
+                    <span class="badge bg-primary fs-6">Completada</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <!-- Información del vehículo -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h6><i class="fas fa-car me-2"></i>Vehículo:</h6>
+                        <div class="alert alert-light">
+                            <strong>{{ transferencia.vehiculo.marca }} {{ transferencia.vehiculo.modelo }}</strong> - {{ transferencia.vehiculo.placas }}<br>
+                            <small class="text-muted">Año: {{ transferencia.vehiculo.año }} | Color: {{ transferencia.vehiculo.color }} | Tipo: {{ transferencia.vehiculo.get_tipo_display }}</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información de los empleados -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user-minus me-2"></i>Empleado Origen:</h6>
+                        <p><strong>{{ transferencia.empleado_origen.usuario.get_full_name }}</strong><br>
+                        <small class="text-muted">{{ transferencia.empleado_origen.numero_empleado }}</small></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user-plus me-2"></i>Empleado Destino:</h6>
+                        <p><strong>{{ transferencia.empleado_destino.usuario.get_full_name }}</strong><br>
+                        <small class="text-muted">{{ transferencia.empleado_destino.numero_empleado }}</small></p>
+                    </div>
+                </div>
+                
+                <!-- Fechas -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-calendar me-2"></i>Fecha de Solicitud:</h6>
+                        <p>{{ transferencia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    {% if transferencia.fecha_transferencia %}
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-calendar-check me-2"></i>Fecha de Transferencia:</h6>
+                        <p>{{ transferencia.fecha_transferencia|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Observaciones de la solicitud -->
+                {% if transferencia.observaciones_solicitud %}
+                <div class="mb-4">
+                    <h6><i class="fas fa-comment me-2"></i>Observaciones de la Solicitud:</h6>
+                    <div class="alert alert-info">
+                        {{ transferencia.observaciones_solicitud|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Información de la inspección -->
+                {% if transferencia.estado != 'solicitada' %}
+                <div class="mb-4">
+                    <h6><i class="fas fa-search me-2"></i>Inspección del Vehículo:</h6>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            {% if transferencia.kilometraje_transferencia %}
+                            <p><strong>Kilometraje registrado:</strong> {{ transferencia.kilometraje_transferencia|floatformat:0 }} km</p>
+                            {% endif %}
+                            
+                            {% if transferencia.observaciones_inspeccion %}
+                            <p><strong>Observaciones de la inspección:</strong></p>
+                            <div class="alert alert-warning">
+                                {{ transferencia.observaciones_inspeccion|linebreaks }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar con acciones -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-cog me-2"></i>Acciones</h6>
+            </div>
+            <div class="card-body">
+                {% if es_destino and transferencia.estado == 'solicitada' %}
+                    <a href="{% url 'flota:responder_solicitud' transferencia.pk %}" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-reply me-2"></i>Responder Solicitud
+                    </a>
+                    <a href="{% url 'flota:inspeccionar_vehiculo' transferencia.pk %}" class="btn btn-info w-100 mb-2">
+                        <i class="fas fa-search me-2"></i>Inspeccionar Primero
+                    </a>
+                {% endif %}
+                
+                {% if es_origen and transferencia.estado == 'inspeccion' %}
+                    <a href="{% url 'flota:responder_inspeccion' transferencia.pk %}" class="btn btn-warning w-100 mb-2">
+                        <i class="fas fa-reply me-2"></i>Responder Inspección
+                    </a>
+                {% endif %}
+                
+                <a href="{% url 'flota:mis_transferencias' %}" class="btn btn-outline-secondary w-100 mb-2">
+                    <i class="fas fa-list me-2"></i>Mis Transferencias
+                </a>
+                
+                <a href="{% url 'mi_vehiculo' %}" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-car me-2"></i>Mi Vehículo
+                </a>
+            </div>
+        </div>
+        
+        <!-- Estado actual -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle me-2"></i>Estado Actual</h6>
+            </div>
+            <div class="card-body">
+                {% if transferencia.estado == 'solicitada' %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock me-2"></i>
+                        {% if es_destino %}
+                            <strong>Acción requerida:</strong> Necesitas inspeccionar el vehículo para continuar con la transferencia.
+                        {% else %}
+                            Esperando que {{ transferencia.empleado_destino.usuario.get_full_name }} inspeccione el vehículo.
+                        {% endif %}
+                    </div>
+                {% elif transferencia.estado == 'inspeccion' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-search me-2"></i>
+                        {% if es_origen %}
+                            <strong>Acción requerida:</strong> {{ transferencia.empleado_destino.usuario.get_full_name }} ha completado la inspección. Revisa las observaciones y responde.
+                        {% else %}
+                            Esperando que {{ transferencia.empleado_origen.usuario.get_full_name }} revise tu inspección.
+                        {% endif %}
+                    </div>
+                {% elif transferencia.estado == 'aprobada' %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        ¡Transferencia completada exitosamente!
+                    </div>
+                {% elif transferencia.estado == 'rechazada' %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle me-2"></i>
+                        La transferencia fue rechazada.
+                    </div>
+                {% elif transferencia.estado == 'cancelada' %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-ban me-2"></i>
+                        Esta transferencia fue cancelada automáticamente.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
