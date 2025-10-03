@@ -25,12 +25,54 @@
         <div class="d-flex w-100 justify-content-between">
           <div>
             <strong>{{ a.empresa.nombre }}</strong>
-            <span class="text-muted">· {{ a.empleado.nombre_completo }}</span>
+            <span class="text-muted">· 
+              {% for empleado in a.empleados.all %}
+                {{ empleado.nombre_completo }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                Sin empleados asignados
+              {% endfor %}
+            </span>
+            
+            <!-- Indicador de progreso -->
+            {% if a.porcentaje_completado == 100 %}
+              <span class="badge bg-success ms-2">✅ COMPLETADA</span>
+            {% elif a.porcentaje_completado > 0 %}
+              <span class="badge bg-warning text-dark ms-2">📊 {{ a.porcentaje_completado }}%</span>
+            {% else %}
+              <span class="badge bg-secondary ms-2">⭕ 0% - Pendiente</span>
+            {% endif %}
           </div>
           <small>{{ a.fecha|date:'d/m/Y' }}</small>
         </div>
         <p class="mb-1">{{ a.detalles|truncatechars:160 }}</p>
-        <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+        
+        <!-- Información adicional del supervisor y progreso -->
+        <div class="d-flex justify-content-between align-items-center">
+          <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+          
+          {% if a.porcentaje_completado < 100 and a.actividades.count > 0 %}
+            <small class="text-muted">
+              {{ a.actividades_completadas }}/{{ a.actividades.count }} actividades completadas
+            </small>
+          {% endif %}
+        </div>
+        
+        <!-- Barra de progreso visual -->
+        {% if a.actividades.count > 0 %}
+          <div class="progress mt-2" style="height: 6px;">
+            <div class="progress-bar 
+              {% if a.porcentaje_completado == 100 %}bg-success
+              {% elif a.porcentaje_completado > 50 %}bg-warning
+              {% else %}bg-danger
+              {% endif %}" 
+              role="progressbar" 
+              style="width: {{ a.porcentaje_completado }}%"
+              aria-valuenow="{{ a.porcentaje_completado }}" 
+              aria-valuemin="0" 
+              aria-valuemax="100">
+            </div>
+          </div>
+        {% endif %}
       </a>
     {% endfor %}
   </div>

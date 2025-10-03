@@ -59,6 +59,11 @@ class Asignacion(models.Model):
         return self.actividades.exists() and not self.actividades.filter(completada=False).exists()
     
     @property
+    def actividades_completadas(self):
+        """Retorna el número de actividades completadas"""
+        return self.actividades.filter(completada=True).count()
+    
+    @property
     def tiempo_estimado_total(self):
         """Retorna el tiempo total estimado en días para todas las actividades"""
         return self.actividades.aggregate(

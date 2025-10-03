@@ -26,6 +26,7 @@ def index(request):
     empleado = Empleado.objects.filter(usuario=request.user).first()
     asignaciones_recientes = []
     asignaciones_supervisadas_hoy = []
+    asignaciones_supervisadas_pendientes = []
     
     if es_admin:
         # Si es admin, mostrar todas las asignaciones del día sin duplicados
@@ -50,13 +51,27 @@ def index(request):
                   .select_related('empresa', 'supervisor')
                   .prefetch_related('empleados')
                   .order_by('-fecha', '-fecha_creacion'))
+        
+        # Asignaciones supervisadas de hoy
         asignaciones_supervisadas_hoy = list(qs_sup.filter(fecha=timezone.localdate()))
         
-        # Combinar ambas listas eliminando duplicados por ID
+        # Asignaciones supervisadas pendientes de días anteriores (no completadas al 100%)
+        asignaciones_supervisadas_pendientes = []
+        asignaciones_anteriores = qs_sup.filter(fecha__lt=timezone.localdate())[:10]  # Últimas 10
+        for asig in asignaciones_anteriores:
+            if asig.porcentaje_completado < 100:
+                asignaciones_supervisadas_pendientes.append(asig)
+            if len(asignaciones_supervisadas_pendientes) >= 5:  # Máximo 5
+                break
+        
+        # Combinar todas las listas eliminando duplicados por ID
         asignaciones_ids_vistas = set()
         asignaciones_hoy = []
         
-        for asignacion in asignaciones_empleado_hoy + asignaciones_supervisadas_hoy:
+        # Priorizar: hoy + pendientes de días anteriores
+        todas_asignaciones = asignaciones_empleado_hoy + asignaciones_supervisadas_hoy + asignaciones_supervisadas_pendientes
+        
+        for asignacion in todas_asignaciones:
             if asignacion.id not in asignaciones_ids_vistas:
                 asignaciones_ids_vistas.add(asignacion.id)
                 asignaciones_hoy.append(asignacion)
@@ -76,7 +91,9 @@ def index(request):
         'asignaciones_hoy': asignaciones_hoy,
         'asignaciones_recientes': asignaciones_recientes,
         'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
+        'asignaciones_pendientes': asignaciones_supervisadas_pendientes if empleado else [],
         'empleado': empleado,
+        'today': timezone.localdate(),
     }
     if es_admin:
         # Proveer listado de apps del admin para renderizar en el Home
@@ -140,6 +157,7 @@ def perfil_usuario(request):
     empleado = Empleado.objects.filter(usuario=request.user).first()
     asignaciones_recientes = []
     asignaciones_supervisadas_hoy = []
+    asignaciones_supervisadas_pendientes_perfil = []
     if empleado:
         # Asignaciones como empleado
         qs_emp = (Asignacion.objects
@@ -154,13 +172,27 @@ def perfil_usuario(request):
                   .select_related('empresa', 'supervisor')
                   .prefetch_related('empleados')
                   .order_by('-fecha', '-fecha_creacion'))
+        
+        # Asignaciones supervisadas de hoy
         asignaciones_supervisadas_hoy = list(qs_sup.filter(fecha=timezone.localdate()))
         
-        # Combinar ambas listas eliminando duplicados por ID
+        # Asignaciones supervisadas pendientes de días anteriores (no completadas al 100%)
+        asignaciones_supervisadas_pendientes_perfil = []
+        asignaciones_anteriores_perfil = qs_sup.filter(fecha__lt=timezone.localdate())[:10]  # Últimas 10
+        for asig in asignaciones_anteriores_perfil:
+            if asig.porcentaje_completado < 100:
+                asignaciones_supervisadas_pendientes_perfil.append(asig)
+            if len(asignaciones_supervisadas_pendientes_perfil) >= 5:  # Máximo 5
+                break
+        
+        # Combinar todas las listas eliminando duplicados por ID
         asignaciones_ids_vistas = set()
         asignaciones_hoy = []
         
-        for asignacion in asignaciones_empleado_hoy + asignaciones_supervisadas_hoy:
+        # Priorizar: hoy + pendientes de días anteriores
+        todas_asignaciones_perfil = asignaciones_empleado_hoy + asignaciones_supervisadas_hoy + asignaciones_supervisadas_pendientes_perfil
+        
+        for asignacion in todas_asignaciones_perfil:
             if asignacion.id not in asignaciones_ids_vistas:
                 asignaciones_ids_vistas.add(asignacion.id)
                 asignaciones_hoy.append(asignacion)
@@ -185,7 +217,9 @@ def perfil_usuario(request):
         'asignaciones_hoy': asignaciones_hoy,
         'asignaciones_recientes': asignaciones_recientes,
         'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
+        'asignaciones_pendientes': asignaciones_supervisadas_pendientes_perfil if empleado else [],
         'empleado': empleado,
+        'today': timezone.localdate(),
     }
     return render(request, 'perfil_usuario.html', context)
 

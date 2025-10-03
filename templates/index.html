@@ -194,10 +194,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% if asignaciones_hoy %}
                     <div class="list-group">
                         {% for a in asignaciones_hoy %}
-                            <a href="{% if a.supervisor == empleado %}{% url 'asignaciones:supervisor_detalle' a.pk %}{% else %}{% url 'asignaciones:detalle' a.pk %}{% endif %}" class="list-group-item list-group-item-action">
+                            <a href="{% if a.supervisor == empleado %}{% url 'asignaciones:supervisor_detalle' a.pk %}{% else %}{% url 'asignaciones:detalle' a.pk %}{% endif %}" 
+                               class="list-group-item list-group-item-action {% if a.fecha != today and a.supervisor == empleado and a.porcentaje_completado < 100 %}list-group-item-warning{% endif %}">
                                 <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
-                                    <small>{{ a.fecha|date:'d/m/Y' }}</small>
+                                    <h6 class="mb-1">
+                                        {{ a.empresa.nombre }}
+                                        {% if a.fecha != today and a.supervisor == empleado and a.porcentaje_completado < 100 %}
+                                            <span class="badge bg-danger ms-2">📋 PENDIENTE</span>
+                                        {% elif a.porcentaje_completado == 100 %}
+                                            <span class="badge bg-success ms-2">✅ COMPLETADA</span>
+                                        {% elif a.porcentaje_completado > 0 %}
+                                            <span class="badge bg-warning text-dark ms-2">📊 {{ a.porcentaje_completado }}%</span>
+                                        {% endif %}
+                                    </h6>
+                                    <small>
+                                        {{ a.fecha|date:'d/m/Y' }}
+                                        {% if a.fecha != today %}
+                                            <span class="text-muted">(Anterior)</span>
+                                        {% endif %}
+                                    </small>
                                 </div>
                                 <p class="mb-1">{{ a.detalles|truncatechars:140 }}</p>
                                 <small>
@@ -207,7 +222,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                     {% if a.supervisor == empleado %}
                                         <span class="badge bg-warning text-dark">
                                             <i class="fas fa-eye me-1"></i>Supervisando
-                                        </span> ·
+                                        </span>
+                                        {% if a.fecha != today and a.porcentaje_completado < 100 %}
+                                            <span class="badge bg-danger ms-1">
+                                                <i class="fas fa-clock me-1"></i>Requiere atención
+                                            </span>
+                                        {% endif %}
+                                         ·
                                     {% endif %}
                                     {% if a.archivos %}
                                         <span class="badge bg-info text-dark">
