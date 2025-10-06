@@ -213,3 +213,29 @@ LOGOUT_REDIRECT_URL = '/admin/login/'
 # Configuración del contexto de notificaciones
 # Context processors
 # TEMPLATES[0]['OPTIONS']['context_processors'].append('apps.notificaciones.context_processors.notificaciones')
+
+# Configuración de EMAIL para reset de contraseñas
+# Configuración dinámica: si hay EMAIL_HOST configurado, usar SMTP; si no, usar consola
+EMAIL_HOST_CONFIG = config('EMAIL_HOST', default='')
+
+if EMAIL_HOST_CONFIG:
+    # SMTP configurado - usar Gmail u otro proveedor
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = EMAIL_HOST_CONFIG
+    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+else:
+    # No hay SMTP configurado - usar consola para desarrollo
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Configuración del remitente de emails
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@soma.com')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# URLs para reset de contraseña
+PASSWORD_RESET_TIMEOUT = 3600  # 1 hora en segundos
+
+# Configuración para emails HTML (multipart)
+EMAIL_USE_LOCALTIME = True
