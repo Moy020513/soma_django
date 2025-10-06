@@ -121,7 +121,12 @@
                 <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom py-4" style="min-height:100px; display: flex; align-items: center;">
                     <div class="d-flex align-items-center px-4">
                         <img src="{% static 'images/logo.png' %}" alt="SOMA Logo" class="soma-logo" style="max-height:40px;">
-                        <h1 class="h2 ms-3 mb-0">{% block page_title %}Dashboard{% endblock %}</h1>
+                        <div class="ms-3">
+                            <h1 class="h2 mb-1">{% block page_title %}Dashboard{% endblock %}</h1>
+                            {% if descripcion %}
+                            <p class="text-white-50 mb-0 small">{{ descripcion }}</p>
+                            {% endif %}
+                        </div>
                     </div>
                     {% if user.is_authenticated %}
                     <div class="btn-toolbar mb-2 mb-md-0 px-4 d-flex align-items-center">

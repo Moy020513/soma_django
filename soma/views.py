@@ -85,7 +85,7 @@ def index(request):
                     asignaciones_recientes_ids.add(asignacion.id)
                     asignaciones_recientes.append(asignacion)
     context = {
-        'titulo': 'Sistema SOMA',
+        'titulo': 'Servicios Industriales SOMA',
         'descripcion': 'Sistema de Gestión Empresarial',
         'es_admin': es_admin,
         'asignaciones_hoy': asignaciones_hoy,
