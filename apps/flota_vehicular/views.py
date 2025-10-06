@@ -153,12 +153,32 @@ def responder_solicitud(request, pk):
         except Notificacion.DoesNotExist:
             pass  # La notificación ya fue leída o no existe
     
-    transferencia = get_object_or_404(
-        TransferenciaVehicular.objects.select_related('vehiculo', 'empleado_origen__usuario'),
-        pk=pk,
-        empleado_destino=empleado,
-        estado='solicitada'
-    )
+    # Buscar la transferencia con mejor manejo de errores
+    try:
+        transferencia = TransferenciaVehicular.objects.select_related(
+            'vehiculo', 'empleado_origen__usuario'
+        ).get(pk=pk)
+        
+        # Verificar que la transferencia es para este empleado
+        if transferencia.empleado_destino != empleado:
+            messages.error(request, 'Esta solicitud de transferencia no está dirigida a ti.')
+            return redirect('flota:mis_transferencias')
+        
+        # Verificar que está en estado correcto
+        if transferencia.estado != 'solicitada':
+            if transferencia.estado == 'aprobada':
+                messages.info(request, 'Esta transferencia ya fue aprobada.')
+            elif transferencia.estado == 'rechazada':
+                messages.info(request, 'Esta transferencia ya fue rechazada.')
+            elif transferencia.estado == 'cancelada':
+                messages.info(request, 'Esta transferencia fue cancelada.')
+            elif transferencia.estado == 'inspeccion':
+                messages.info(request, 'Esta transferencia está en proceso de inspección.')
+            return redirect('flota:mis_transferencias')
+            
+    except TransferenciaVehicular.DoesNotExist:
+        messages.error(request, 'La solicitud de transferencia no existe o ya no está disponible.')
+        return redirect('flota:mis_transferencias')
     
     if request.method == 'POST':
         accion = request.POST.get('accion')

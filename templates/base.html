@@ -20,7 +20,96 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
     
    
-    <link rel="stylesheet" href="{% static 'css/base_custom.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base_custom.css' %}?v=20251006">
+    
+    <style>
+        /* Estilos para iconos de navegación principal */
+        .btn-outline-light {
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            color: white !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+            color: white !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        .btn-outline-light:focus {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+            color: white !important;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25) !important;
+        }
+        
+        .btn-outline-light:active {
+            background-color: rgba(255, 255, 255, 0.25) !important;
+            border-color: rgba(255, 255, 255, 0.6) !important;
+            color: white !important;
+        }
+        
+        /* Tooltips personalizados instantáneos para los iconos */
+        .nav-icon-tooltip {
+            position: relative;
+        }
+        
+        .nav-icon-tooltip::before {
+            content: attr(data-tooltip-custom);
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--soma-orange, #ff6b35);
+            color: white;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s ease; /* Transición mucho más rápida */
+            z-index: 1050;
+        }
+        
+        .nav-icon-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid var(--soma-orange, #ff6b35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s ease; /* Transición mucho más rápida */
+            z-index: 1051;
+        }
+        
+        .nav-icon-tooltip:hover::before,
+        .nav-icon-tooltip:hover::after {
+            opacity: 1;
+        }
+        
+        /* Ocultar tooltips CSS cuando Bootstrap tooltip está visible */
+        .nav-icon-tooltip[aria-describedby]::before,
+        .nav-icon-tooltip[aria-describedby]::after {
+            display: none;
+        }
+        
+        /* Asegurar que los iconos no cambien de color en hover */
+        .btn-outline-light:hover .text-white,
+        .btn-outline-light:focus .text-white,
+        .btn-outline-light:active .text-white {
+            color: white !important;
+        }
+    </style>
     {% block extrastyle %}{% endblock %}
 </head>
 <body>
@@ -31,22 +120,44 @@
                 <!-- Header con logo y navegación -->
                 <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom py-4" style="min-height:100px; display: flex; align-items: center;">
                     <div class="d-flex align-items-center px-4">
-                        <a href="{% url 'home' %}" class="me-3" title="Inicio">
-                            <i class="fas fa-home fa-lg" style="color: var(--soma-blue);"></i>
-                        </a>
                         <img src="{% static 'images/logo.png' %}" alt="SOMA Logo" class="soma-logo" style="max-height:40px;">
                         <h1 class="h2 ms-3 mb-0">{% block page_title %}Dashboard{% endblock %}</h1>
                     </div>
                     {% if user.is_authenticated %}
-                    <div class="btn-toolbar mb-2 mb-md-0 px-4">
-                        {% if user.is_staff %}
-                        <a class="btn btn-sm btn-outline-primary me-2" href="{% url 'acciones_recientes' %}">
-                            <i class="fas fa-clock me-1"></i> Acciones recientes
+                    <div class="btn-toolbar mb-2 mb-md-0 px-4 d-flex align-items-center">
+                        <!-- Icono de Inicio -->
+                        <a href="{% url 'home' %}" 
+                           class="btn btn-outline-light me-2 nav-icon-tooltip" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="bottom" 
+                           data-bs-delay='{"show":0,"hide":100}'
+                           title="Inicio"
+                           data-tooltip-custom="Inicio"
+                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
+                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <i class="fas fa-home text-white"></i>
                         </a>
-                        {% endif %}
+                        
+                        <!-- Icono de Notificaciones -->
                         <div class="dropdown me-2" id="dropdownNotificacionesWrapper">
-                            <button id="btnDropdownNotificaciones" class="btn btn-outline-secondary position-relative notification-bell" data-bs-toggle="dropdown" aria-expanded="false" hx-get="{% url 'dropdown_notificaciones' %}" hx-trigger="click" hx-target="#dropdownNotificacionesMenu" hx-swap="innerHTML" title="Notificaciones">
-                                <i class="fas fa-bell"></i>
+                            <button id="btnDropdownNotificaciones" 
+                                    class="btn btn-outline-light position-relative notification-bell nav-icon-tooltip" 
+                                    data-bs-toggle="dropdown" 
+                                    data-bs-auto-close="true"
+                                    data-bs-placement="bottom"
+                                    title="Notificaciones"
+                                    data-tooltip-custom="Notificaciones"
+                                    aria-expanded="false" 
+                                    hx-get="{% url 'dropdown_notificaciones' %}" 
+                                    hx-trigger="click" 
+                                    hx-target="#dropdownNotificacionesMenu" 
+                                    hx-swap="innerHTML"
+                                    style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
+                                    onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'; this.setAttribute('title', 'Notificaciones')"
+                                    onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                                    onclick="console.log('Dropdown clicked'); this.blur();">
+                                <i class="fas fa-bell text-white"></i>
                                 {% if notificaciones_pendientes|default:0 > 0 %}
                                     <span id="badgeNotificaciones" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;">
                                         {% if notificaciones_pendientes > 9 %}9+{% else %}{{ notificaciones_pendientes }}{% endif %}
@@ -57,25 +168,51 @@
                                 <div class="text-center p-3 small text-muted">Cargando...</div>
                             </div>
                         </div>
+                        
+                        <!-- Icono de Mi Vehículo (si tiene vehículo asignado) -->
+                        {% if vehiculo_menu %}
+                        <a href="{% url 'mi_vehiculo' %}" 
+                           class="btn btn-outline-light me-2 nav-icon-tooltip" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="bottom" 
+                           data-bs-delay='{"show":0,"hide":100}'
+                           title="Mi Vehículo - {{ vehiculo_menu.placas }}"
+                           data-tooltip-custom="Mi Vehículo - {{ vehiculo_menu.placas }}"
+                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
+                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <i class="fas fa-car text-white"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if user.is_staff %}
+                        <a href="{% url 'acciones_recientes' %}" 
+                           class="btn btn-outline-light me-2 nav-icon-tooltip" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="bottom" 
+                           data-bs-delay='{"show":0,"hide":100}'
+                           title="Acciones Recientes"
+                           data-tooltip-custom="Acciones Recientes"
+                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
+                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <i class="fas fa-clock text-white"></i>
+                        </a>
+                        {% endif %}
                         <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-1"></i>{{ user.username }}
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1 text-white"></i><span class="text-white">{{ user.username }}</span>
                             </button>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'perfil_usuario' %}">
                                     <i class="fas fa-id-card me-2"></i>Mi Perfil
                                 </a></li>
                                 {% if vehiculo_menu %}
-                                <li><a class="dropdown-item" href="{% url 'mi_vehiculo' %}">
-                                    <i class="fas fa-car me-2"></i>Mi Vehículo ({{ vehiculo_menu.placas }})
-                                </a></li>
                                 <li><a class="dropdown-item" href="{% url 'flota:mis_transferencias' %}">
                                     <i class="fas fa-exchange-alt me-2"></i>Transferencias
                                 </a></li>
                                 {% endif %}
-                                <li><a class="dropdown-item" href="{% url 'notificaciones_usuario' %}">
-                                    <i class="fas fa-bell me-2"></i>Notificaciones
-                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}">
                                     <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
                                 </a></li>
@@ -201,6 +338,145 @@
                         }
                     }).catch(()=>{});
             }
+        });
+        </script>
+        
+        <script>
+        // Inicializar tooltips de Bootstrap con configuración instantánea
+        document.addEventListener('DOMContentLoaded', function () {
+            // Configurar tooltips con respuesta instantánea
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle*="tooltip"]:not(#btnDropdownNotificaciones)'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    delay: { show: 0, hide: 50 }, // Instantáneo mostrar, rápido ocultar
+                    animation: false, // Sin animación CSS
+                    trigger: 'hover', // Solo hover para evitar conflictos
+                    template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>',
+                    customClass: 'tooltip-instant'
+                });
+            });
+            
+            // Manejar tooltip del botón de notificaciones manualmente
+            const notifBtn = document.getElementById('btnDropdownNotificaciones');
+            if (notifBtn) {
+                let notifTooltip = null;
+                
+                notifBtn.addEventListener('mouseenter', function() {
+                    if (!this.classList.contains('show')) { // Solo mostrar tooltip si dropdown no está abierto
+                        notifTooltip = new bootstrap.Tooltip(this, {
+                            title: 'Notificaciones',
+                            delay: { show: 0, hide: 50 },
+                            animation: false,
+                            customClass: 'tooltip-instant'
+                        });
+                        notifTooltip.show();
+                    }
+                });
+                
+                notifBtn.addEventListener('mouseleave', function() {
+                    if (notifTooltip) {
+                        notifTooltip.dispose();
+                        notifTooltip = null;
+                    }
+                });
+                
+                notifBtn.addEventListener('click', function(e) {
+                    if (notifTooltip) {
+                        notifTooltip.dispose();
+                        notifTooltip = null;
+                    }
+                    console.log('Notificaciones button clicked');
+                });
+                
+                // Verificar que el dropdown funcione correctamente
+                notifBtn.addEventListener('shown.bs.dropdown', function() {
+                    console.log('Dropdown opened');
+                });
+                
+                notifBtn.addEventListener('hidden.bs.dropdown', function() {
+                    console.log('Dropdown closed');
+                });
+            }
+            
+            // Debug: Verificar que HTMX esté funcionando
+            document.body.addEventListener('htmx:beforeRequest', function(evt) {
+                console.log('HTMX request started:', evt.detail.requestConfig.path);
+            });
+            
+            document.body.addEventListener('htmx:afterRequest', function(evt) {
+                console.log('HTMX request completed:', evt.detail.xhr.status);
+            });
+            
+            // Asegurar que el dropdown se cierre al hacer click fuera
+            document.addEventListener('click', function(e) {
+                const dropdownWrapper = document.getElementById('dropdownNotificacionesWrapper');
+                const dropdown = document.getElementById('btnDropdownNotificaciones');
+                const dropdownMenu = document.getElementById('dropdownNotificacionesMenu');
+                
+                if (dropdownWrapper && dropdown && dropdownMenu) {
+                    // Si el click no es dentro del dropdown wrapper
+                    if (!dropdownWrapper.contains(e.target)) {
+                        // Si el dropdown está abierto
+                        if (dropdown.classList.contains('show') || dropdown.getAttribute('aria-expanded') === 'true') {
+                            // Cerrar el dropdown usando Bootstrap
+                            const dropdownInstance = bootstrap.Dropdown.getInstance(dropdown);
+                            if (dropdownInstance) {
+                                dropdownInstance.hide();
+                            } else {
+                                // Fallback manual
+                                dropdown.classList.remove('show');
+                                dropdown.setAttribute('aria-expanded', 'false');
+                                dropdownMenu.classList.remove('show');
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Prevenir que clicks dentro del dropdown lo cierren accidentalmente
+            document.addEventListener('click', function(e) {
+                const dropdownMenu = document.getElementById('dropdownNotificacionesMenu');
+                if (dropdownMenu && dropdownMenu.contains(e.target)) {
+                    // Solo cerrar si se hace click en un enlace específico
+                    if (e.target.tagName === 'A' || e.target.closest('a')) {
+                        // Permitir que el enlace funcione y luego cerrar
+                        setTimeout(() => {
+                            const dropdown = document.getElementById('btnDropdownNotificaciones');
+                            if (dropdown) {
+                                const dropdownInstance = bootstrap.Dropdown.getInstance(dropdown);
+                                if (dropdownInstance) {
+                                    dropdownInstance.hide();
+                                }
+                            }
+                        }, 100);
+                    } else {
+                        // Prevenir cierre al hacer click en el contenido del dropdown
+                        e.stopPropagation();
+                    }
+                }
+            });
+            
+            // Agregar CSS para tooltips instantáneos con colores SOMA
+            const style = document.createElement('style');
+            style.textContent = `
+                .tooltip-instant {
+                    --bs-tooltip-opacity: 1;
+                }
+                .tooltip-instant .tooltip-inner {
+                    background-color: var(--soma-orange, #ff6b35) !important;
+                    color: white !important;
+                    font-size: 0.75rem !important;
+                    padding: 0.4rem 0.6rem !important;
+                    font-weight: 500 !important;
+                }
+                .tooltip-instant .tooltip-arrow::before {
+                    border-top-color: var(--soma-orange, #ff6b35) !important;
+                    border-bottom-color: var(--soma-orange, #ff6b35) !important;
+                    border-left-color: var(--soma-orange, #ff6b35) !important;
+                    border-right-color: var(--soma-orange, #ff6b35) !important;
+                }
+            `;
+            document.head.appendChild(style);
         });
         </script>
         
