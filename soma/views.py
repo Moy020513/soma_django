@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.contrib import admin as djadmin
 from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular, AsignacionVehiculo
-from apps.herramientas.models import Herramienta
+from apps.herramientas.models import Herramienta, AsignacionHerramienta
 from apps.notificaciones.models import Notificacion
 from django.contrib.admin.models import LogEntry
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
@@ -159,6 +159,7 @@ def perfil_usuario(request):
     asignaciones_supervisadas_hoy = []
     asignaciones_supervisadas_pendientes_perfil = []
     vehiculo_asignado = None
+    herramienta_asignada = None
     
     if empleado:
         # Asignaciones como empleado
@@ -222,6 +223,13 @@ def perfil_usuario(request):
         ).select_related('vehiculo').first()
         if asignacion_vehiculo:
             vehiculo_asignado = asignacion_vehiculo.vehiculo
+        # Obtener herramienta asignada (sin fecha_devolucion)
+        asignacion_herramienta = AsignacionHerramienta.objects.filter(
+            empleado=empleado,
+            fecha_devolucion__isnull=True
+        ).select_related('herramienta').first()
+        if asignacion_herramienta:
+            herramienta_asignada = asignacion_herramienta.herramienta
     
     context = {
         'titulo': 'Mi Perfil',
@@ -231,7 +239,8 @@ def perfil_usuario(request):
         'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
         'asignaciones_pendientes': asignaciones_supervisadas_pendientes_perfil if empleado else [],
         'empleado': empleado,
-        'vehiculo_asignado': vehiculo_asignado,
+    'vehiculo_asignado': vehiculo_asignado,
+    'herramienta_asignada': herramienta_asignada,
         'today': timezone.localdate(),
     }
     return render(request, 'perfil_usuario.html', context)

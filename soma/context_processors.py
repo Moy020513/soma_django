@@ -1,6 +1,7 @@
 from django.contrib.admin.models import LogEntry
 from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import AsignacionVehiculo
+from apps.herramientas.models import AsignacionHerramienta
 
 def vehiculo_asignado_context(request):
     """Retorna el vehículo asignado del usuario autenticado si existe"""
@@ -21,6 +22,33 @@ def vehiculo_asignado_context(request):
         return {'vehiculo_menu': None}
     except:
         return {'vehiculo_menu': None}
+
+
+def herramienta_asignada_context(request):
+    """Retorna información de herramientas asignadas para el menú: una (herramienta_menu) o varias (herramientas_menu, herramientas_count)."""
+    if not request.user.is_authenticated:
+        return {}
+    try:
+        empleado = Empleado.objects.filter(usuario=request.user).first()
+        if not empleado:
+            return {'herramienta_menu': None, 'herramientas_menu': [], 'herramientas_count': 0}
+        asignaciones = (AsignacionHerramienta.objects
+                         .filter(empleado=empleado, fecha_devolucion__isnull=True)
+                         .select_related('herramienta')
+                         .order_by('herramienta__categoria', 'herramienta__codigo'))
+        count = asignaciones.count()
+        if count == 0:
+            return {'herramienta_menu': None, 'herramientas_menu': [], 'herramientas_count': 0}
+        if count == 1:
+            return {'herramienta_menu': asignaciones[0].herramienta, 'herramientas_menu': [], 'herramientas_count': 1}
+        # Múltiples
+        return {
+            'herramienta_menu': None,
+            'herramientas_menu': [a.herramienta for a in asignaciones],
+            'herramientas_count': count
+        }
+    except Exception:
+        return {'herramienta_menu': None, 'herramientas_menu': [], 'herramientas_count': 0}
 
 def recent_admin_actions(request):
     """Retorna las últimas 10 acciones del admin para usuarios staff.

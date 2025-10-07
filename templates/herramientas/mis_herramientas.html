@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Mis Herramientas{% endblock %}
+{% block page_title %}Mis Herramientas Asignadas{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="fas fa-toolbox me-2"></i>Herramientas Asignadas</h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Código</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Marca</th>
+            <th>Asignada Desde</th>
+            <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in asignaciones %}
+        <tr>
+          <td><span class="fw-semibold">{{ a.herramienta.codigo }}</span></td>
+          <td>{{ a.herramienta.nombre }}</td>
+          <td>{{ a.herramienta.get_categoria_display }}</td>
+          <td>{{ a.herramienta.marca|default:'-' }}</td>
+          <td>{{ a.fecha_asignacion|date:'d/m/Y' }}</td>
+          <td class="text-end">
+            <a href="{% url 'herramientas:solicitar_transferencia' %}?h={{ a.herramienta.id }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-exchange-alt"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

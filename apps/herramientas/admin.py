@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Herramienta, AsignacionHerramienta
+from .models import Herramienta, AsignacionHerramienta, TransferenciaHerramienta
 
 
 @admin.register(Herramienta)
@@ -60,3 +60,12 @@ class AsignacionHerramientaAdmin(admin.ModelAdmin):
         updated = queryset.filter(fecha_devolucion__isnull=True).update(fecha_devolucion=today)
         self.message_user(request, f'{updated} herramientas marcadas como devueltas.')
     marcar_como_devueltas.short_description = "Marcar como devueltas (fecha actual)"
+
+
+@admin.register(TransferenciaHerramienta)
+class TransferenciaHerramientaAdmin(admin.ModelAdmin):
+    list_display = ['herramienta', 'empleado_origen', 'empleado_destino', 'estado', 'fecha_solicitud']
+    list_filter = ['estado', 'fecha_solicitud']
+    search_fields = ['herramienta__codigo', 'empleado_origen__usuario__username', 'empleado_destino__usuario__username']
+    date_hierarchy = 'fecha_solicitud'
+    readonly_fields = ['fecha_solicitud', 'fecha_respuesta', 'fecha_transferencia']

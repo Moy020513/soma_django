@@ -61,6 +61,10 @@ class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        # Redirección automática para notificaciones de inspección de herramienta enviada
+        if self.object.titulo.startswith('📤 Inspección de Herramienta Enviada') and self.object.url.endswith('/responder/'):
+            from django.shortcuts import redirect
+            return redirect(self.object.url)
         # Marcar como leída si no lo está
         if not self.object.leida:
             self.object.leida = True

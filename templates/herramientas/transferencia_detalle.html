@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Detalle Transferencia Herramienta{% endblock %}
+{% block page_title %}Detalle Transferencia de Herramienta{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="fas fa-tools me-2"></i>{{ transferencia.herramienta.nombre }} ({{ transferencia.herramienta.codigo }})</h5>
+    <span class="badge bg-info">{{ transferencia.get_estado_display }}</span>
+  </div>
+  <div class="card-body">
+    <p><strong>Origen:</strong> {{ transferencia.empleado_origen }}</p>
+    <p><strong>Destino:</strong> {{ transferencia.empleado_destino }}</p>
+    <p><strong>Solicitada:</strong> {{ transferencia.fecha_solicitud }}</p>
+    {% if transferencia.observaciones_solicitud %}<p><strong>Observaciones solicitud:</strong><br>{{ transferencia.observaciones_solicitud|linebreaks }}</p>{% endif %}
+    {% if transferencia.observaciones_respuesta %}<p><strong>Observaciones respuesta:</strong><br>{{ transferencia.observaciones_respuesta|linebreaks }}</p>{% endif %}
+  </div>
+</div>
+{% if es_destino and transferencia.estado == 'solicitada' %}
+  <a href="{% url 'herramientas:responder_transferencia' transferencia.pk %}" class="btn btn-success me-2">Responder</a>
+{% endif %}
+<a href="{% url 'herramientas:mi_herramienta' %}" class="btn btn-outline-secondary">Volver</a>
+{% endblock %}

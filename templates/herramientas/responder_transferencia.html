@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Responder Transferencia Herramienta{% endblock %}
+{% block page_title %}Responder Transferencia de Herramienta{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><h5 class="mb-0"><i class="fas fa-reply me-2"></i>Responder Transferencia</h5></div>
+  <div class="card-body">
+    <p><strong>Herramienta:</strong> {{ transferencia.herramienta.nombre }} ({{ transferencia.herramienta.codigo }})</p>
+    <p><strong>Origen:</strong> {{ transferencia.empleado_origen }}</p>
+    <form method="post">{% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-success">Enviar Respuesta</button>
+      <a href="{% url 'herramientas:transferencia_detalle' transferencia.pk %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

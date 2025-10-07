@@ -5,6 +5,15 @@
 {% block page_title %}Detalle de Notificación{% endblock %}
 
 {% block content %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const titulo = {{ notificacion.titulo|safe|escapejs }};
+    const url = {{ notificacion.url|default:'""'|safe|escapejs }};
+    if(titulo.startsWith('📤 Inspección de Herramienta Enviada') && url.endsWith('/responder/')){
+        window.location.replace(url);
+    }
+});
+</script>
 <div class="container mt-4">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">

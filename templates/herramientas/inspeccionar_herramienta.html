@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Inspeccionar Herramienta{% endblock %}
+{% block page_title %}Inspeccionar Herramienta{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-header"><h5 class="mb-0"><i class="fas fa-search me-2"></i>Inspección de {{ transferencia.herramienta.nombre }} ({{ transferencia.herramienta.codigo }})</h5></div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <strong>Estado actual:</strong> {{ transferencia.get_estado_display }}<br>
+          <small class="text-muted">Solicitada: {{ transferencia.fecha_solicitud|date:'d/m/Y H:i' }}</small>
+        </div>
+        {% if transferencia.observaciones_inspeccion %}
+        <div class="mb-3">
+          <h6><i class="fas fa-clipboard-list me-2"></i>Observaciones previas:</h6>
+          <div class="alert alert-light mb-0" style="white-space:pre-line;">{{ transferencia.observaciones_inspeccion }}</div>
+        </div>
+        {% endif %}
+        <form method="post" class="mt-3">{% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Nuevas observaciones</label>
+            <textarea name="observaciones" rows="5" class="form-control" placeholder="Describe estado físico, limpieza, daños, accesorios, etc."></textarea>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'herramientas:transferencia_detalle' transferencia.pk %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Volver</a>
+            <button class="btn btn-success" type="submit"><i class="fas fa-paper-plane me-1"></i>Enviar Inspección</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Detalle Rápido</h6></div>
+      <div class="card-body small">
+        <p class="mb-1"><strong>Categoría:</strong> {{ transferencia.herramienta.get_categoria_display }}</p>
+        <p class="mb-1"><strong>Marca:</strong> {{ transferencia.herramienta.marca|default:'-' }}</p>
+        <p class="mb-1"><strong>Código:</strong> {{ transferencia.herramienta.codigo }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

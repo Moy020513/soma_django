@@ -85,3 +85,34 @@ class AsignacionHerramienta(models.Model):
 
     def __str__(self):
         return f"{self.herramienta} - {self.empleado}"
+
+
+class TransferenciaHerramienta(models.Model):
+    ESTADOS_TRANSFERENCIA = [
+        ('solicitada', 'Solicitada'),
+        ('inspeccion', 'En Inspección'),
+        ('inspeccion_enviada', 'Inspección Enviada'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+        ('cancelada', 'Cancelada'),
+    ]
+
+    herramienta = models.ForeignKey(Herramienta, on_delete=models.CASCADE)
+    empleado_origen = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='transferencias_herramientas_origen')
+    empleado_destino = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='transferencias_herramientas_destino')
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    fecha_respuesta = models.DateTimeField(null=True, blank=True)
+    fecha_transferencia = models.DateTimeField(null=True, blank=True)
+    fecha_inspeccion = models.DateTimeField(null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS_TRANSFERENCIA, default='solicitada')
+    observaciones_solicitud = models.TextField(blank=True)
+    observaciones_respuesta = models.TextField(blank=True)
+    observaciones_inspeccion = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Transferencia de Herramienta'
+        verbose_name_plural = 'Transferencias de Herramientas'
+        ordering = ['-fecha_solicitud']
+
+    def __str__(self):
+        return f"Transferencia {self.herramienta.codigo} - {self.empleado_origen} → {self.empleado_destino}"
