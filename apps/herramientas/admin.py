@@ -1,42 +1,31 @@
 from django.contrib import admin
-from .models import CategoriaHerramienta, Herramienta, AsignacionHerramienta
-
-
-@admin.register(CategoriaHerramienta)
-class CategoriaHerramientaAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'descripcion']
-    search_fields = ['nombre', 'descripcion']
-    
-    def get_queryset(self, request):
-        return super().get_queryset(request)
+from .models import Herramienta, AsignacionHerramienta
 
 
 @admin.register(Herramienta)
 class HerramientaAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'categoria', 'modelo', 'numero_serie', 'estado', 'fecha_adquisicion']
-    list_filter = ['categoria', 'estado', 'fecha_adquisicion']
-    search_fields = ['nombre', 'modelo', 'numero_serie', 'descripcion']
+    list_display = ['nombre', 'categoria', 'marca', 'codigo', 'estado']
+    list_filter = ['categoria', 'estado']
+    search_fields = ['nombre', 'marca', 'codigo']
     list_editable = ['estado']
-    date_hierarchy = 'fecha_adquisicion'
-    
+
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'categoria', 'modelo', 'numero_serie')
+            'fields': ('nombre', 'categoria', 'marca', 'codigo')
         }),
-        ('Descripción', {
-            'fields': ('descripcion',)
-        }),
-        ('Estado y Fechas', {
-            'fields': ('estado', 'fecha_adquisicion')
-        }),
-        ('Información Financiera', {
-            'fields': ('costo',),
-            'classes': ('collapse',)
+        ('Estado', {
+            'fields': ('estado',)
         }),
     )
-    
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('categoria')
+
+    readonly_fields = ('codigo',)
+
+    def save_model(self, request, obj, form, change):
+        # Asegura generación del código si no existe
+        if not obj.codigo:
+            obj.save()
+        else:
+            super().save_model(request, obj, form, change)
 
 
 @admin.register(AsignacionHerramienta)
@@ -60,7 +49,8 @@ class AsignacionHerramientaAdmin(admin.ModelAdmin):
     )
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('herramienta', 'herramienta__categoria', 'empleado')
+        # 'categoria' ya no es FK, no usar select_related sobre ella
+        return super().get_queryset(request).select_related('herramienta', 'empleado')
     
     actions = ['marcar_como_devueltas']
     
