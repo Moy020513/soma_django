@@ -1,0 +1,941 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registro de Ubicación{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<!-- Leaflet JavaScript - Carga estática simple -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Verificación de carga -->
+<script>
+console.log('� Verificando carga de Leaflet...');
+
+// Función que se ejecuta cuando el DOM está listo
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        if (typeof L !== 'undefined') {
+            console.log('✅ Leaflet cargado exitosamente! Versión:', L.version);
+         // Función p// Función para inicfunction init// Funfunction ini// Función para inicializar el mapa
+function initMap(lat, lng, accuracy, timestamp, tipo) {
+    // Convertir parámetros a números
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    console.log('� Mostrando ubicación:', latNum.toFixed(6), lngNum.toFixed(6));
+    
+    // Verificación rápida de Leaflet - sin esperas
+    if (typeof L !== 'undefined') {
+        console.log('🗺️ Creando mapa interactivo');
+        createMap(latNum, lngNum, accuracy, timestamp, tipo);
+    } else { lng, accuracy, timestamp, tipo) {
+    // Convertir parámetros a números
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    console.log('� Mostrando ubicación:', latNum.toFixed(6), lngNum.toFixed(6));
+    
+    // Verificación rápida de Leaflet - sin esperas
+    if (typeof L !== 'undefined') {
+        console.log('🗺️ Creando mapa interactivo');
+        createMap(latNum, lngNum, accuracy, timestamp, tipo);
+    } else {
+        console.log('📋 Usando vista de información');
+        mostrarInfoSinMapa(latNum, lngNum, accuracy, timestamp, tipo);
+    }nicializar el mapa
+function initMap(lat, lng, accuracy, timestamp, tipo) {
+    // Convertir parámetros a números
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    console.log('� Mostrando ubicación:', latNum.toFixed(6), lngNum.toFixed(6));(lat, lng, accuracy, timestamp, tipo) {
+    // Convertir parámetros a números
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    
+    console.log('� Mostrando ubicación:', latNum.toFixed(6), lngNum.toFixed(6));
+    
+    // Verificación rápida de Leaflet - sin esperas
+    if (typeof L !== 'undefined') {
+        console.log('🗺️ Creando mapa interactivo');
+        createMap(latNum, lngNum, accuracy, timestamp, tipo);
+    } else {
+        console.log('📋 Usando vista de información');
+        mostrarInfoSinMapa(latNum, lngNum, accuracy, timestamp, tipo);
+    }mapa
+function initMap(lat, lng, accuracy, timestamp, tipo) {
+    const latNum = parseFloat(lat);
+    co// Función para mostrar información de registros anteriores
+window.mostrarMapaRegistro = function(lat, lng, accuracy, timestamp, tipo) {
+    console.log('� Mostrando ubicación de registro:', tipo);
+    
+    // Convertir parámetros a números
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    
+    // Validar que los parámetros sean correctos
+    if (isNaN(latNum) || isNaN(lngNum)) {
+        console.error('❌ Coordenadas inválidas:', lat, lng);
+        return;
+    }
+    
+    // Mostrar información inmediatamente
+    initMap(latNum, lngNum, accuracy, timestamp, tipo); parseFloat(lng);
+    console.log('📍 Mostrando ubicación:', latNum.toFixed(6), lngNum.toFixed(6)); inicializar el mapa
+function initMap(lat, lng, accuracy, timestamp, tipo) {
+    // Convertir lat y lng a números si son strings
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    
+    console.log('📍 Mostrando ubicación:', latNum.toFixed(6), lngNum.toFixed(6));window.leafletLoaded = true;
+        } else {
+            console.warn('⚠️ Leaflet no se cargó, marcando como// Función para mostrar información de registros anteriores
+window.mostrarMapaRegistro = function(lat, lng, accuracy, timestamp, tipo) {
+    console.log('� === DEBUG PARÁMETROS ===');
+    console.log('Parámetro 1 (lat):', lat, typeof lat);
+    console.log('Parámetro 2 (lng):', lng, typeof lng);
+    console.log('Parámetro 3 (accuracy):', accuracy, typeof accuracy);
+    console.log('Parámetro 4 (timestamp):', timestamp, typeof timestamp);
+    console.log('Parámetro 5 (tipo):', tipo, typeof tipo);
+    console.log('🔍 === FIN DEBUG ===');llido');
+            window.leafletLoadFailed = true;
+        }
+    }, 1000); // Dar tiempo para que se cargue
+});
+</script>
+
+<style>
+    .location-card {
+        border-left: 4px solid #007bff;
+        background: #f8f9fa;
+    }
+    .btn-location {
+        min-height: 70px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border: 2px solid;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .btn-location:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    .btn-success-custom {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border-color: #28a745;
+        color: white;
+    }
+    .btn-success-custom:hover:not(.disabled) {
+        background: linear-gradient(135deg, #218838, #1e7e34);
+        border-color: #1e7e34;
+        color: white;
+    }
+    .btn-warning-custom {
+        background: linear-gradient(135deg, #fd7e14, #ffc107);
+        border-color: #fd7e14;
+        color: white;
+    }
+    .btn-warning-custom:hover:not(.disabled) {
+        background: linear-gradient(135deg, #e8690b, #e0a800);
+        border-color: #dc6002;
+        color: white;
+    }
+    .btn-location.disabled {
+        opacity: 0.6;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Estados de carga para los botones */
+    .btn-location .btn-text {
+        display: block;
+    }
+    
+    .btn-location .loading-spinner {
+        display: none;
+    }
+    
+    .btn-location.loading .btn-text {
+        display: none;
+    }
+    
+    .btn-location.loading .loading-spinner {
+        display: block;
+    }
+    
+    /* Estilos para el mapa */
+    .map-container {
+        margin-top: 1.5rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        display: none; /* Oculto por defecto */
+    }
+    
+    .map-container.show {
+        display: block;
+    }
+    
+    #locationMap {
+        height: 300px;
+        width: 100%;
+    }
+    
+    .map-info {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .map-info h6 {
+        margin: 0 0 0.5rem 0;
+        color: #495057;
+    }
+    
+    .coordinate-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+    
+    .coordinate-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .coordinate-value {
+        font-family: 'Courier New', monospace;
+        color: #28a745;
+    }
+    .location-status {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    .status-success {
+        background-color: #d1e7dd;
+        border: 1px solid #badbcc;
+        color: #0f5132;
+    }
+    .status-warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffecb5;
+        color: #664d03;
+    }
+    .registro-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .registro-entrada {
+        border-left: 4px solid #28a745;
+    }
+    .registro-salida {
+        border-left: 4px solid #dc3545;
+    }
+    .loading-spinner {
+        display: none;
+    }
+    .loading .loading-spinner {
+        display: inline-block;
+    }
+    .loading .btn-text {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card location-card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Control de Asistencia por Ubicación
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información del empleado -->
+                    <div class="mb-4">
+                        <h5>Empleado: {{ empleado.nombre_completo }}</h5>
+                        <p class="text-muted mb-0">Número: {{ empleado.numero_empleado }}</p>
+                        <p class="text-muted">Puesto: {{ empleado.puesto.nombre }}</p>
+                    </div>
+
+                    <!-- Estado actual -->
+                    <div class="location-status {% if ya_registro_entrada and ya_registro_salida %}status-success{% elif ya_registro_entrada %}status-warning{% else %}status-info{% endif %}">
+                        {% if ya_registro_entrada and ya_registro_salida %}
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Registros completos:</strong> Ya registraste entrada y salida para hoy.
+                        {% elif ya_registro_entrada %}
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>Entrada registrada:</strong> Recuerda registrar tu salida al terminar la jornada.
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Sin registros hoy:</strong> Registra tu entrada al llegar al trabajo.
+                        {% endif %}
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                                                        <button 
+                                type="button" 
+                                id="btnEntrada"
+                                class="btn btn-success-custom btn-location w-100 {% if ya_registro_entrada %}disabled{% endif %}" 
+                                data-tipo="entrada"
+                                {% if ya_registro_entrada %}disabled{% endif %}>
+                                <span class="btn-text">
+                                    <i class="fas fa-sign-in-alt me-2"></i>
+                                    {% if ya_registro_entrada %}
+                                        ✅ ENTRADA REGISTRADA
+                                    {% else %}
+                                        🎯 CLIC PARA REGISTRAR ENTRADA
+                                    {% endif %}
+                                </span>
+                                <span class="loading-spinner" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Solicitando GPS...
+                                </span>
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button 
+                                type="button" 
+                                id="btnSalida"
+                                class="btn btn-warning-custom btn-location w-100 {% if ya_registro_salida or not ya_registro_entrada %}disabled{% endif %}" 
+                                data-tipo="salida"
+                                {% if ya_registro_salida or not ya_registro_entrada %}disabled{% endif %}>
+                                <span class="btn-text">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    {% if ya_registro_salida %}
+                                        ✅ SALIDA REGISTRADA
+                                    {% elif not ya_registro_entrada %}
+                                        ⏳ REGISTRA ENTRADA PRIMERO
+                                    {% else %}
+                                        🎯 CLIC PARA REGISTRAR SALIDA
+                                    {% endif %}
+                                </span>
+                                <span class="loading-spinner" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Solicitando GPS...
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Información de ubicación -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>🆕 NUEVO: ¿Cómo funciona el registro de ubicación?</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>📍 Proceso:</strong></p>
+                                <p class="mb-0 small">
+                                    1. Haz clic en "Registrar Entrada/Salida"<br>
+                                    2. <strong>El navegador pedirá permiso de ubicación</strong><br>
+                                    3. <strong>Selecciona "Permitir" cuando aparezca</strong><br>
+                                    4. Tu posición GPS se registrará automáticamente
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>⚠️ Importante:</strong></p>
+                                <p class="mb-0 small">
+                                    • Solo una entrada y una salida por día<br>
+                                    • Activa el GPS para mayor precisión<br>
+                                    • Permite el acceso cuando lo solicite<br>
+                                    • Recarga la página si hay problemas
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mapa de ubicación -->
+                    <div id="mapContainer" class="map-container">
+                        <div id="locationMap"></div>
+                        <div class="map-info">
+                            <h6><i class="fas fa-map-marker-alt me-2"></i>Ubicación Registrada</h6>
+                            <div class="coordinate-item">
+                                <span class="coordinate-label">Latitud:</span>
+                                <span class="coordinate-value" id="mapLatitude">--</span>
+                            </div>
+                            <div class="coordinate-item">
+                                <span class="coordinate-label">Longitud:</span>
+                                <span class="coordinate-value" id="mapLongitude">--</span>
+                            </div>
+                            <div class="coordinate-item">
+                                <span class="coordinate-label">Precisión:</span>
+                                <span class="coordinate-value" id="mapPrecision">--</span>
+                            </div>
+                            <div class="coordinate-item">
+                                <span class="coordinate-label">Timestamp:</span>
+                                <span class="coordinate-value" id="mapTimestamp">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Registros de hoy -->
+                    {% if registros_hoy %}
+                    <div class="mt-4">
+                        <h6><i class="fas fa-history me-2"></i>Registros de hoy:</h6>
+                        {% for registro in registros_hoy %}
+                        <div class="registro-item registro-{{ registro.tipo }} mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong>{{ registro.get_tipo_display }}</strong>
+                                    <small class="text-muted d-block">{{ registro.fecha_local|date:"H:i:s" }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ registro.coordenadas_str }}</small>
+                                    {% if registro.precision %}
+                                    <small class="text-muted d-block">Precisión: {{ registro.precision|floatformat:0 }}m</small>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-outline-primary mt-1" 
+                                            onclick="mostrarMapaRegistro('{{ registro.latitud }}', '{{ registro.longitud }}', {{ registro.precision|default:50 }}, '{{ registro.fecha_local|date:"H:i:s" }}', '{{ registro.get_tipo_display|lower }}')">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Ver Ubicación
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Sistema de Control de Asistencia por Ubicación
+console.log('🚀 Control de Asistencia SOMA - Listo');
+
+// Configurar event listeners cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Configurando event listeners...');
+    
+    const btnEntrada = document.getElementById('btnEntrada');
+    const btnSalida = document.getElementById('btnSalida');
+    
+    console.log('🔍 Botón entrada encontrado:', btnEntrada ? 'SÍ' : 'NO');
+    console.log('🔍 Botón salida encontrado:', btnSalida ? 'SÍ' : 'NO');
+    
+    // Event listener para botón de entrada
+    if (btnEntrada && !btnEntrada.disabled) {
+        btnEntrada.addEventListener('click', function() {
+            console.log('� Click en botón entrada detectado');
+            confirmarRegistro('entrada');
+        });
+        console.log('✅ Event listener entrada configurado');
+    }
+    
+    // Event listener para botón de salida  
+    if (btnSalida && !btnSalida.disabled) {
+        btnSalida.addEventListener('click', function() {
+            console.log('� Click en botón salida detectado');
+            confirmarRegistro('salida');
+        });
+        console.log('✅ Event listener salida configurado');
+    }
+    
+    console.log('🎯 Todos los event listeners configurados');
+});
+
+// Función global para confirmar registro
+window.confirmarRegistro = function(tipo) {
+    console.log('🔘 Usuario hizo clic en registrar', tipo);
+    console.log('🔘 Timestamp:', new Date().toLocaleTimeString());
+    
+    // Confirmación clara
+    const tipoTexto = tipo === 'entrada' ? 'ENTRADA' : 'SALIDA';
+    const confirmacion = confirm(
+        `🎯 ¿REGISTRAR ${tipoTexto}?\n\n` +
+        `✓ Se solicitará acceso a tu ubicación GPS\n` +
+        `✓ Debes PERMITIR el acceso cuando aparezca la ventana\n` +
+        `✓ Solo puedes registrar una ${tipo} por día\n\n` +
+        `¿Continuar?`
+    );
+    
+    if (!confirmacion) {
+        console.log('❌ Usuario canceló');
+        return;
+    }
+    
+    // Verificar soporte
+    if (!navigator.geolocation) {
+        alert("❌ Tu navegador no soporta geolocalización.");
+        return;
+    }
+    
+    console.log('✅ Procediendo con registro de', tipo);
+    iniciarRegistro(tipo);
+}
+
+window.iniciarRegistro = function(tipo) {
+    const button = document.getElementById(tipo === 'entrada' ? 'btnEntrada' : 'btnSalida');
+    
+    // Mostrar estado de carga
+    if (button) {
+        button.classList.add('loading');
+        console.log('🔄 Botón en estado de carga');
+    }
+    
+    console.log('📍 Solicitando ubicación GPS ahora...');
+    
+    // AQUÍ es donde el navegador pide permisos
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            console.log('✅ Ubicación obtenida:', position.coords);
+            
+            if (button) {
+                button.classList.remove('loading');
+            }
+            
+            // Enviar al servidor
+            enviarRegistro(position, tipo);
+        },
+        function(error) {
+            console.error('❌ Error de ubicación:', error);
+            
+            if (button) {
+                button.classList.remove('loading');
+            }
+            
+            let mensaje = "";
+            switch(error.code) {
+                case 1:
+                    mensaje = "🚫 Permisos denegados\n\nBusca el ícono 📍 en la barra de direcciones y permite el acceso.";
+                    break;
+                case 2:
+                    mensaje = "📡 GPS no disponible\n\nVerifica tu conexión y que el GPS esté activado.";
+                    break;
+                case 3:
+                    mensaje = "⏱️ Tiempo agotado\n\nIntenta de nuevo.";
+                    break;
+                default:
+                    mensaje = "❓ Error desconocido\n\nContacta al administrador.";
+            }
+            alert(mensaje);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 60000
+        }
+    );
+}
+
+window.enviarRegistro = function(position, tipo) {
+    console.log('📤 Enviando registro al servidor...');
+    
+    const data = {
+        latitud: position.coords.latitude,
+        longitud: position.coords.longitude,
+        precision: position.coords.accuracy,
+        tipo: tipo
+    };
+    
+    fetch('{% url "ubicaciones:api_registrar" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const tipoTexto = tipo.toUpperCase();
+            const precision = position.coords.accuracy < 20 ? "Excelente" : 
+                            position.coords.accuracy < 50 ? "Buena" : "Aceptable";
+            
+            // Mostrar mapa o vista alternativa después del registro
+            setTimeout(() => {
+                if (typeof L !== 'undefined') {
+                    console.log('✅ Mostrando mapa real después del registro');
+                    initMap(
+                        position.coords.latitude,
+                        position.coords.longitude,
+                        position.coords.accuracy,
+                        data.timestamp,
+                        tipo
+                    );
+                } else {
+                    console.log('⚠️ Mostrando vista alternativa después del registro');
+                    mostrarInfoSinMapa(
+                        position.coords.latitude,
+                        position.coords.longitude,
+                        position.coords.accuracy,
+                        data.timestamp,
+                        tipo
+                    );
+                }
+            }, 1000);
+            
+            // Mensaje de éxito más conciso
+            alert(`✅ ¡${tipoTexto} REGISTRADA!\n\n` +
+                  `🕒 ${data.timestamp}\n` +
+                  `🎯 Precisión: ${position.coords.accuracy.toFixed(0)}m (${precision})\n\n` +
+                  `📍 Revisa el mapa abajo para ver tu ubicación`);
+            
+            // Recargar página después de 3 segundos para mostrar el nuevo estado
+            setTimeout(() => location.reload(), 3000);
+        } else {
+            alert(`❌ Error: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión. Intenta de nuevo.');
+    });
+};
+
+console.log('✅ Sistema operativo');
+
+// Variables globales para el mapa
+let map = null;
+let marker = null;
+
+// Función de diagnóstico del mapa
+window.diagnosticarMapa = function() {
+    console.log('🔍 === DIAGNÓSTICO COMPLETO DEL MAPA ===');
+    console.log('- Leaflet disponible:', typeof L !== 'undefined');
+    console.log('- Contenedor mapa existe:', !!document.getElementById('mapContainer'));
+    console.log('- Elemento mapa existe:', !!document.getElementById('locationMap'));
+    console.log('- Mapa instanciado:', !!map);
+    console.log('- leafletLoaded flag:', window.leafletLoaded);
+    console.log('- leafletLoadFailed flag:', window.leafletLoadFailed);
+    
+    if (typeof L !== 'undefined') {
+        console.log('- Versión Leaflet:', L.version);
+        console.log('- Funciones L disponibles:', Object.keys(L).slice(0, 10));
+    } else {
+        console.log('🔄 Intentando cargar Leaflet ahora...');
+        
+        // Mostrar diagnóstico de red
+        console.log('🌐 === DIAGNÓSTICO DE RED ===');
+        console.log('- Navigator online:', navigator.onLine);
+        console.log('- User Agent:', navigator.userAgent.substring(0, 50) + '...');
+        
+        // Verificar CSP
+        const scripts = document.querySelectorAll('script[src*="leaflet"]');
+        console.log('- Scripts Leaflet en DOM:', scripts.length);
+        scripts.forEach((script, i) => {
+            console.log(`  Script ${i+1}:`, script.src, 'loaded:', !script.error);
+        });
+        
+        waitForLeaflet(() => {
+            console.log('✅ Leaflet ahora está disponible después de esperar');
+        });
+    }
+    
+    // Mostrar información del elemento del mapa
+    const mapElement = document.getElementById('locationMap');
+    if (mapElement) {
+        console.log('- Dimensiones del mapa:', {
+            width: mapElement.offsetWidth,
+            height: mapElement.offsetHeight,
+            visible: mapElement.offsetParent !== null
+        });
+    }
+    
+    console.log('🔍 === FIN DIAGNÓSTICO ===');
+    
+    // Mostrar en pantalla también
+    alert('Diagnóstico completo en consola. Abre F12 > Console para ver detalles.');
+};
+
+// Función alternativa para mostrar información sin mapa
+function mostrarInfoSinMapa(lat, lng, accuracy, timestamp, tipo) {
+    console.log('📍 Mostrando información sin mapa');
+    console.log('🔍 Valores recibidos:');
+    console.log('  - Latitud:', lat, '(tipo:', typeof lat, ')');
+    console.log('  - Longitud:', lng, '(tipo:', typeof lng, ')');
+    console.log('  - Lat parseada:', parseFloat(lat));
+    console.log('  - Lng parseada:', parseFloat(lng));
+    
+    const mapContainer = document.getElementById('mapContainer');
+    if (!mapContainer) return;
+    
+    // Convertir tipo a string y validar
+    let tipoStr = String(tipo || 'entrada').toLowerCase();
+    
+    // Manejar diferentes formatos de tipo
+    if (tipoStr === '1' || tipoStr === 'entrada' || tipoStr.includes('entrada')) {
+        tipoStr = 'entrada';
+    } else if (tipoStr === '2' || tipoStr === 'salida' || tipoStr.includes('salida')) {
+        tipoStr = 'salida';
+    } else {
+        tipoStr = 'entrada'; // default
+    }
+    
+    console.log('🔍 Tipo procesado:', tipoStr);
+    
+    const precision = accuracy < 20 ? "Excelente" : 
+                     accuracy < 50 ? "Buena" : "Aceptable";
+    
+    const iconColor = tipoStr === 'entrada' ? 'success' : 'warning';
+    const iconSymbol = tipoStr === 'entrada' ? '🏢' : '🏠';
+    const tipoTexto = tipoStr === 'entrada' ? 'ENTRADA' : 'SALIDA';
+    
+    mapContainer.innerHTML = `
+        <div class="alert alert-${iconColor} p-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="fs-1 me-3">${iconSymbol}</div>
+                <div>
+                    <h5 class="mb-1">${tipoTexto} REGISTRADA</h5>
+                    <small class="text-muted">${timestamp}</small>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>📍 Coordenadas:</strong><br>
+                    <small class="font-monospace">
+                        Lat: ${parseFloat(lat).toFixed(6)}<br>
+                        Lng: ${parseFloat(lng).toFixed(6)}
+                    </small>
+                </div>
+                <div class="col-md-6">
+                    <strong>🎯 Precisión:</strong><br>
+                    <small>${accuracy ? accuracy.toFixed(0) : '50'}m (${precision})</small>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <a href="https://www.google.com/maps?q=${parseFloat(lat).toFixed(6)},${parseFloat(lng).toFixed(6)}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i>Ver en Google Maps
+                </a>
+            </div>
+        </div>
+    `;
+    
+    mapContainer.classList.add('show');
+};
+
+// Función para probar el mapa
+window.probarMapa = function() {
+    console.log('🧪 Iniciando prueba del mapa...');
+    
+    const lat = 19.4326;
+    const lng = -99.1332;
+    const accuracy = 50;
+    const timestamp = new Date().toLocaleTimeString();
+    const tipo = 'entrada';
+    
+    // Verificar inmediatamente si Leaflet está disponible
+    if (typeof L !== 'undefined') {
+        console.log('✅ Leaflet disponible, creando mapa real');
+        initMap(lat, lng, accuracy, timestamp, tipo);
+    } else {
+        console.log('⚠️ Leaflet no disponible, mostrando vista alternativa');
+        mostrarInfoSinMapa(lat, lng, accuracy, timestamp, tipo);
+    }
+};
+
+// Verificar que Leaflet esté cargado
+function checkLeaflet() {
+    if (typeof L === 'undefined') {
+        console.error('❌ Leaflet no está cargado');
+        return false;
+    }
+    console.log('✅ Leaflet está disponible - Versión:', L.version);
+    return true;
+}
+
+// Función simplificada - no hay mapas disponibles
+function waitForLeaflet(callback, maxAttempts = 1) {
+    // Verificación única y rápida
+    if (typeof L !== 'undefined') {
+        console.log('✅ Leaflet disponible - inicializando mapa');
+        callback();
+    } else {
+        console.log('ℹ️ Mapas no disponibles - usando vista alternativa');
+        // No hacer más intentos, usar vista alternativa inmediatamente
+    }
+}
+
+// Función para mostrar error del mapa
+function showMapError() {
+    const mapContainer = document.getElementById('mapContainer');
+    if (mapContainer) {
+        mapContainer.innerHTML = `
+            <div class="alert alert-warning text-center p-4">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <h6>No se pudo cargar el mapa</h6>
+                <p class="mb-2">Puede ser por problemas de conexión o bloqueo de contenido.</p>
+                <button class="btn btn-sm btn-primary" onclick="location.reload()">
+                    <i class="fas fa-redo me-1"></i>Reintentar
+                </button>
+            </div>
+        `;
+        mapContainer.classList.add('show');
+    }
+}
+
+// Función para inicializar el mapa
+function initMap(lat, lng, accuracy, timestamp, tipo) {
+    console.log('� Mostrando ubicación:', lat.toFixed(6), lng.toFixed(6));
+    
+    // Verificación rápida de Leaflet - sin esperas
+    if (typeof L !== 'undefined') {
+        console.log('🗺️ Creando mapa interactivo');
+        createMap(latNum, lngNum, accuracy, timestamp, tipo);
+    } else {
+        console.log('📋 Usando vista de información');
+        mostrarInfoSinMapa(latNum, lngNum, accuracy, timestamp, tipo);
+    }
+}
+
+// Función separada para crear el mapa (una vez que Leaflet esté disponible)
+function createMap(lat, lng, accuracy, timestamp, tipo) {
+    console.log('🗺️ Creando mapa con Leaflet disponible');
+    
+    // Verificación final de Leaflet
+    if (typeof L === 'undefined') {
+        console.warn('⚠️ Leaflet aún no disponible, usando vista alternativa');
+        mostrarInfoSinMapa(lat, lng, accuracy, timestamp, tipo);
+        return;
+    }
+    
+    const mapContainer = document.getElementById('mapContainer');
+    const mapElement = document.getElementById('locationMap');
+    
+    if (!mapContainer || !mapElement) {
+        console.error('❌ Elementos del mapa no encontrados');
+        return;
+    }
+    
+    // Mostrar el contenedor del mapa
+    mapContainer.classList.add('show');
+    
+    // Si ya existe un mapa, eliminarlo
+    if (map) {
+        try {
+            map.remove();
+            console.log('🗑️ Mapa anterior eliminado');
+        } catch (e) {
+            console.warn('⚠️ Error al eliminar mapa anterior:', e);
+        }
+    }
+    
+    // Esperar un momento para que el DOM se actualice
+    setTimeout(() => {
+        try {
+            // Crear nuevo mapa
+            map = L.map('locationMap').setView([lat, lng], 16);
+            console.log('✅ Mapa creado exitosamente');
+            
+            // Continuar con la configuración
+            setupMapLayers(lat, lng, accuracy, timestamp, tipo);
+        } catch (error) {
+            console.error('❌ Error al crear mapa:', error);
+        }
+    }, 100);
+}
+
+// Función para configurar las capas del mapa
+function setupMapLayers(lat, lng, accuracy, timestamp, tipo) {
+    
+    try {
+        // Agregar tiles de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        console.log('🗺️ Tiles agregados al mapa');
+        
+        // Icono personalizado según el tipo
+        const iconColor = tipo === 'entrada' ? 'green' : 'orange';
+        const iconSymbol = tipo === 'entrada' ? '🏢' : '🏠';
+        
+        // Crear marcador personalizado más simple
+        const customIcon = L.divIcon({
+            html: `<div style="background-color: ${iconColor}; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${iconSymbol}</div>`,
+            className: 'custom-div-icon',
+            iconSize: [25, 25],
+            iconAnchor: [12, 12]
+        });
+        
+        // Agregar marcador
+        marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+        console.log('📍 Marcador agregado');
+        
+        // Agregar círculo de precisión
+        L.circle([lat, lng], {
+            color: iconColor,
+            fillColor: iconColor,
+            fillOpacity: 0.15,
+            radius: accuracy || 50
+        }).addTo(map);
+        console.log('⭕ Círculo de precisión agregado');
+        
+        // Popup con información
+        const precisionText = accuracy < 20 ? "Excelente" : 
+                             accuracy < 50 ? "Buena" : "Aceptable";
+        
+        marker.bindPopup(`
+            <div style="text-align: center;">
+                <strong>${tipo.toUpperCase()} REGISTRADA</strong><br>
+                <small style="color: #666;">
+                    ${timestamp}<br>
+                    Precisión: ${accuracy ? accuracy.toFixed(0) : '50'}m (${precisionText})
+                </small>
+            </div>
+        `).openPopup();
+        
+        // Actualizar información en la interfaz
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        document.getElementById('mapLatitude').textContent = latNum.toFixed(6);
+        document.getElementById('mapLongitude').textContent = lngNum.toFixed(6);
+        document.getElementById('mapPrecision').textContent = `${accuracy ? accuracy.toFixed(0) : '50'}m (${precisionText})`;
+        document.getElementById('mapTimestamp').textContent = timestamp;
+        
+        // Forzar redimensionamiento del mapa
+        setTimeout(() => {
+            map.invalidateSize();
+            console.log('🔄 Mapa redimensionado');
+        }, 200);
+        
+        console.log('✅ Mapa configurado completamente');
+        
+    } catch (error) {
+        console.error('❌ Error al configurar mapa:', error);
+    }
+}
+
+// Función para mostrar información de registros anteriores
+window.mostrarMapaRegistro = function(lat, lng, accuracy, timestamp, tipo) {
+    console.log('� Mostrando ubicación de registro:', tipo);
+    
+    // Validar que los parámetros sean correctos
+    if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
+        console.error('❌ Coordenadas inválidas:', lat, lng);
+        return;
+    }
+    
+    // Mostrar información inmediatamente
+    initMap(lat, lng, accuracy, timestamp, tipo);
+    
+    // Scroll hacia la información
+    setTimeout(() => {
+        const mapContainer = document.getElementById('mapContainer');
+        if (mapContainer) {
+            mapContainer.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }
+    }, 100);
+};
+</script>
+
+{% endblock %}

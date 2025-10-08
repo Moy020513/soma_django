@@ -146,6 +146,7 @@
                                     {% elif app.app_label == 'herramientas' %}fas fa-tools
                                     {% elif app.app_label == 'notificaciones' %}fas fa-bell
                                     {% elif app.app_label == 'recursos_humanos' %}fas fa-users
+                                    {% elif app.app_label == 'ubicaciones' %}fas fa-map-marker-alt
                                     {% else %}fas fa-cube{% endif %}"></i>
                         </span>
                         <span class="module-name">
@@ -156,6 +157,7 @@
                             {% elif app.app_label == 'herramientas' %}Herramientas
                             {% elif app.app_label == 'notificaciones' %}Notificaciones
                             {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                            {% elif app.app_label == 'ubicaciones' %}Control de Asistencia
                             {% else %}{{ app.name }}{% endif %}
                         </span>
                         <i class="fas fa-chevron-down chevron ms-auto"></i>
@@ -304,6 +306,39 @@
                                                         <i class="fas fa-tools text-white"></i>
                                                 </a>
                                                 {% endif %}
+                        
+                        <!-- Icono de Ubicaciones para empleados -->
+                        {% if user.empleado %}
+                        <a href="{% url 'ubicaciones:registrar' %}" 
+                           class="btn btn-outline-light me-2 nav-icon-tooltip" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="bottom" 
+                           data-bs-delay='{"show":0,"hide":100}'
+                           title="Registro de Asistencia"
+                           data-tooltip-custom="Registro de Asistencia"
+                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
+                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <i class="fas fa-map-marker-alt text-white"></i>
+                        </a>
+                        {% endif %}
+                        
+                        {% if user.is_staff %}
+                        <!-- Dashboard de ubicaciones para administradores -->
+                        <a href="{% url 'ubicaciones:dashboard' %}" 
+                           class="btn btn-outline-light me-2 nav-icon-tooltip" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="bottom" 
+                           data-bs-delay='{"show":0,"hide":100}'
+                           title="Dashboard de Asistencia"
+                           data-tooltip-custom="Dashboard de Asistencia"
+                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
+                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <i class="fas fa-map-marked-alt text-white"></i>
+                        </a>
+                        
+                        {% endif %}
                         
                         {% if user.is_staff %}
                         <a href="{% url 'acciones_recientes' %}" 

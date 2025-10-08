@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registro de Ubicación{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+    .location-card {
+        border-left: 4px solid #007bff;
+        background: #f8f9fa;
+    }
+    .btn-location {
+        min-height: 70px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border: 2px solid;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .btn-location:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    .btn-success-custom {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border-color: #28a745;
+        color: white;
+    }
+    .btn-success-custom:hover:not(.disabled) {
+        background: linear-gradient(135deg, #218838, #1e7e34);
+        border-color: #1e7e34;
+        color: white;
+    }
+    .btn-warning-custom {
+        background: linear-gradient(135deg, #fd7e14, #ffc107);
+        border-color: #fd7e14;
+        color: white;
+    }
+    .btn-warning-custom:hover:not(.disabled) {
+        background: linear-gradient(135deg, #e8690b, #e0a800);
+        border-color: #dc6002;
+        color: white;
+    }
+    .btn-location.disabled {
+        opacity: 0.6;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    .location-status {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+    .status-success {
+        background-color: #d1e7dd;
+        border: 1px solid #badbcc;
+        color: #0f5132;
+    }
+    .status-warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffecb5;
+        color: #664d03;
+    }
+
+    .registro-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .registro-entrada {
+        border-left: 4px solid #28a745;
+    }
+    .registro-salida {
+        border-left: 4px solid #dc3545;
+    }
+    .loading-spinner {
+        display: none;
+    }
+    .loading .loading-spinner {
+        display: inline-block;
+    }
+    .loading .btn-text {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card location-card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Control de Asistencia por Ubicación
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información del empleado -->
+                    <div class="mb-4">
+                        <h5>Empleado: {{ empleado.nombre_completo }}</h5>
+                        <p class="text-muted mb-0">Número: {{ empleado.numero_empleado }}</p>
+                        <p class="text-muted">Puesto: {{ empleado.puesto.nombre }}</p>
+                    </div>
+
+                    <!-- Estado actual -->
+                    <div class="location-status {% if ya_registro_entrada and ya_registro_salida %}status-success{% elif ya_registro_entrada %}status-warning{% else %}status-info{% endif %}">
+                        {% if ya_registro_entrada and ya_registro_salida %}
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Registros completos:</strong> Ya registraste entrada y salida para hoy.
+                        {% elif ya_registro_entrada %}
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>Entrada registrada:</strong> Recuerda registrar tu salida al terminar la jornada.
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Sin registros hoy:</strong> Registra tu entrada al llegar al trabajo.
+                        {% endif %}
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <button 
+                                type="button" 
+                                class="btn btn-success-custom btn-location w-100 {% if ya_registro_entrada %}disabled{% endif %}" 
+                                onclick="confirmarYRegistrar('entrada')"
+                                {% if ya_registro_entrada %}disabled{% endif %}>
+                                <span class="btn-text">
+                                    <i class="fas fa-sign-in-alt me-2"></i>
+                                    {% if ya_registro_entrada %}
+                                        ✅ Entrada Registrada
+                                    {% else %}
+                                        📍 Registrar Entrada
+                                    {% endif %}
+                                </span>
+                                <span class="loading-spinner">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Obteniendo ubicación...
+                                </span>
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button 
+                                type="button" 
+                                class="btn btn-warning-custom btn-location w-100 {% if ya_registro_salida or not ya_registro_entrada %}disabled{% endif %}" 
+                                onclick="confirmarYRegistrar('salida')"
+                                {% if ya_registro_salida or not ya_registro_entrada %}disabled{% endif %}>
+                                <span class="btn-text">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    {% if ya_registro_salida %}
+                                        ✅ Salida Registrada
+                                    {% elif not ya_registro_entrada %}
+                                        ⏳ Registra Entrada Primero
+                                    {% else %}
+                                        📍 Registrar Salida
+                                    {% endif %}
+                                </span>
+                                <span class="loading-spinner">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Obteniendo ubicación...
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Información de ubicación -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>¿Cómo funciona el registro de ubicación?</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>📍 Proceso:</strong></p>
+                                <p class="mb-0 small">
+                                    1. Haz clic en "Registrar Entrada/Salida"<br>
+                                    2. <strong>El navegador pedirá permiso de ubicación</strong><br>
+                                    3. <strong>Selecciona "Permitir" cuando aparezca</strong><br>
+                                    4. Tu posición GPS se registrará automáticamente
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>⚠️ Importante:</strong></p>
+                                <p class="mb-0 small">
+                                    • Solo una entrada y una salida por día<br>
+                                    • Activa el GPS para mayor precisión<br>
+                                    • Permite el acceso cuando lo solicite<br>
+                                    • Recarga la página si hay problemas
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de permisos -->
+                    <div class="alert alert-warning" id="alertaPermisos" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>¿No aparece la solicitud de ubicación?</h6>
+                        <p class="mb-2">Si no ves la ventana pidiendo permisos de ubicación:</p>
+                        <ol class="mb-0 small">
+                            <li>Busca el ícono de ubicación 📍 en la barra de direcciones del navegador</li>
+                            <li>Haz clic en él y selecciona "Permitir ubicación para este sitio"</li>
+                            <li>Recarga la página (F5) e intenta de nuevo</li>
+                        </ol>
+                    </div>
+
+                    <!-- Registros de hoy -->
+                    {% if registros_hoy %}
+                    <div class="mt-4">
+                        <h6>Registros de hoy:</h6>
+                        {% for registro in registros_hoy %}
+                        <div class="registro-item registro-{{ registro.tipo }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ registro.get_tipo_display }}</strong>
+                                    <small class="text-muted d-block">{{ registro.fecha_local|date:"H:i:s" }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ registro.coordenadas_str }}</small>
+                                    {% if registro.precision %}
+                                    <small class="text-muted d-block">Precisión: {{ registro.precision|floatformat:0 }}m</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+// Variables globales
+let currentPosition = null;
+let currentType = null;
+
+function confirmarYRegistrar(tipo) {
+    console.log('🔘 Usuario hizo clic en registrar', tipo);
+    
+    // Confirmación previa clara
+    const tipoTexto = tipo === 'entrada' ? 'ENTRADA' : 'SALIDA';
+    const confirmacion = confirm(
+        `🎯 ¿REGISTRAR ${tipoTexto}?\n\n` +
+        `✓ Se solicitará acceso a tu ubicación GPS\n` +
+        `✓ Debes PERMITIR el acceso cuando aparezca la ventana\n` +
+        `✓ Solo puedes registrar una ${tipo} por día\n\n` +
+        `¿Continuar con el registro?`
+    );
+    
+    if (!confirmacion) {
+        console.log('❌ Usuario canceló el registro');
+        return;
+    }
+    
+    // Verificar soporte de geolocalización
+    if (!("geolocation" in navigator)) {
+        alert("❌ Tu navegador no soporta geolocalización.\n\nPor favor, usa un navegador moderno como Chrome, Firefox o Safari.");
+        return;
+    }
+    
+    console.log('✅ Procediendo con el registro de', tipo);
+    
+    // Proceder con el registro
+    registrarUbicacion(tipo);
+}
+
+function registrarUbicacion(tipo) {
+    currentType = tipo;
+    const button = event.target ? event.target.closest('button') : 
+                  document.querySelector(`button[onclick="confirmarYRegistrar('${tipo}')"]`);
+    
+    console.log(`Iniciando registro de ${tipo}`);
+    
+    if (button) {
+        button.classList.add('loading');
+    }
+
+    // Verificar soporte de geolocalización
+    if (!("geolocation" in navigator)) {
+        if (button) {
+            button.classList.remove('loading');
+        }
+        alert("❌ Tu navegador no soporta geolocalización.\n\nPor favor, usa un navegador moderno como Chrome, Firefox o Safari.");
+        return;
+    }
+
+    // Proceder directamente con la solicitud de ubicación
+    // El navegador manejará automáticamente la solicitud de permisos
+    solicitarUbicacion(tipo, button);
+}
+
+function solicitarUbicacion(tipo, button) {
+    const tipoTexto = tipo === 'entrada' ? 'entrada' : 'salida';
+    console.log(`Solicitando ubicación GPS para registro de ${tipoTexto}`);
+    
+    // AQUÍ es donde el navegador solicitará permisos si no los tiene
+    navigator.geolocation.getCurrentPosition(
+        // Función de éxito
+        function(position) {
+            console.log('✅ Ubicación obtenida exitosamente:', position.coords);
+            currentPosition = position;
+            
+            if (button) {
+                button.classList.remove('loading');
+            }
+            
+            // Registrar la ubicación inmediatamente
+            enviarRegistro(position, tipo);
+        },
+        // Función de error
+        function(error) {
+            console.error('❌ Error al obtener ubicación. Código:', error.code, 'Mensaje:', error.message);
+            
+            if (button) {
+                button.classList.remove('loading');
+            }
+            
+            let errorMessage = "";
+            
+            switch(error.code) {
+                case 1: // PERMISSION_DENIED
+                    errorMessage = "🚫 PERMISOS DE UBICACIÓN DENEGADOS\n\n" +
+                                  "Para registrar tu asistencia necesitas permitir el acceso a la ubicación:\n\n" +
+                                  "1️⃣ Busca el ícono 📍 en la barra de direcciones del navegador\n" +
+                                  "2️⃣ Haz clic en él y selecciona 'Permitir'\n" +
+                                  "3️⃣ Recarga la página (F5) e intenta de nuevo\n\n" +
+                                  "Si no aparece el ícono, revisa la configuración de privacidad de tu navegador.";
+                    break;
+                    
+                case 2: // POSITION_UNAVAILABLE
+                    errorMessage = "📡 SEÑAL GPS NO DISPONIBLE\n\n" +
+                                  "No se pudo determinar tu ubicación:\n\n" +
+                                  "• Asegúrate de tener conexión a internet\n" +
+                                  "• Si estás en interiores, acércate a una ventana\n" +
+                                  "• Verifica que el GPS esté activado en tu dispositivo\n" +
+                                  "• Intenta de nuevo en unos segundos";
+                    break;
+                    
+                case 3: // TIMEOUT
+                    errorMessage = "⏱️ TIEMPO DE ESPERA AGOTADO\n\n" +
+                                  "La ubicación tardó demasiado en obtenerse:\n\n" +
+                                  "• Verifica tu conexión a internet\n" +
+                                  "• Asegúrate de que el GPS esté activado\n" +
+                                  "• Intenta de nuevo";
+                    break;
+                    
+                default:
+                    errorMessage = `❓ ERROR DESCONOCIDO (${error.code})\n\n` +
+                                  "Ocurrió un problema inesperado.\n" +
+                                  "Intenta de nuevo o contacta al administrador.";
+            }
+            
+            alert(errorMessage);
+        },
+        // Opciones de geolocalización
+        {
+            enableHighAccuracy: true,  // Usar GPS de alta precisión
+            timeout: 15000,           // 15 segundos de timeout
+            maximumAge: 60000         // Usar ubicación cacheada si es menor a 1 minuto
+        }
+    );
+}
+
+function enviarRegistro(position, tipo) {
+    const data = {
+        latitud: position.coords.latitude,
+        longitud: position.coords.longitude,
+        precision: position.coords.accuracy,
+        tipo: tipo
+    };
+    
+    const tipoTexto = tipo === 'entrada' ? 'ENTRADA' : 'SALIDA';
+    console.log(`Enviando registro de ${tipoTexto}:`, data);
+    
+    fetch('{% url "ubicaciones:api_registrar" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar mensaje de éxito más detallado
+            const precisionTexto = position.coords.accuracy < 20 ? "Excelente" : 
+                                 position.coords.accuracy < 50 ? "Buena" : "Aceptable";
+            
+            alert(`✅ ¡${tipoTexto} REGISTRADA EXITOSAMENTE!\n\n` +
+                  `🕒 Hora: ${data.timestamp}\n` +
+                  `📍 Coordenadas: ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}\n` +
+                  `🎯 Precisión: ${position.coords.accuracy.toFixed(0)} metros (${precisionTexto})\n\n` +
+                  `Tu asistencia ha sido registrada correctamente.`);
+            
+            // Recargar para actualizar el estado
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert(`❌ Error al registrar ${tipo.toUpperCase()}:\n\n${data.error}\n\nSi el problema persiste, contacta al administrador.`);
+        }
+    })
+    .catch(error => {
+        console.error('Error de conexión:', error);
+        alert(`❌ Error de conexión al registrar ${tipo.toUpperCase()}.\n\n` +
+              `Posibles causas:\n` +
+              `• Sin conexión a internet\n` +
+              `• Problema del servidor\n\n` +
+              `Verifica tu conexión e inténtalo de nuevo.`);
+    });
+}
+
+// Funciones de limpieza al salir de la página
+function limpiarRecursos() {
+    currentPosition = null;
+    currentType = null;
+    if (map) {
+        map.remove();
+        map = null;
+    }
+}
+
+// Verificar estado de permisos al cargar la página (SIN solicitar ubicación)
+document.addEventListener('DOMContentLoaded', function() {
+    verificarEstadoPermisosSinSolicitar();
+});
+
+function verificarEstadoPermisosSinSolicitar() {
+    if ('permissions' in navigator) {
+        navigator.permissions.query({name: 'geolocation'}).then(function(permissionStatus) {
+            const alertaPermisos = document.getElementById('alertaPermisos');
+            
+            console.log('Estado actual de permisos:', permissionStatus.state);
+            
+            switch(permissionStatus.state) {
+                case 'denied':
+                    if (alertaPermisos) {
+                        alertaPermisos.style.display = 'block';
+                        alertaPermisos.className = 'alert alert-danger';
+                        alertaPermisos.innerHTML = `
+                            <h6><i class="fas fa-ban me-2"></i>Permisos de ubicación bloqueados</h6>
+                            <p class="mb-2">Para usar el registro de asistencia necesitas habilitar la ubicación:</p>
+                            <ol class="mb-0 small">
+                                <li>Haz clic en el ícono de ubicación 📍 en la barra de direcciones</li>
+                                <li>Selecciona "Permitir ubicación para este sitio"</li>
+                                <li>Recarga la página (F5)</li>
+                            </ol>
+                        `;
+                    }
+                    break;
+                case 'granted':
+                    console.log('Permisos de ubicación ya otorgados - listos para usar');
+                    // Los permisos están otorgados, pero NO solicitamos ubicación aquí
+                    break;
+                case 'prompt':
+                    console.log('Se solicitarán permisos cuando el usuario haga clic');
+                    // Se solicitarán permisos cuando se use la función
+                    break;
+            }
+            
+            // Escuchar cambios en los permisos (pero sin solicitar ubicación)
+            permissionStatus.onchange = function() {
+                console.log('Estado de permisos cambió a:', this.state);
+                // NO recargar automáticamente, solo informar
+            };
+        }).catch(function(error) {
+            console.log('API de permisos no disponible (normal en algunos navegadores):', error);
+        });
+    } else {
+        console.log('API de permisos no disponible - se solicitarán cuando sea necesario');
+    }
+}
+
+// Limpiar al salir de la página  
+window.addEventListener('beforeunload', limpiarRecursos);
+</script>
+{% endblock %}

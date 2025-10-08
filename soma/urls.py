@@ -39,6 +39,7 @@ urlpatterns = [
     path('empresas/', include('apps.empresas.urls')),
     path('notificaciones/', include('apps.notificaciones.urls')),
     path('asignaciones/', include('apps.asignaciones.urls')),
+    path('ubicaciones/', include('apps.ubicaciones.urls')),
 ]
 
 if settings.DEBUG:

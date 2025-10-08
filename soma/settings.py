@@ -57,6 +57,7 @@ LOCAL_APPS = [
     'apps.herramientas',
     'apps.empresas',
     'apps.notificaciones',
+    'apps.ubicaciones',
 ]
 
 INSTALLED_APPS = [
@@ -79,6 +80,7 @@ INSTALLED_APPS = [
     'apps.empresas',
     'apps.notificaciones',
     'apps.asignaciones',
+    'apps.ubicaciones',
     'soma.apps.SomaConfig',  # App principal personalizada al final
 ]
 
