@@ -117,6 +117,7 @@ TEMPLATES = [
                 'soma.context_processors.recent_admin_actions',
                 'soma.context_processors.vehiculo_asignado_context',
                 'soma.context_processors.herramienta_asignada_context',
+                'soma.context_processors.admin_app_list',
                 'apps.notificaciones.context_processors.notificaciones',
             ],
         },

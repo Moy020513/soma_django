@@ -62,3 +62,19 @@ def recent_admin_actions(request):
     return {
         'recent_admin_actions': entries
     }
+
+
+def admin_app_list(request):
+    """Retorna la lista de aplicaciones del admin para usuarios staff.
+    Esto asegura que siempre esté disponible en el sidebar administrativo.
+    """
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated or not user.is_staff:
+        return {}
+    
+    try:
+        from django.contrib import admin as djadmin
+        app_list = djadmin.site.get_app_list(request)
+        return {'app_list': app_list}
+    except Exception:
+        return {'app_list': []}

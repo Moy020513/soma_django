@@ -118,10 +118,74 @@
     {% block extrastyle %}{% endblock %}
 </head>
 <body>
-    <div class="container-fluid">
+    <!-- Admin Sidebar -->
+    {% if user.is_authenticated and user.is_staff %}
+    <div class="admin-sidebar" id="adminSidebar">
+        <div class="admin-sidebar-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <img src="{% static 'images/logo_soma.png' %}" alt="SOMA Logo" style="height: 25px;">
+                    <span class="sidebar-title ms-2">Panel Admin</span>
+                </div>
+                <button class="btn btn-sm btn-link text-white sidebar-toggle" onclick="toggleAdminSidebar()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="admin-sidebar-content">
+            {% if app_list %}
+                {% for app in app_list %}
+                <div class="sidebar-module">
+                    <div class="module-header" onclick="toggleModule('{{ app.app_label }}')">
+                        <span class="module-icon">
+                            <i class="{% if app.app_label == 'auth' %}fas fa-user-shield
+                                    {% elif app.app_label == 'usuarios' %}fas fa-users-cog
+                                    {% elif app.app_label == 'empresas' %}fas fa-building
+                                    {% elif app.app_label == 'flota_vehicular' %}fas fa-car
+                                    {% elif app.app_label == 'herramientas' %}fas fa-tools
+                                    {% elif app.app_label == 'notificaciones' %}fas fa-bell
+                                    {% elif app.app_label == 'recursos_humanos' %}fas fa-users
+                                    {% else %}fas fa-cube{% endif %}"></i>
+                        </span>
+                        <span class="module-name">
+                            {% if app.app_label == 'auth' %}Autenticación
+                            {% elif app.app_label == 'usuarios' %}Usuarios
+                            {% elif app.app_label == 'empresas' %}Empresas
+                            {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
+                            {% elif app.app_label == 'herramientas' %}Herramientas
+                            {% elif app.app_label == 'notificaciones' %}Notificaciones
+                            {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                            {% else %}{{ app.name }}{% endif %}
+                        </span>
+                        <i class="fas fa-chevron-down chevron ms-auto"></i>
+                    </div>
+                    
+                    {% if app.models %}
+                    <div class="module-models" id="module-{{ app.app_label }}" style="display: none;">
+                        {% for model in app.models %}
+                        <a href="{{ model.admin_url }}" class="model-link">
+                            <i class="fas fa-caret-right me-2"></i>{{ model.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Toggle button for admin sidebar -->
+    <button class="admin-sidebar-toggle" id="sidebarToggle" onclick="toggleAdminSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    {% endif %}
+    
+    <div class="container-fluid" id="mainContainer">
         <div class="row">
-            <!-- Main content, ahora ocupa todo el ancho -->
-            <main class="col-12 px-md-4">
+            <!-- Main content -->
+            <main class="col-12 px-md-4" id="mainContent">
                 <!-- Header con logo y navegación -->
                 <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom py-4" style="min-height:100px; display: flex; align-items: center;">
                     <div class="d-flex align-items-center px-4">
@@ -531,6 +595,243 @@
             `;
             document.head.appendChild(style);
         });
+        </script>
+        
+        <!-- Admin Sidebar Styles and Scripts -->
+        <style>
+            .admin-sidebar {
+                position: fixed;
+                top: 0;
+                left: -300px;
+                width: 300px;
+                height: 100vh;
+                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                color: white;
+                transition: left 0.3s ease;
+                z-index: 1050;
+                overflow-y: auto;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+            
+            .admin-sidebar.show {
+                left: 0;
+            }
+            
+            .admin-sidebar-header {
+                padding: 20px;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                background: rgba(255,255,255,0.05);
+            }
+            
+            .sidebar-title {
+                font-weight: 600;
+                font-size: 16px;
+            }
+            
+            .sidebar-toggle {
+                padding: 0;
+                color: white !important;
+            }
+            
+            .admin-sidebar-content {
+                padding: 0;
+            }
+            
+            .sidebar-module {
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+            
+            .module-header {
+                padding: 15px 20px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                transition: all 0.3s ease;
+            }
+            
+            .module-header:hover {
+                background: rgba(255,255,255,0.1);
+            }
+            
+            .module-icon {
+                width: 20px;
+                text-align: center;
+                margin-right: 12px;
+            }
+            
+            .module-name {
+                font-weight: 500;
+                font-size: 14px;
+            }
+            
+            .chevron {
+                font-size: 12px;
+                transition: transform 0.3s ease;
+            }
+            
+            .chevron.rotated {
+                transform: rotate(180deg);
+            }
+            
+            .module-models {
+                background: rgba(0,0,0,0.1);
+                border-top: 1px solid rgba(255,255,255,0.1);
+            }
+            
+            .model-link {
+                display: block;
+                padding: 10px 20px 10px 45px;
+                color: rgba(255,255,255,0.8);
+                text-decoration: none;
+                font-size: 13px;
+                transition: all 0.3s ease;
+                border-left: 3px solid transparent;
+            }
+            
+            .model-link:hover {
+                background: rgba(255,255,255,0.1);
+                color: white;
+                border-left-color: #ff6600;
+                padding-left: 48px;
+            }
+            
+            .admin-sidebar-toggle {
+                position: fixed;
+                top: 99px;
+                left: 3px;
+                z-index: 1051;
+                background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+                color: white;
+                border: none;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .admin-sidebar-toggle:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(255, 102, 0, 0.4);
+            }
+            
+            .admin-sidebar-toggle.active {
+                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            }
+            
+            /* Ajustes cuando el sidebar está abierto */
+            body.sidebar-open .admin-sidebar-toggle {
+                left: 320px;
+                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            }
+            
+            body.sidebar-open #mainContainer {
+                margin-left: 300px;
+                transition: margin-left 0.3s ease;
+            }
+            
+            /* Responsive */
+            @media (max-width: 768px) {
+                body.sidebar-open #mainContainer {
+                    margin-left: 0;
+                }
+                
+                .admin-sidebar {
+                    width: 280px;
+                    left: -280px;
+                }
+                
+                body.sidebar-open .admin-sidebar-toggle {
+                    left: 300px;
+                }
+            }
+            
+            /* Overlay para móvil */
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 1049;
+                display: none;
+            }
+            
+            body.sidebar-open .sidebar-overlay {
+                display: block;
+            }
+        </style>
+        
+        <!-- Overlay para móvil -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleAdminSidebar()"></div>
+        
+        <script>
+            function toggleAdminSidebar() {
+                const sidebar = document.getElementById('adminSidebar');
+                const toggle = document.getElementById('sidebarToggle');
+                const body = document.body;
+                
+                if (sidebar) {
+                    sidebar.classList.toggle('show');
+                    body.classList.toggle('sidebar-open');
+                    
+                    // Cambiar icono del botón
+                    const icon = toggle.querySelector('i');
+                    if (sidebar.classList.contains('show')) {
+                        icon.className = 'fas fa-times';
+                        toggle.classList.add('active');
+                    } else {
+                        icon.className = 'fas fa-bars';
+                        toggle.classList.remove('active');
+                    }
+                }
+            }
+            
+            function toggleModule(appLabel) {
+                const module = document.getElementById('module-' + appLabel);
+                const chevron = document.querySelector('[onclick="toggleModule(\'' + appLabel + '\')"] .chevron');
+                
+                if (module) {
+                    const isVisible = module.style.display !== 'none';
+                    
+                    // Cerrar todos los otros módulos
+                    document.querySelectorAll('.module-models').forEach(function(m) {
+                        if (m !== module) {
+                            m.style.display = 'none';
+                        }
+                    });
+                    
+                    // Resetear todos los chevrons
+                    document.querySelectorAll('.chevron').forEach(function(c) {
+                        if (c !== chevron) {
+                            c.classList.remove('rotated');
+                        }
+                    });
+                    
+                    // Toggle del módulo actual
+                    if (isVisible) {
+                        module.style.display = 'none';
+                        chevron.classList.remove('rotated');
+                    } else {
+                        module.style.display = 'block';
+                        chevron.classList.add('rotated');
+                    }
+                }
+            }
+            
+            // Cerrar sidebar con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const sidebar = document.getElementById('adminSidebar');
+                    if (sidebar && sidebar.classList.contains('show')) {
+                        toggleAdminSidebar();
+                    }
+                }
+            });
         </script>
         
 </body>

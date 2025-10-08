@@ -95,9 +95,7 @@ def index(request):
         'empleado': empleado,
         'today': timezone.localdate(),
     }
-    if es_admin:
-        # Proveer listado de apps del admin para renderizar en el Home
-        context['app_list'] = djadmin.site.get_app_list(request)
+    # app_list ahora se maneja automáticamente por el context processor admin_app_list
     return render(request, 'index.html', context)
 
 
