@@ -5,260 +5,295 @@
 {% block page_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card profile-card">
-            <div class="card-header">
-                <h5><i class="fas fa-user me-2" style="color: var(--soma-orange);"></i>Información Personal</h5>
-            </div>
-            <div class="card-body">
-                {% if not empleado %}
-                <div class="alert alert-warning">Tu usuario no está vinculado a un empleado. Pide al administrador que asocie tu cuenta para ver asignaciones.</div>
-                {% endif %}
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="profile-field mb-3">
-                            <label class="profile-label"><i class="fas fa-user-tag me-2" style="color: var(--soma-orange);"></i><strong>Usuario:</strong></label>
-                            <p class="profile-value">{{ usuario.username }}</p>
-                        </div>
-                        
-                        <div class="profile-field mb-3">
-                            <label class="profile-label"><i class="fas fa-id-badge me-2" style="color: var(--soma-orange);"></i><strong>Nombre:</strong></label>
-                            <p class="profile-value">{{ usuario.first_name|default:"No especificado" }}</p>
-                        </div>
-                        
-                        <div class="profile-field mb-3">
-                            <label class="profile-label"><i class="fas fa-user me-2" style="color: var(--soma-orange);"></i><strong>Apellidos:</strong></label>
-                            <p class="profile-value">{{ usuario.last_name|default:"No especificado" }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="profile-field mb-3">
-                            <label class="profile-label"><i class="fas fa-envelope me-2" style="color: var(--soma-orange);"></i><strong>Email:</strong></label>
-                            <p class="profile-value">{{ usuario.email|default:"No especificado" }}</p>
-                        </div>
-                        
-                        <div class="profile-field mb-3">
-                            <label class="profile-label"><i class="fas fa-calendar-plus me-2" style="color: var(--soma-orange);"></i><strong>Fecha de registro:</strong></label>
-                            <p class="profile-value">{{ usuario.date_joined|date:"d/m/Y H:i" }}</p>
-                        </div>
-                        
-                        <div class="profile-field mb-3">
-                            <label class="profile-label"><i class="fas fa-clock me-2" style="color: var(--soma-orange);"></i><strong>Último acceso:</strong></label>
-                            <p class="profile-value">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<style>
+    .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .profile-header {
+        background: linear-gradient(135deg, var(--soma-orange, #ff6b35) 0%, var(--soma-blue, #004e89) 100%);
+        border-radius: 12px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: var(--soma-orange, #ff6b35);
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .profile-header-content {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .profile-header-text h2 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 600;
+    }
+    
+    .profile-header-text p {
+        margin: 0.25rem 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: none;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 100%;
+    }
+    
+    .info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+    
+    .info-card-header {
+        background: linear-gradient(to right, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 2px solid var(--soma-orange, #ff6b35);
+    }
+    
+    .info-card-header h5 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .info-card-body {
+        padding: 1.5rem;
+    }
+    
+    .info-item {
+        padding: 0.75rem 0;
+        margin-bottom: 0;
+        border-bottom: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+    }
+    
+    .info-item:hover {
+        background: #f8f9fa;
+        padding-left: 0.5rem;
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-weight: 500;
+        min-width: 140px;
+    }
+    
+    .info-label i {
+        width: 18px;
+        margin-right: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .info-value {
+        display: inline;
+        font-size: 0.95rem;
+        color: #2c3e50;
+        font-weight: 500;
+    }
+    
+    .alert-warning-custom {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .action-button {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        background: white;
+        color: #2c3e50;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .action-button:hover {
+        border-color: var(--soma-orange, #ff6b35);
+        background: var(--soma-orange, #ff6b35);
+        color: white;
+        transform: translateX(5px);
+    }
+    
+    .action-button i {
+        width: 24px;
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+    }
+    
+    .action-button.secondary:hover {
+        border-color: var(--soma-blue, #004e89);
+        background: var(--soma-blue, #004e89);
+    }
+    
+    @media (max-width: 768px) {
+        .profile-header {
+            padding: 1.5rem;
+        }
+        
+        .profile-header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .info-card-body {
+            padding: 1rem;
+        }
+    }
+</style>
 
-        <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-tasks me-2" style="color: var(--soma-blue);"></i>Asignaciones de hoy</h5>
-                <div class="btn-group btn-group-sm">
-                    <a href="{% url 'asignaciones:todas' %}" class="btn btn-outline-primary">Ver todas</a>
-                    <a href="{% url 'asignaciones:mias' %}" class="btn btn-outline-secondary">Mis asignaciones</a>
-                </div>
+<div class="profile-container">
+    <!-- Header del perfil -->
+    <div class="profile-header">
+        <div class="profile-header-content">
+            <div class="profile-avatar">
+                {{ usuario.first_name|slice:":1"|upper|default:"U" }}{{ usuario.last_name|slice:":1"|upper|default:"" }}
             </div>
-            <div class="card-body">
-                {% if asignaciones_hoy %}
-                    <div class="list-group">
-                        {% for a in asignaciones_hoy %}
-                            <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
-                                    <small>{{ a.fecha|date:'d/m/Y' }}</small>
-                                </div>
-                                <p class="mb-1">{{ a.detalles|truncatechars:120 }}</p>
-                                <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    {% if asignaciones_recientes %}
-                        <div class="alert alert-warning">No tienes asignaciones para hoy. Estas son las más recientes:</div>
-                        <div class="list-group">
-                            {% for a in asignaciones_recientes %}
-                                <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ a.empresa.nombre }}</h6>
-                                        <small>{{ a.fecha|date:'d/m/Y' }}</small>
-                                    </div>
-                                    <p class="mb-1">{{ a.detalles|truncatechars:120 }}</p>
-                                    <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
-                                </a>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="alert alert-info mb-0">No tienes asignaciones para hoy.</div>
-                    {% endif %}
-                {% endif %}
+            <div class="profile-header-text">
+                <h2>{{ usuario.first_name }} {{ usuario.last_name }}</h2>
+                <p><i class="fas fa-at me-1"></i>{{ usuario.username }}</p>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card actions-card">
-            <div class="card-header">
-                <h5><i class="fas fa-cog me-2" style="color: var(--soma-blue);"></i>Acciones</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-3">
-                    <a href="{% url 'password_change' %}" class="btn btn-outline-primary action-btn">
-                        <i class="fas fa-key me-2"></i>Cambiar Contraseña
-                    </a>
-                    
-                    <a href="{% url 'notificaciones_usuario' %}" class="btn btn-outline-primary action-btn">
-                        <i class="fas fa-bell me-2"></i>Mis Notificaciones
-                    </a>
-                    
-                    <a href="{% url 'home' %}" class="btn btn-outline-secondary action-btn">
-                        <i class="fas fa-home me-2"></i>Volver al Inicio
-                    </a>
+
+    {% if not empleado %}
+    <div class="alert-warning-custom">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Atención:</strong> Tu usuario no está vinculado a un empleado. Contacta al administrador para asociar tu cuenta y ver tus asignaciones.
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Información Personal -->
+        <div class="col-lg-8">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5><i class="fas fa-user me-2" style="color: var(--soma-orange, #ff6b35);"></i>Información Personal</h5>
                 </div>
-            </div>
-        </div>
-        
-        {% if vehiculo_asignado %}
-        <div class="card mt-3" id="mi-vehiculo">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-car me-2" style="color: var(--soma-orange);"></i>Mi Vehículo</h5>
-                <a href="{% url 'mi_vehiculo' %}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-external-link-alt me-1"></i>Ver Detalles
-                </a>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="vehicle-info">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="text-muted mb-0">{{ vehiculo_asignado.marca }} {{ vehiculo_asignado.modelo }}</h6>
-                                <span class="badge bg-success">{{ vehiculo_asignado.get_estado_display }}</span>
+                <div class="info-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-user-tag" style="color: var(--soma-orange, #ff6b35);"></i>
+                                    Usuario:
+                                </span>
+                                <span class="info-value">{{ usuario.username }}</span>
                             </div>
                             
-                            <div class="vehicle-details">
-                                <div class="detail-item mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-calendar-alt me-1"></i>Año:
-                                    </small>
-                                    <span class="fw-semibold">{{ vehiculo_asignado.año }}</span>
-                                </div>
-                                
-                                <div class="detail-item mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-palette me-1"></i>Color:
-                                    </small>
-                                    <span class="fw-semibold">{{ vehiculo_asignado.color }}</span>
-                                </div>
-                                
-                                <div class="detail-item mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-id-card me-1"></i>Placas:
-                                    </small>
-                                    <span class="fw-semibold">{{ vehiculo_asignado.placas }}</span>
-                                </div>
-                                
-                                <div class="detail-item mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-truck me-1"></i>Tipo:
-                                    </small>
-                                    <span class="fw-semibold">{{ vehiculo_asignado.get_tipo_display }}</span>
-                                </div>
-                                
-                                <div class="detail-item mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-tachometer-alt me-1"></i>Kilometraje:
-                                    </small>
-                                    <span class="fw-semibold">{{ vehiculo_asignado.kilometraje_actual|floatformat:0 }} km</span>
-                                </div>
-                                
-                                {% if vehiculo_asignado.aseguradora %}
-                                <div class="detail-item mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-shield-alt me-1"></i>Aseguradora:
-                                    </small>
-                                    <span class="fw-semibold">{{ vehiculo_asignado.aseguradora }}</span>
-                                </div>
-                                {% endif %}
-                                
-                                {% if vehiculo_asignado.contacto_aseguradora %}
-                                <div class="detail-item mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-phone me-1"></i>Tel. Aseguradora:
-                                    </small>
-                                    <span class="fw-semibold">{{ vehiculo_asignado.contacto_aseguradora }}</span>
-                                </div>
-                                {% endif %}
-                                
-                                {% if vehiculo_asignado.observaciones %}
-                                <div class="detail-item">
-                                    <small class="text-muted">
-                                        <i class="fas fa-comment me-1"></i>Observaciones:
-                                    </small>
-                                    <p class="small mt-1 mb-0">{{ vehiculo_asignado.observaciones|truncatechars:100 }}</p>
-                                </div>
-                                {% endif %}
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-id-badge" style="color: var(--soma-orange, #ff6b35);"></i>
+                                    Nombre:
+                                </span>
+                                <span class="info-value">{{ usuario.first_name|default:"No especificado" }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-user" style="color: var(--soma-orange, #ff6b35);"></i>
+                                    Apellidos:
+                                </span>
+                                <span class="info-value">{{ usuario.last_name|default:"No especificado" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-envelope" style="color: var(--soma-orange, #ff6b35);"></i>
+                                    Email:
+                                </span>
+                                <span class="info-value">{{ usuario.email|default:"No especificado" }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-calendar-plus" style="color: var(--soma-orange, #ff6b35);"></i>
+                                    Registro:
+                                </span>
+                                <span class="info-value">{{ usuario.date_joined|date:"d/m/Y H:i" }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-clock" style="color: var(--soma-orange, #ff6b35);"></i>
+                                    Último acceso:
+                                </span>
+                                <span class="info-value">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        {% endif %}
         
-        <div class="card mt-3 permissions-card">
-            <div class="card-header">
-                <h5><i class="fas fa-shield-alt me-2" style="color: var(--soma-blue);"></i>Estado de la Cuenta</h5>
-            </div>
-            <div class="card-body">
-                <div class="permission-items">
-                    <div class="permission-item d-flex justify-content-between align-items-center">
-                        <span class="permission-label">
-                            <i class="fas fa-user-check me-2" style="color: var(--soma-orange);"></i>
-                            Usuario activo
-                        </span>
-                        {% if usuario.is_active %}
-                            <span class="badge bg-success status-badge">
-                                <i class="fas fa-check me-1"></i>Activo
-                            </span>
-                        {% else %}
-                            <span class="badge bg-danger status-badge">
-                                <i class="fas fa-times me-1"></i>Inactivo
-                            </span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="permission-item d-flex justify-content-between align-items-center">
-                        <span class="permission-label">
-                            <i class="fas fa-user-cog me-2" style="color: var(--soma-orange);"></i>
-                            Administrador
-                        </span>
-                        {% if usuario.is_staff %}
-                            <span class="badge bg-success status-badge">
-                                <i class="fas fa-check me-1"></i>Sí
-                            </span>
-                        {% else %}
-                            <span class="badge status-badge" style="background: var(--soma-light-gray); color: var(--soma-blue);">
-                                <i class="fas fa-minus me-1"></i>No
-                            </span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="permission-item d-flex justify-content-between align-items-center">
-                        <span class="permission-label">
-                            <i class="fas fa-crown me-2" style="color: var(--soma-orange);"></i>
-                            Superusuario
-                        </span>
-                        {% if usuario.is_superuser %}
-                            <span class="badge bg-warning status-badge">
-                                <i class="fas fa-star me-1"></i>Sí
-                            </span>
-                        {% else %}
-                            <span class="badge status-badge" style="background: var(--soma-light-gray); color: var(--soma-blue);">
-                                <i class="fas fa-minus me-1"></i>No
-                            </span>
-                        {% endif %}
+        <!-- Panel de Acciones -->
+        <div class="col-lg-4">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h5><i class="fas fa-cog me-2" style="color: var(--soma-blue, #004e89);"></i>Acciones Rápidas</h5>
+                </div>
+                <div class="info-card-body">
+                    <div class="d-flex flex-column gap-3">
+                        <a href="{% url 'password_change' %}" class="action-button">
+                            <i class="fas fa-key"></i>
+                            <span>Cambiar Contraseña</span>
+                        </a>
+                        
+                        <a href="{% url 'notificaciones_usuario' %}" class="action-button">
+                            <i class="fas fa-bell"></i>
+                            <span>Mis Notificaciones</span>
+                        </a>
+                        
+                        <a href="{% url 'home' %}" class="action-button secondary">
+                            <i class="fas fa-home"></i>
+                            <span>Volver al Inicio</span>
+                        </a>
                     </div>
                 </div>
             </div>
