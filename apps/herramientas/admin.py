@@ -30,8 +30,8 @@ class HerramientaAdmin(admin.ModelAdmin):
 
 @admin.register(AsignacionHerramienta)
 class AsignacionHerramientaAdmin(admin.ModelAdmin):
-    list_display = ['herramienta', 'empleado', 'fecha_asignacion', 'fecha_devolucion']
-    list_filter = ['fecha_asignacion', 'fecha_devolucion', 'herramienta__categoria']
+    list_display = ['herramienta', 'empleado', 'fecha_asignacion', 'fecha_devolucion', 'estado_herramienta', 'es_activa']
+    list_filter = ['fecha_asignacion', 'fecha_devolucion', 'herramienta__categoria', 'herramienta__estado']
     search_fields = ['herramienta__nombre', 'empleado__nombre', 'empleado__apellidos']
     date_hierarchy = 'fecha_asignacion'
     
@@ -53,6 +53,15 @@ class AsignacionHerramientaAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('herramienta', 'empleado')
     
     actions = ['marcar_como_devueltas']
+    
+    def estado_herramienta(self, obj):
+        return obj.herramienta.get_estado_display()
+    estado_herramienta.short_description = 'Estado de la herramienta'
+    
+    def es_activa(self, obj):
+        return obj.fecha_devolucion is None
+    es_activa.boolean = True
+    es_activa.short_description = 'Asignación activa'
     
     def marcar_como_devueltas(self, request, queryset):
         from django.utils import timezone
