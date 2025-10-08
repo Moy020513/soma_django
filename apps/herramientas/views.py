@@ -69,6 +69,54 @@ def mi_herramienta(request):
 
 
 @login_required
+def mis_herramientas(request):
+    """Vista para mostrar la lista de herramientas asignadas al usuario"""
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está vinculado a un empleado.')
+        return redirect('perfil_usuario')
+    
+    asignaciones = list(
+        AsignacionHerramienta.objects.filter(
+            empleado=empleado,
+            fecha_devolucion__isnull=True
+        ).select_related('herramienta').order_by('herramienta__categoria', 'herramienta__codigo')
+    )
+    
+    if not asignaciones:
+        messages.info(request, 'No tienes herramientas asignadas actualmente.')
+        return redirect('perfil_usuario')
+    
+    return render(request, 'herramientas/mis_herramientas.html', {
+        'titulo': 'Mis Herramientas',
+        'asignaciones': asignaciones,
+    })
+
+
+@login_required
+def detalle_herramienta(request, herramienta_id):
+    """Vista para mostrar los detalles de una herramienta específica"""
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está vinculado a un empleado.')
+        return redirect('perfil_usuario')
+    
+    # Verificar que la herramienta esté asignada al usuario
+    asignacion = get_object_or_404(
+        AsignacionHerramienta,
+        herramienta_id=herramienta_id,
+        empleado=empleado,
+        fecha_devolucion__isnull=True
+    )
+    
+    return render(request, 'herramientas/detalle_herramienta.html', {
+        'titulo': f'Herramienta - {asignacion.herramienta.nombre}',
+        'herramienta': asignacion.herramienta,
+        'asignacion': asignacion,
+    })
+
+
+@login_required
 def solicitar_transferencia_herramienta(request):
     empleado = Empleado.objects.filter(usuario=request.user).first()
     if not empleado:
@@ -90,6 +138,10 @@ def solicitar_transferencia_herramienta(request):
         pre_h = int(pre_h) if pre_h else None
     except ValueError:
         pre_h = None
+    
+    # Detectar de dónde viene para el botón cancelar
+    referrer = request.META.get('HTTP_REFERER', '')
+    from_list = 'mis/' in referrer or 'mis_herramientas' in referrer
     if request.method == 'POST':
         form = SolicitudTransferenciaHerramientaForm(request.POST, empleado_actual=empleado, pre_herramienta_id=pre_h)
         if form.is_valid():
@@ -102,7 +154,10 @@ def solicitar_transferencia_herramienta(request):
                 # Verificar duplicada
                 if TransferenciaHerramienta.objects.filter(empleado_origen=empleado, herramienta=herramienta, estado='solicitada').exists():
                     messages.warning(request, 'Ya existe una solicitud pendiente para esa herramienta.')
-                    return redirect('herramientas:mi_herramienta')
+                    if from_list:
+                        return redirect('herramientas:mis_herramientas')
+                    else:
+                        return redirect('herramientas:mi_herramienta')
                 transf.herramienta = herramienta
                 transf.empleado_origen = empleado
                 transf.estado = 'solicitada'
@@ -131,7 +186,8 @@ def solicitar_transferencia_herramienta(request):
     return render(request, 'herramientas/solicitar_transferencia.html', {
         'titulo': 'Solicitar Transferencia de Herramienta',
         'form': form,
-    'herramientas': [a.herramienta for a in asignaciones],
+        'herramientas': [a.herramienta for a in asignaciones],
+        'from_list': from_list,
     })
 
 

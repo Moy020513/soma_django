@@ -198,7 +198,7 @@
                                                 {% if herramientas_count|default:0 > 1 %}
                                                 <div class="dropdown d-inline-block me-2">
                                                     <button class="btn btn-outline-light nav-icon-tooltip position-relative" type="button" data-bs-toggle="dropdown"
-                                                                    data-bs-placement="bottom" data-bs-delay='{"show":0,"hide":100}' title="Mis Herramientas"
+                                                                    data-bs-placement="bottom" data-bs-delay='{"show":0,"hide":100}' title="Herramientas"
                                                                     style="border-color: rgba(255,255,255,0.3); transition:all .3s ease;"
                                                                     onmouseover="this.style.backgroundColor='rgba(255,255,255,0.15)'; this.style.borderColor='rgba(255,255,255,0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,.2)'"
                                                                     onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255,255,255,0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
@@ -208,7 +208,7 @@
                                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm small" style="min-width:260px; max-height:300px; overflow:auto;">
                                                         <li class="dropdown-header d-flex justify-content-between align-items-center">
                                                             <span class="fw-semibold"><i class="fas fa-toolbox me-1"></i>Herramientas</span>
-                                                            <a href="{% url 'herramientas:mi_herramienta' %}" class="text-decoration-none small">ver todas</a>
+                                                            <a href="{% url 'herramientas:mis_herramientas' %}" class="text-decoration-none small">ver todas</a>
                                                         </li>
                                                         <li><hr class="dropdown-divider my-1"></li>
                                                         {% for h in herramientas_menu %}
@@ -227,13 +227,13 @@
                                                     </ul>
                                                 </div>
                                                 {% elif herramienta_menu %}
-                                                <a href="{% url 'herramientas:mi_herramienta' %}" 
+                                                <a href="{% url 'herramientas:mis_herramientas' %}" 
                                                      class="btn btn-outline-light me-2 nav-icon-tooltip" 
                                                      data-bs-toggle="tooltip" 
                                                      data-bs-placement="bottom" 
                                                      data-bs-delay='{"show":0,"hide":100}'
-                                                     title="Mi Herramienta - {{ herramienta_menu.codigo }}"
-                                                     data-tooltip-custom="Mi Herramienta - {{ herramienta_menu.codigo }}"
+                                                     title="Herramientas"
+                                                     data-tooltip-custom="Herramientas"
                                                      style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
                                                      onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
                                                      onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
@@ -268,11 +268,7 @@
                                     <i class="fas fa-exchange-alt me-2"></i>Transferencias
                                 </a></li>
                                 {% endif %}
-                                {% if herramienta_menu or herramientas_count|default:0 > 0 %}
-                                <li><a class="dropdown-item" href="{% url 'herramientas:mis_transferencias' %}">
-                                    <i class="fas fa-exchange-alt me-2"></i>Transferencias Herramientas
-                                </a></li>
-                                {% endif %}
+
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}">
                                     <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión

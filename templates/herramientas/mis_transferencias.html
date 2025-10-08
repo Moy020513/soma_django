@@ -5,7 +5,7 @@
 <div class="row">
   <div class="col-md-6">
     <div class="card mb-3">
-      <div class="card-header"><strong>Como Origen</strong></div>
+      <div class="card-header"><strong>Enviadas</strong></div>
       <div class="card-body p-0">
         <table class="table table-sm mb-0">
           <thead><tr><th>Herramienta</th><th>Destino</th><th>Estado</th><th></th></tr></thead>
@@ -27,7 +27,7 @@
   </div>
   <div class="col-md-6">
     <div class="card mb-3">
-      <div class="card-header"><strong>Como Destino</strong></div>
+      <div class="card-header"><strong>Recibidas</strong></div>
       <div class="card-body p-0">
         <table class="table table-sm mb-0">
           <thead><tr><th>Herramienta</th><th>Origen</th><th>Estado</th><th></th></tr></thead>
@@ -48,5 +48,5 @@
     </div>
   </div>
 </div>
-<a href="{% url 'perfil_usuario' %}" class="btn btn-outline-secondary">Volver</a>
+<a href="{% url 'herramientas:mis_herramientas' %}" class="btn btn-outline-secondary">Volver a Mis Herramientas</a>
 {% endblock %}

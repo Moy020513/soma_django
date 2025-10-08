@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Mi Herramienta{% endblock %}
-{% block page_title %}Mi Herramienta{% endblock %}
+{% block title %}{{ herramienta.nombre }}{% endblock %}
+{% block page_title %}{{ herramienta.nombre }}{% endblock %}
 {% block content %}
 
 <div class="container-fluid">
@@ -159,7 +159,7 @@
                             </small>
                         </div>
                         <div class="actions-buttons">
-                            <a href="{% url 'herramientas:solicitar_transferencia' %}" class="btn btn-outline-primary">
+                            <a href="{% url 'herramientas:solicitar_transferencia' %}?h={{ herramienta.id }}" class="btn btn-outline-primary">
                                 <i class="fas fa-exchange-alt me-2"></i>Solicitar Transferencia
                             </a>
                         </div>
@@ -169,8 +169,8 @@
             
             <!-- Botón para volver -->
             <div class="text-center">
-                <a href="{% url 'perfil_usuario' %}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Volver al Perfil
+                <a href="{% url 'herramientas:mis_herramientas' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a Mis Herramientas
                 </a>
             </div>
         </div>

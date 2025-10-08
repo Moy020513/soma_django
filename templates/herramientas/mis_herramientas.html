@@ -2,37 +2,229 @@
 {% block title %}Mis Herramientas{% endblock %}
 {% block page_title %}Mis Herramientas Asignadas{% endblock %}
 {% block content %}
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0"><i class="fas fa-toolbox me-2"></i>Herramientas Asignadas</h5>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-sm mb-0 align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Código</th>
-            <th>Nombre</th>
-            <th>Categoría</th>
-            <th>Marca</th>
-            <th>Asignada Desde</th>
-            <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in asignaciones %}
-        <tr>
-          <td><span class="fw-semibold">{{ a.herramienta.codigo }}</span></td>
-          <td>{{ a.herramienta.nombre }}</td>
-          <td>{{ a.herramienta.get_categoria_display }}</td>
-          <td>{{ a.herramienta.marca|default:'-' }}</td>
-          <td>{{ a.fecha_asignacion|date:'d/m/Y' }}</td>
-          <td class="text-end">
-            <a href="{% url 'herramientas:solicitar_transferencia' %}?h={{ a.herramienta.id }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-exchange-alt"></i></a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header con información general -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white border-bottom-0 py-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-1 fw-bold text-dark">
+                                <i class="fas fa-toolbox me-3" style="color: var(--soma-orange);"></i>Mis Herramientas
+                            </h4>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Tienes <span class="fw-semibold">{{ asignaciones|length }}</span> herramienta{{ asignaciones|length|pluralize:"s" }} asignada{{ asignaciones|length|pluralize:"s" }}
+                            </p>
+                        </div>
+                        <div class="d-flex flex-column align-items-end">
+                            <span class="badge bg-primary fs-6 px-3 py-2 mb-2">
+                                {{ asignaciones|length }} herramienta{{ asignaciones|length|pluralize:"s" }}
+                            </span>
+                            <a href="{% url 'herramientas:mis_transferencias' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-exchange-alt me-2"></i>Ver Transferencias
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de herramientas -->
+            <div class="card shadow-sm border-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" class="fw-semibold">
+                                    <i class="fas fa-tools me-2" style="color: #ff6600;"></i>Herramienta
+                                </th>
+                                <th scope="col" class="fw-semibold">
+                                    <i class="fas fa-barcode me-2" style="color: #ff6600;"></i>Código
+                                </th>
+                                <th scope="col" class="fw-semibold">
+                                    <i class="fas fa-tags me-2" style="color: #ff6600;"></i>Categoría
+                                </th>
+                                <th scope="col" class="fw-semibold">
+                                    <i class="fas fa-industry me-2" style="color: #ff6600;"></i>Marca
+                                </th>
+                                <th scope="col" class="fw-semibold">
+                                    <i class="fas fa-calendar-alt me-2" style="color: #ff6600;"></i>Asignada
+                                </th>
+                                <th scope="col" class="fw-semibold">
+                                    <i class="fas fa-info-circle me-2" style="color: #ff6600;"></i>Estado
+                                </th>
+                                <th scope="col" class="fw-semibold text-center">
+                                    <i class="fas fa-cogs me-2" style="color: #ff6600;"></i>Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for asignacion in asignaciones %}
+                            <tr class="tool-row">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="tool-icon-small me-3">
+                                            <i class="fas fa-tools text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">{{ asignacion.herramienta.nombre }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="font-monospace fw-semibold badge bg-light text-dark">
+                                        {{ asignacion.herramienta.codigo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ asignacion.herramienta.get_categoria_display }}</span>
+                                </td>
+                                <td>
+                                    {% if asignacion.herramienta.marca %}
+                                        <span class="text-dark">{{ asignacion.herramienta.marca }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ asignacion.fecha_asignacion|date:"d/m/Y" }}</small>
+                                </td>
+                                <td>
+                                    {% if asignacion.herramienta.estado == 'asignada' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>{{ asignacion.herramienta.get_estado_display }}
+                                        </span>
+                                    {% elif asignacion.herramienta.estado == 'disponible' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-circle me-1"></i>{{ asignacion.herramienta.get_estado_display }}
+                                        </span>
+                                    {% elif asignacion.herramienta.estado == 'mantenimiento' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-wrench me-1"></i>{{ asignacion.herramienta.get_estado_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ asignacion.herramienta.get_estado_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'herramientas:detalle_herramienta' herramienta_id=asignacion.herramienta.id %}" 
+                                           class="btn btn-outline-primary btn-sm"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-placement="top"
+                                           title="Ver detalles completos">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'herramientas:solicitar_transferencia' %}?h={{ asignacion.herramienta.id }}" 
+                                           class="btn btn-outline-secondary btn-sm"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-placement="top"
+                                           title="Solicitar transferencia">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Botón para volver -->
+            <div class="text-center mt-4">
+                <a href="{% url 'perfil_usuario' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver al Perfil
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+.tool-row {
+    transition: all 0.2s ease;
+}
+
+.tool-row:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+.tool-icon-small {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.table th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 1rem 0.75rem;
+}
+
+.table th i {
+    text-shadow: 0 0 8px rgba(255, 102, 0, 0.3);
+    filter: drop-shadow(0 0 2px rgba(255, 102, 0, 0.4));
+}
+
+.table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.table-hover tbody tr:hover {
+    color: inherit;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+    
+    .tool-icon-small {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.4rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.4rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .table th:nth-child(4),
+    .table td:nth-child(4) {
+        display: none; /* Ocultar marca en móviles */
+    }
+}
+</style>
+
 {% endblock %}

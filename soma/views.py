@@ -160,6 +160,7 @@ def perfil_usuario(request):
     asignaciones_supervisadas_pendientes_perfil = []
     vehiculo_asignado = None
     herramienta_asignada = None
+    herramientas_lista = []
     
     if empleado:
         # Asignaciones como empleado
@@ -223,13 +224,21 @@ def perfil_usuario(request):
         ).select_related('vehiculo').first()
         if asignacion_vehiculo:
             vehiculo_asignado = asignacion_vehiculo.vehiculo
-        # Obtener herramienta asignada (sin fecha_devolucion)
-        asignacion_herramienta = AsignacionHerramienta.objects.filter(
+        # Obtener herramientas asignadas (sin fecha_devolucion)
+        asignaciones_herramientas = AsignacionHerramienta.objects.filter(
             empleado=empleado,
             fecha_devolucion__isnull=True
-        ).select_related('herramienta').first()
-        if asignacion_herramienta:
-            herramienta_asignada = asignacion_herramienta.herramienta
+        ).select_related('herramienta').order_by('herramienta__categoria', 'herramienta__codigo')
+        
+        # Extraer las herramientas de las asignaciones
+        herramientas_lista = [asignacion.herramienta for asignacion in asignaciones_herramientas]
+        
+        # Para compatibilidad con template, usar primera herramienta si solo hay una
+        if len(herramientas_lista) == 1:
+            herramienta_asignada = herramientas_lista[0]
+        elif len(herramientas_lista) > 1:
+            # Múltiples herramientas, se manejará en template
+            herramienta_asignada = None
     
     context = {
         'titulo': 'Mi Perfil',
@@ -239,8 +248,9 @@ def perfil_usuario(request):
         'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
         'asignaciones_pendientes': asignaciones_supervisadas_pendientes_perfil if empleado else [],
         'empleado': empleado,
-    'vehiculo_asignado': vehiculo_asignado,
-    'herramienta_asignada': herramienta_asignada,
+        'vehiculo_asignado': vehiculo_asignado,
+        'herramienta_asignada': herramienta_asignada,
+        'herramientas_asignadas': herramientas_lista if empleado else [],
         'today': timezone.localdate(),
     }
     return render(request, 'perfil_usuario.html', context)
