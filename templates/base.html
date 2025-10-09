@@ -28,6 +28,16 @@
     <link rel="stylesheet" href="{% static 'css/base_custom.css' %}?v=20251006">
     
     <style>
+        :root {
+            --admin-offcanvas-width: 320px;
+        }
+
+        @media (max-width: 576px) {
+            :root {
+                --admin-offcanvas-width: min(90vw, 320px);
+            }
+        }
+
         /* Estilos para iconos de navegación principal */
         .btn-outline-light {
             border-color: rgba(255, 255, 255, 0.3) !important;
@@ -114,72 +124,109 @@
         .btn-outline-light:active .text-white {
             color: white !important;
         }
+
+        /* Evitar que el menú admin aparezca durante la carga inicial */
+        .admin-offcanvas {
+            visibility: hidden;
+            transform: translate3d(-100%, 0, 0);
+        }
+
+        .admin-offcanvas.show {
+            visibility: visible;
+            transform: none;
+        }
+
+        body.offcanvas-open {
+            overflow: hidden !important;
+        }
+
+        .admin-offcanvas {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+
+        .admin-offcanvas .offcanvas-body {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            min-height: 0;
+            touch-action: pan-y;
+            padding-top: 0.75rem;
+            padding-bottom: 1rem;
+        }
     </style>
     {% block extrastyle %}{% endblock %}
 </head>
 <body>
     <!-- Admin Sidebar -->
     {% if user.is_authenticated and user.is_staff %}
-    <div class="admin-sidebar" id="adminSidebar">
-        <div class="admin-sidebar-header">
-            <div class="d-flex align-items-center justify-content-between">
+    <template id="adminModulesOffcanvasTemplate">
+        <div class="offcanvas offcanvas-start admin-offcanvas text-bg-dark" tabindex="-1" id="adminModulesOffcanvas" aria-labelledby="adminModulesOffcanvasLabel">
+            <div class="offcanvas-header border-bottom border-secondary">
                 <div class="d-flex align-items-center">
-                    <img src="{% static 'images/logo_soma.png' %}" alt="SOMA Logo" style="height: 25px;">
-                    <span class="sidebar-title ms-2">Panel Admin</span>
+                    <img src="{% static 'images/logo_soma.png' %}" alt="SOMA Logo" style="height: 28px;">
+                    <span class="fw-semibold ms-2 admin-offcanvas-title" id="adminModulesOffcanvasLabel">Panel admin</span>
                 </div>
-                <button class="btn btn-sm btn-link text-white sidebar-toggle" onclick="toggleAdminSidebar()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+            </div>
+            <div class="offcanvas-body p-0">
+                {% if app_list %}
+                <div class="accordion accordion-flush admin-modules-accordion" id="adminModulesAccordion">
+                    {% for app in app_list %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-{{ app.app_label }}">
+                            <button class="accordion-button collapsed admin-module-header" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ app.app_label }}" aria-expanded="false" aria-controls="collapse-{{ app.app_label }}">
+                                <span class="admin-module-icon me-2">
+                                    <i class="{% if app.app_label == 'auth' %}fas fa-user-shield
+                                            {% elif app.app_label == 'usuarios' %}fas fa-users-cog
+                                            {% elif app.app_label == 'empresas' %}fas fa-building
+                                            {% elif app.app_label == 'flota_vehicular' %}fas fa-car
+                                            {% elif app.app_label == 'herramientas' %}fas fa-tools
+                                            {% elif app.app_label == 'notificaciones' %}fas fa-bell
+                                            {% elif app.app_label == 'recursos_humanos' %}fas fa-users
+                                            {% elif app.app_label == 'ubicaciones' %}fas fa-map-marker-alt
+                                            {% else %}fas fa-cube{% endif %}"></i>
+                                </span>
+                                <span>
+                                    {% if app.app_label == 'auth' %}Autenticación
+                                    {% elif app.app_label == 'usuarios' %}Usuarios
+                                    {% elif app.app_label == 'empresas' %}Empresas
+                                    {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
+                                    {% elif app.app_label == 'herramientas' %}Herramientas
+                                    {% elif app.app_label == 'notificaciones' %}Notificaciones
+                                    {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                                    {% elif app.app_label == 'ubicaciones' %}Control de Asistencia
+                                    {% else %}{{ app.name }}{% endif %}
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="collapse-{{ app.app_label }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ app.app_label }}" data-bs-parent="#adminModulesAccordion">
+                            <div class="accordion-body p-0">
+                                {% if app.models %}
+                                <div class="list-group list-group-flush admin-module-links">
+                                    {% for model in app.models %}
+                                    <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                        <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="text-muted small px-3 py-2">Sin modelos disponibles.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted small">No hay módulos disponibles.</div>
+                {% endif %}
             </div>
         </div>
-        
-        <div class="admin-sidebar-content">
-            {% if app_list %}
-                {% for app in app_list %}
-                <div class="sidebar-module">
-                    <div class="module-header" onclick="toggleModule('{{ app.app_label }}')">
-                        <span class="module-icon">
-                            <i class="{% if app.app_label == 'auth' %}fas fa-user-shield
-                                    {% elif app.app_label == 'usuarios' %}fas fa-users-cog
-                                    {% elif app.app_label == 'empresas' %}fas fa-building
-                                    {% elif app.app_label == 'flota_vehicular' %}fas fa-car
-                                    {% elif app.app_label == 'herramientas' %}fas fa-tools
-                                    {% elif app.app_label == 'notificaciones' %}fas fa-bell
-                                    {% elif app.app_label == 'recursos_humanos' %}fas fa-users
-                                    {% elif app.app_label == 'ubicaciones' %}fas fa-map-marker-alt
-                                    {% else %}fas fa-cube{% endif %}"></i>
-                        </span>
-                        <span class="module-name">
-                            {% if app.app_label == 'auth' %}Autenticación
-                            {% elif app.app_label == 'usuarios' %}Usuarios
-                            {% elif app.app_label == 'empresas' %}Empresas
-                            {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
-                            {% elif app.app_label == 'herramientas' %}Herramientas
-                            {% elif app.app_label == 'notificaciones' %}Notificaciones
-                            {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
-                            {% elif app.app_label == 'ubicaciones' %}Control de Asistencia
-                            {% else %}{{ app.name }}{% endif %}
-                        </span>
-                        <i class="fas fa-chevron-down chevron ms-auto"></i>
-                    </div>
-                    
-                    {% if app.models %}
-                    <div class="module-models" id="module-{{ app.app_label }}" style="display: none;">
-                        {% for model in app.models %}
-                        <a href="{{ model.admin_url }}" class="model-link">
-                            <i class="fas fa-caret-right me-2"></i>{{ model.name }}
-                        </a>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-    </div>
-    
+    </template>
+
     <!-- Toggle button for admin sidebar -->
-    <button class="admin-sidebar-toggle" id="sidebarToggle" onclick="toggleAdminSidebar()">
+    <button class="admin-sidebar-toggle" id="sidebarToggle" type="button" aria-controls="adminModulesOffcanvas" aria-expanded="false">
         <i class="fas fa-bars"></i>
     </button>
     {% endif %}
@@ -634,239 +681,265 @@
         
         <!-- Admin Sidebar Styles and Scripts -->
         <style>
-            .admin-sidebar {
-                position: fixed;
-                top: 0;
-                left: -300px;
-                width: 300px;
-                height: 100vh;
+            .admin-offcanvas {
                 background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-                color: white;
-                transition: left 0.3s ease;
-                z-index: 1050;
-                overflow-y: auto;
-                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            }
-            
-            .admin-sidebar.show {
-                left: 0;
-            }
-            
-            .admin-sidebar-header {
-                padding: 20px;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-                background: rgba(255,255,255,0.05);
-            }
-            
-            .sidebar-title {
-                font-weight: 600;
-                font-size: 16px;
-            }
-            
-            .sidebar-toggle {
-                padding: 0;
-                color: white !important;
-            }
-            
-            .admin-sidebar-content {
-                padding: 0;
-            }
-            
-            .sidebar-module {
-                border-bottom: 1px solid rgba(255,255,255,0.05);
-            }
-            
-            .module-header {
-                padding: 15px 20px;
-                cursor: pointer;
+                width: var(--admin-offcanvas-width);
+                height: 100vh;
                 display: flex;
+                flex-direction: column;
+            }
+
+            .admin-offcanvas .offcanvas-body {
+                flex: 1;
+                overflow-y: auto;
+            }
+
+            .admin-offcanvas .offcanvas-header {
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .admin-modules-accordion .accordion-item {
+                background: transparent;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+
+            .admin-modules-accordion .accordion-button {
+                background: transparent;
+                color: rgba(255, 255, 255, 0.9);
+                box-shadow: none;
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
+                gap: 0.5rem;
+            }
+
+            .admin-modules-accordion .accordion-button.collapsed {
+                color: rgba(255, 255, 255, 0.75);
+            }
+
+            .admin-modules-accordion .accordion-button:not(.collapsed) {
+                background: rgba(255, 255, 255, 0.08);
+                color: #fff;
+            }
+
+            .admin-modules-accordion .accordion-button::after {
+                filter: invert(1);
+            }
+
+            .admin-module-icon {
+                width: 1.75rem;
+                height: 1.75rem;
+                border-radius: 0.55rem;
+                background: rgba(255, 255, 255, 0.12);
+                display: inline-flex;
                 align-items: center;
-                transition: all 0.3s ease;
+                justify-content: center;
+                color: #ffcc80;
             }
-            
-            .module-header:hover {
-                background: rgba(255,255,255,0.1);
-            }
-            
-            .module-icon {
-                width: 20px;
-                text-align: center;
-                margin-right: 12px;
-            }
-            
-            .module-name {
-                font-weight: 500;
-                font-size: 14px;
-            }
-            
-            .chevron {
-                font-size: 12px;
-                transition: transform 0.3s ease;
-            }
-            
-            .chevron.rotated {
-                transform: rotate(180deg);
-            }
-            
-            .module-models {
-                background: rgba(0,0,0,0.1);
-                border-top: 1px solid rgba(255,255,255,0.1);
-            }
-            
-            .model-link {
-                display: block;
-                padding: 10px 20px 10px 45px;
-                color: rgba(255,255,255,0.8);
-                text-decoration: none;
-                font-size: 13px;
-                transition: all 0.3s ease;
+
+            .admin-module-links .list-group-item {
+                background: transparent;
+                color: rgba(255, 255, 255, 0.8);
+                padding-top: 0.55rem;
+                padding-bottom: 0.55rem;
+                padding-left: 2.4rem;
+                border: none;
                 border-left: 3px solid transparent;
+                transition: all 0.2s ease;
             }
-            
-            .model-link:hover {
-                background: rgba(255,255,255,0.1);
-                color: white;
-                border-left-color: #ff6600;
-                padding-left: 48px;
+
+            .admin-module-links .list-group-item:hover {
+                background: rgba(255, 255, 255, 0.08);
+                color: #fff;
+                border-left-color: #ff6b35;
             }
-            
+
+            .admin-offcanvas-title {
+                color: #ffffff !important;
+                font-weight: 700 !important;
+            }
+
             .admin-sidebar-toggle {
                 position: fixed;
-                top: 99px;
-                left: 3px;
+                top: 96px;
+                left: 1rem;
                 z-index: 1051;
                 background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
                 color: white;
                 border: none;
-                width: 50px;
-                height: 50px;
+                width: 52px;
+                height: 52px;
                 border-radius: 50%;
                 box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
-                transition: all 0.3s ease;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
             }
-            
+
+            .admin-sidebar-toggle:focus {
+                outline: none;
+                box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+            }
+
             .admin-sidebar-toggle:hover {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(255, 102, 0, 0.4);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 18px rgba(255, 102, 0, 0.45);
             }
-            
-            .admin-sidebar-toggle.active {
+
+            .admin-sidebar-toggle.is-open {
                 background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+                left: calc(var(--admin-offcanvas-width) + 1.25rem);
             }
-            
-            /* Ajustes cuando el sidebar está abierto */
-            body.sidebar-open .admin-sidebar-toggle {
-                left: 320px;
-                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            }
-            
-            body.sidebar-open #mainContainer {
-                margin-left: 300px;
-                transition: margin-left 0.3s ease;
-            }
-            
-            /* Responsive */
-            @media (max-width: 768px) {
-                body.sidebar-open #mainContainer {
-                    margin-left: 0;
-                }
-                
-                .admin-sidebar {
-                    width: 280px;
-                    left: -280px;
-                }
-                
-                body.sidebar-open .admin-sidebar-toggle {
-                    left: 300px;
+
+            @media (max-width: 992px) {
+                .admin-sidebar-toggle {
+                    top: 88px;
                 }
             }
-            
-            /* Overlay para móvil */
-            .sidebar-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                z-index: 1049;
-                display: none;
-            }
-            
-            body.sidebar-open .sidebar-overlay {
-                display: block;
+
+            @media (max-width: 576px) {
+                .admin-sidebar-toggle {
+                    top: 82px;
+                    width: 46px;
+                    height: 46px;
+                }
+
+                .admin-sidebar-toggle.is-open {
+                    left: calc(var(--admin-offcanvas-width) + 0.75rem);
+                }
             }
         </style>
-        
-        <!-- Overlay para móvil -->
-        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleAdminSidebar()"></div>
-        
+
         <script>
-            function toggleAdminSidebar() {
-                const sidebar = document.getElementById('adminSidebar');
-                const toggle = document.getElementById('sidebarToggle');
-                const body = document.body;
-                
-                if (sidebar) {
-                    sidebar.classList.toggle('show');
-                    body.classList.toggle('sidebar-open');
-                    
-                    // Cambiar icono del botón
-                    const icon = toggle.querySelector('i');
-                    if (sidebar.classList.contains('show')) {
-                        icon.className = 'fas fa-times';
-                        toggle.classList.add('active');
-                    } else {
-                        icon.className = 'fas fa-bars';
-                        toggle.classList.remove('active');
-                    }
+            (function() {
+                const STORAGE_KEY = 'soma.admin.lastModule';
+
+                if (typeof bootstrap === 'undefined') {
+                    return;
                 }
-            }
-            
-            function toggleModule(appLabel) {
-                const module = document.getElementById('module-' + appLabel);
-                const chevron = document.querySelector('[onclick="toggleModule(\'' + appLabel + '\')"] .chevron');
-                
-                if (module) {
-                    const isVisible = module.style.display !== 'none';
-                    
-                    // Cerrar todos los otros módulos
-                    document.querySelectorAll('.module-models').forEach(function(m) {
-                        if (m !== module) {
-                            m.style.display = 'none';
+
+                const toggleButton = document.getElementById('sidebarToggle');
+                const offcanvasTemplate = document.getElementById('adminModulesOffcanvasTemplate');
+                let offcanvasElement = null;
+                let offcanvasInstance = null;
+
+                function ensureOffcanvas() {
+                    if (offcanvasInstance) {
+                        return offcanvasInstance;
+                    }
+
+                    if (!offcanvasTemplate || !offcanvasTemplate.content.firstElementChild) {
+                        return null;
+                    }
+
+                    offcanvasElement = offcanvasTemplate.content.firstElementChild.cloneNode(true);
+                    offcanvasElement.style.visibility = 'hidden';
+                    offcanvasElement.style.display = 'none';
+                    document.body.appendChild(offcanvasElement);
+
+                    offcanvasElement.addEventListener('show.bs.offcanvas', function() {
+                        offcanvasElement.style.display = 'block';
+                        requestAnimationFrame(() => {
+                            offcanvasElement.style.visibility = 'visible';
+                        });
+
+                        if (toggleButton) {
+                            toggleButton.setAttribute('aria-expanded', 'true');
+                            toggleButton.classList.add('is-open');
+                        }
+
+                        document.body.classList.add('offcanvas-open');
+                        document.body.classList.remove('modal-open');
+                    });
+
+                    offcanvasElement.addEventListener('shown.bs.offcanvas', function() {
+                        const storedId = localStorage.getItem(STORAGE_KEY);
+                        const firstCollapse = offcanvasElement.querySelector('.accordion-collapse');
+                        const targetId = storedId || (firstCollapse ? firstCollapse.id : null);
+
+                        if (!targetId) {
+                            return;
+                        }
+
+                        const collapseElement = document.getElementById(targetId);
+                        if (collapseElement && !collapseElement.classList.contains('show')) {
+                            new bootstrap.Collapse(collapseElement, { toggle: true });
                         }
                     });
-                    
-                    // Resetear todos los chevrons
-                    document.querySelectorAll('.chevron').forEach(function(c) {
-                        if (c !== chevron) {
-                            c.classList.remove('rotated');
+
+                    offcanvasElement.addEventListener('hidden.bs.offcanvas', function() {
+                        offcanvasElement.style.visibility = 'hidden';
+                        offcanvasElement.style.display = 'none';
+
+                        if (toggleButton) {
+                            toggleButton.setAttribute('aria-expanded', 'false');
+                            toggleButton.classList.remove('is-open');
+                        }
+
+                        document.body.classList.remove('offcanvas-open');
+                    });
+
+                    offcanvasElement.addEventListener('shown.bs.collapse', function(event) {
+                        if (event.target.classList.contains('accordion-collapse')) {
+                            localStorage.setItem(STORAGE_KEY, event.target.id);
+
+                            requestAnimationFrame(() => {
+                                const scrollContainer = offcanvasElement.querySelector('.offcanvas-body');
+
+                                if (!scrollContainer) {
+                                    return;
+                                }
+
+                                const containerScrollTop = scrollContainer.scrollTop;
+                                const containerHeight = scrollContainer.clientHeight;
+                                const targetTop = event.target.offsetTop - scrollContainer.offsetTop;
+                                const targetHeight = event.target.offsetHeight;
+                                const targetBottom = targetTop + targetHeight;
+
+                                if (targetBottom > containerScrollTop + containerHeight) {
+                                    const newScrollTop = targetBottom - containerHeight + 16;
+                                    scrollContainer.scrollTo({
+                                        top: newScrollTop,
+                                        behavior: 'smooth'
+                                    });
+                                } else if (targetTop < containerScrollTop) {
+                                    const newScrollTop = Math.max(targetTop - 16, 0);
+                                    scrollContainer.scrollTo({
+                                        top: newScrollTop,
+                                        behavior: 'smooth'
+                                    });
+                                }
+                            });
                         }
                     });
-                    
-                    // Toggle del módulo actual
-                    if (isVisible) {
-                        module.style.display = 'none';
-                        chevron.classList.remove('rotated');
-                    } else {
-                        module.style.display = 'block';
-                        chevron.classList.add('rotated');
-                    }
+
+                    offcanvasElement.addEventListener('hidden.bs.collapse', function(event) {
+                        if (event.target.classList.contains('accordion-collapse') && localStorage.getItem(STORAGE_KEY) === event.target.id) {
+                            localStorage.removeItem(STORAGE_KEY);
+                        }
+                    });
+
+                    offcanvasInstance = new bootstrap.Offcanvas(offcanvasElement);
+                    return offcanvasInstance;
                 }
-            }
-            
-            // Cerrar sidebar con ESC
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const sidebar = document.getElementById('adminSidebar');
-                    if (sidebar && sidebar.classList.contains('show')) {
-                        toggleAdminSidebar();
-                    }
+
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const instance = ensureOffcanvas();
+
+                        if (!instance || !offcanvasElement) {
+                            return;
+                        }
+
+                        if (offcanvasElement.classList.contains('show')) {
+                            instance.hide();
+                        } else {
+                            instance.show();
+                        }
+                    });
                 }
-            });
+            })();
         </script>
         
 </body>
