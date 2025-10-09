@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load l10n %}
 
 {% block title %}Registro de Ubicación{% endblock %}
 
@@ -324,7 +325,7 @@ function mostrarInfoSinMapa(lat, lng, accuracy, timestamp, tipo) {
                                     </small>
                                 </div>
                                 <button class="btn btn-outline-primary btn-sm" 
-                                        onclick="mostrarMapaRegistro('{{ registro.latitud }}', '{{ registro.longitud }}', {{ registro.precision|default:50 }}, '{{ registro.fecha_local|date:"H:i:s" }}', '{{ registro.get_tipo_display|lower }}')">
+                                        onclick="mostrarMapaRegistro('{{ registro.latitud|unlocalize }}', '{{ registro.longitud|unlocalize }}', {{ registro.precision|default:50 }}, '{{ registro.fecha_local|date:"H:i:s" }}', '{{ registro.get_tipo_display|lower }}')">
                                     <i class="fas fa-map-marker-alt"></i>
                                     Ver
                                 </button>
@@ -352,8 +353,8 @@ console.log('🚀 Control de Asistencia SOMA - Listo');
 // Función para confirmar y realizar el registro
 function confirmarRegistro(tipo) {
     // Convertir parámetros a números desde el inicio
-    const latNum = parseFloat('{{ ultimo_registro.latitud|default:"0" }}');
-    const lngNum = parseFloat('{{ ultimo_registro.longitud|default:"0" }}');
+    const latNum = parseFloat('{{ ultimo_registro.latitud|unlocalize|default:"0" }}');
+    const lngNum = parseFloat('{{ ultimo_registro.longitud|unlocalize|default:"0" }}');
     
     console.log('🎯 Confirmando registro de', tipo);
     

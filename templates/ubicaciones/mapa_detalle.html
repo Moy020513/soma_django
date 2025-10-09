@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load l10n %}
 
 {% block title %}Mapa de Ubicación - {{ registro.empleado.nombre_completo }}{% endblock %}
 
@@ -116,8 +117,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 let map;
-const lat = {{ registro.latitud }};
-const lng = {{ registro.longitud }};
+const lat = {{ registro.latitud|unlocalize }};
+const lng = {{ registro.longitud|unlocalize }};
 const precision = {{ registro.precision|default:50 }};
 
 document.addEventListener('DOMContentLoaded', function() {

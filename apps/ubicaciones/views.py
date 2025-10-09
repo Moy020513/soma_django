@@ -150,8 +150,8 @@ class DashboardUbicacionesView(AdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Obtener fecha del parámetro URL o usar hoy
-        fecha_param = kwargs.get('fecha')
+        # Obtener fecha del parámetro URL o del parámetro GET o usar hoy
+        fecha_param = kwargs.get('fecha') or self.request.GET.get('fecha')
         if fecha_param:
             try:
                 fecha_consulta = datetime.strptime(fecha_param, '%Y-%m-%d').date()
@@ -160,16 +160,25 @@ class DashboardUbicacionesView(AdminRequiredMixin, TemplateView):
         else:
             fecha_consulta = timezone.now().date()
         
-        # Obtener registros del día
+        # Obtener registros del día específico
         registros_entrada = RegistroUbicacion.registros_del_dia(fecha_consulta).filter(tipo='entrada')
         registros_salida = RegistroUbicacion.registros_del_dia(fecha_consulta).filter(tipo='salida')
         
-        # Estadísticas
-        empleados_con_entrada = RegistroUbicacion.empleados_registrados_hoy('entrada').count()
-        empleados_con_salida = RegistroUbicacion.empleados_registrados_hoy('salida').count()
-        empleados_sin_entrada = RegistroUbicacion.empleados_faltantes_hoy('entrada')
-        empleados_sin_salida = RegistroUbicacion.empleados_faltantes_hoy('salida')
-        total_empleados_activos = Empleado.objects.filter(activo=True).count()
+        # Estadísticas basadas en la fecha consultada
+        empleados_con_entrada = registros_entrada.values('empleado').distinct().count()
+        empleados_con_salida = registros_salida.values('empleado').distinct().count()
+        
+        # Obtener empleados activos
+        empleados_activos = Empleado.objects.filter(activo=True)
+        total_empleados_activos = empleados_activos.count()
+        
+        # Obtener IDs de empleados con entrada y salida
+        empleados_ids_entrada = registros_entrada.values_list('empleado_id', flat=True).distinct()
+        empleados_ids_salida = registros_salida.values_list('empleado_id', flat=True).distinct()
+        
+        # Empleados faltantes
+        empleados_sin_entrada = empleados_activos.exclude(id__in=empleados_ids_entrada)
+        empleados_sin_salida = empleados_activos.exclude(id__in=empleados_ids_salida)
         
         context.update({
             'fecha_consulta': fecha_consulta,

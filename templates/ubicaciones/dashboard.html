@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load l10n %}
 
 {% block title %}Dashboard de Asistencia{% endblock %}
 
@@ -20,9 +21,31 @@
         font-weight: bold;
     }
     .mini-map {
-        height: 200px;
+        height: 150px;
+        width: 150px;
         border-radius: 8px;
-        margin-bottom: 10px;
+        cursor: pointer;
+        position: relative;
+    }
+    .mini-map:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .table-ubicaciones {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .table-ubicaciones thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .table-ubicaciones tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .btn-map {
+        padding: 4px 8px;
+        font-size: 0.875rem;
     }
     .registro-card {
         border-radius: 10px;
@@ -193,99 +216,169 @@
     <div class="tab-content" id="registrosTabsContent">
         <!-- Tab de Entradas -->
         <div class="tab-pane fade show active" id="entradas" role="tabpanel" aria-labelledby="entradas-tab">
-            <div class="row mt-3">
-                {% for registro in registros_entrada %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card registro-card entrada-card">
-                        <div class="card-header bg-success text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-user me-2"></i>
-                                {{ registro.empleado.nombre_completo }}
-                            </h6>
-                            <small>{{ registro.empleado.numero_empleado }} - {{ registro.empleado.puesto.nombre }}</small>
-                        </div>
-                        <div class="card-body p-0">
-                            <div id="map-entrada-{{ registro.id }}" class="mini-map"></div>
-                            <div class="p-3">
-                                <p class="mb-1">
-                                    <i class="fas fa-clock me-2"></i>
-                                    <strong>{{ registro.fecha_local|date:"l, d/m/Y" }}</strong>
-                                </p>
-                                <p class="mb-1">
-                                    <i class="fas fa-history me-2"></i>
+            <div class="mt-3">
+                {% if registros_entrada %}
+                <div class="table-responsive table-ubicaciones">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th width="20%">Empleado</th>
+                                <th width="12%">Número</th>
+                                <th width="15%">Puesto</th>
+                                <th width="10%">Hora</th>
+                                <th width="15%">Coordenadas</th>
+                                <th width="8%">Precisión</th>
+                                <th width="15%" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for registro in registros_entrada %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ registro.empleado.nombre_completo }}</strong>
+                                </td>
+                                <td>{{ registro.empleado.numero_empleado }}</td>
+                                <td>{{ registro.empleado.puesto.nombre }}</td>
+                                <td>
+                                    <i class="fas fa-clock me-1"></i>
                                     {{ registro.fecha_local|date:"H:i:s" }}
-                                </p>
-                                <p class="mb-1">
-                                    <i class="fas fa-map-marker-alt me-2"></i>
-                                    {{ registro.coordenadas_str }}
-                                </p>
-                                {% if registro.precision %}
-                                <p class="mb-0">
-                                    <i class="fas fa-crosshairs me-2"></i>
-                                    Precisión: {{ registro.precision|floatformat:0 }}m
-                                </p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+                                </td>
+                                <td>
+                                    <small>{{ registro.coordenadas_str }}</small>
+                                </td>
+                                <td>
+                                    {% if registro.precision %}
+                                        {{ registro.precision|floatformat:0 }}m
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-info btn-map me-1" 
+                                            onclick="verMapa('{{ registro.id }}', '{{ registro.empleado.nombre_completo|escapejs }}', {{ registro.latitud|unlocalize }}, {{ registro.longitud|unlocalize }}, 'Entrada', {{ registro.precision|default:50 }})"
+                                            title="Ver mapa">
+                                        <i class="fas fa-map-marked-alt"></i>
+                                    </button>
+                                    <a href="https://www.google.com/maps?q={{ registro.latitud|unlocalize }},{{ registro.longitud|unlocalize }}" 
+                                       target="_blank" 
+                                       class="btn btn-sm btn-success btn-map"
+                                       title="Abrir en Google Maps">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-info text-center">
-                        <i class="fas fa-info-circle me-2"></i>
-                        No hay registros de entrada para esta fecha.
-                    </div>
+                {% else %}
+                <div class="alert alert-info text-center mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No hay registros de entrada para esta fecha.
                 </div>
-                {% endfor %}
+                {% endif %}
             </div>
         </div>
 
         <!-- Tab de Salidas -->
         <div class="tab-pane fade" id="salidas" role="tabpanel" aria-labelledby="salidas-tab">
-            <div class="row mt-3">
-                {% for registro in registros_salida %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card registro-card salida-card">
-                        <div class="card-header bg-danger text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-user me-2"></i>
-                                {{ registro.empleado.nombre_completo }}
-                            </h6>
-                            <small>{{ registro.empleado.numero_empleado }} - {{ registro.empleado.puesto.nombre }}</small>
-                        </div>
-                        <div class="card-body p-0">
-                            <div id="map-salida-{{ registro.id }}" class="mini-map"></div>
-                            <div class="p-3">
-                                <p class="mb-1">
-                                    <i class="fas fa-clock me-2"></i>
-                                    <strong>{{ registro.fecha_local|date:"l, d/m/Y" }}</strong>
-                                </p>
-                                <p class="mb-1">
-                                    <i class="fas fa-history me-2"></i>
+            <div class="mt-3">
+                {% if registros_salida %}
+                <div class="table-responsive table-ubicaciones">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th width="20%">Empleado</th>
+                                <th width="12%">Número</th>
+                                <th width="15%">Puesto</th>
+                                <th width="10%">Hora</th>
+                                <th width="15%">Coordenadas</th>
+                                <th width="8%">Precisión</th>
+                                <th width="15%" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for registro in registros_salida %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ registro.empleado.nombre_completo }}</strong>
+                                </td>
+                                <td>{{ registro.empleado.numero_empleado }}</td>
+                                <td>{{ registro.empleado.puesto.nombre }}</td>
+                                <td>
+                                    <i class="fas fa-clock me-1"></i>
                                     {{ registro.fecha_local|date:"H:i:s" }}
-                                </p>
-                                <p class="mb-1">
-                                    <i class="fas fa-map-marker-alt me-2"></i>
-                                    {{ registro.coordenadas_str }}
-                                </p>
-                                {% if registro.precision %}
-                                <p class="mb-0">
-                                    <i class="fas fa-crosshairs me-2"></i>
-                                    Precisión: {{ registro.precision|floatformat:0 }}m
-                                </p>
-                                {% endif %}
-                            </div>
-                        </div>
+                                </td>
+                                <td>
+                                    <small>{{ registro.coordenadas_str }}</small>
+                                </td>
+                                <td>
+                                    {% if registro.precision %}
+                                        {{ registro.precision|floatformat:0 }}m
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-info btn-map me-1" 
+                                            onclick="verMapa('{{ registro.id }}', '{{ registro.empleado.nombre_completo|escapejs }}', {{ registro.latitud|unlocalize }}, {{ registro.longitud|unlocalize }}, 'Salida', {{ registro.precision|default:50 }})"
+                                            title="Ver mapa">
+                                        <i class="fas fa-map-marked-alt"></i>
+                                    </button>
+                                    <a href="https://www.google.com/maps?q={{ registro.latitud|unlocalize }},{{ registro.longitud|unlocalize }}" 
+                                       target="_blank" 
+                                       class="btn btn-sm btn-danger btn-map"
+                                       title="Abrir en Google Maps">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No hay registros de salida para esta fecha.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver mapa -->
+    <div class="modal fade" id="mapaModal" tabindex="-1" aria-labelledby="mapaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mapaModalLabel">
+                        <i class="fas fa-map-marked-alt me-2"></i>
+                        <span id="modalEmpleadoNombre"></span> - <span id="modalTipoRegistro"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalMapa" style="height: 400px; border-radius: 8px;"></div>
+                    <div class="mt-3">
+                        <p class="mb-2">
+                            <strong>Coordenadas:</strong> 
+                            <span id="modalCoordenadas"></span>
+                        </p>
+                        <p class="mb-3">
+                            <strong>Precisión:</strong> 
+                            <span id="modalPrecision"></span>
+                        </p>
+                        <a id="modalGoogleMapsLink" href="#" target="_blank" class="btn btn-primary w-100">
+                            <i class="fas fa-external-link-alt me-2"></i>
+                            Abrir en Google Maps
+                        </a>
                     </div>
                 </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-info text-center">
-                        <i class="fas fa-info-circle me-2"></i>
-                        No hay registros de salida para esta fecha.
-                    </div>
-                </div>
-                {% endfor %}
             </div>
         </div>
     </div>
@@ -295,73 +388,73 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+let modalMap = null;
+let mapaModal = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar mapas para entradas
-    {% for registro in registros_entrada %}
-    initMap('map-entrada-{{ registro.id }}', {{ registro.latitud }}, {{ registro.longitud }}, 
-            '{{ registro.empleado.nombre_completo }}', 'Entrada', {{ registro.precision|default:50 }});
-    {% endfor %}
-    
-    // Inicializar mapas para salidas (se cargarán cuando se active el tab)
-    document.getElementById('salidas-tab').addEventListener('shown.bs.tab', function() {
-        setTimeout(function() {
-            {% for registro in registros_salida %}
-            initMap('map-salida-{{ registro.id }}', {{ registro.latitud }}, {{ registro.longitud }}, 
-                    '{{ registro.empleado.nombre_completo }}', 'Salida', {{ registro.precision|default:50 }});
-            {% endfor %}
-        }, 100);
-    });
+    // Inicializar modal de Bootstrap
+    mapaModal = new bootstrap.Modal(document.getElementById('mapaModal'));
 });
 
-function initMap(mapId, lat, lng, nombre, tipo, precision) {
-    // Verificar si el elemento existe y no tiene un mapa ya inicializado
-    const mapElement = document.getElementById(mapId);
-    if (!mapElement || mapElement._leaflet_id) {
-        return;
-    }
+function verMapa(registroId, nombre, lat, lng, tipo, precision) {
+    // Actualizar información del modal
+    document.getElementById('modalEmpleadoNombre').textContent = nombre;
+    document.getElementById('modalTipoRegistro').textContent = tipo;
+    document.getElementById('modalCoordenadas').textContent = `${lat}, ${lng}`;
+    document.getElementById('modalPrecision').textContent = precision ? `${precision}m` : 'N/A';
+    document.getElementById('modalGoogleMapsLink').href = `https://www.google.com/maps?q=${lat},${lng}`;
     
-    const map = L.map(mapId, {
-        center: [lat, lng],
-        zoom: 16,
-        zoomControl: false,
-        scrollWheelZoom: false,
-        touchZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-        dragging: false
-    });
+    // Mostrar modal
+    mapaModal.show();
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    
-    // Marcador
-    const iconColor = tipo === 'Entrada' ? 'green' : 'red';
-    const marker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<b>${nombre}</b><br>${tipo}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
-    
-    // Círculo de precisión
-    if (precision && precision < 200) {
-        L.circle([lat, lng], {
-            color: iconColor,
-            fillColor: iconColor,
-            fillOpacity: 0.1,
-            radius: precision
-        }).addTo(map);
-    }
-    
-    // Hacer clic para centrar y habilitar interacción
-    mapElement.addEventListener('click', function() {
-        map.dragging.enable();
-        map.scrollWheelZoom.enable();
-        map.doubleClickZoom.enable();
-        map.touchZoom.enable();
-        map.boxZoom.enable();
-        map.keyboard.enable();
-        map.addControl(L.control.zoom());
-        map.setView([lat, lng], 17);
-    });
+    // Esperar a que el modal se muestre completamente antes de inicializar el mapa
+    document.getElementById('mapaModal').addEventListener('shown.bs.modal', function initMapOnce() {
+        // Limpiar mapa anterior si existe
+        if (modalMap) {
+            modalMap.remove();
+            modalMap = null;
+        }
+        
+        // Crear nuevo mapa
+        try {
+            modalMap = L.map('modalMapa', {
+                center: [lat, lng],
+                zoom: 16
+            });
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(modalMap);
+            
+            // Agregar marcador
+            const iconColor = tipo === 'Entrada' ? 'green' : 'red';
+            const marker = L.marker([lat, lng]).addTo(modalMap)
+                .bindPopup(`<b>${nombre}</b><br>${tipo}<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`)
+                .openPopup();
+            
+            // Agregar círculo de precisión
+            if (precision && precision < 200) {
+                L.circle([lat, lng], {
+                    color: iconColor,
+                    fillColor: iconColor,
+                    fillOpacity: 0.1,
+                    radius: precision
+                }).addTo(modalMap);
+            }
+            
+            // Invalidar tamaño del mapa después de un breve delay
+            setTimeout(function() {
+                modalMap.invalidateSize();
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error al inicializar mapa:', error);
+            document.getElementById('modalMapa').innerHTML = '<div class="alert alert-warning">Error al cargar el mapa</div>';
+        }
+        
+        // Remover el event listener para que no se ejecute múltiples veces
+        document.getElementById('mapaModal').removeEventListener('shown.bs.modal', initMapOnce);
+    }, { once: true });
 }
 
 function limpiarUbicaciones() {

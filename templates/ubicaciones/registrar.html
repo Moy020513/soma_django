@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load l10n %}
 
 {% block title %}Registro de Ubicación{% endblock %}
 
@@ -125,8 +126,8 @@
                                     </small>
                                 </div>
                                 <button class="btn btn-outline-primary btn-sm" 
-                                        data-lat="{{ registro.latitud }}" 
-                                        data-lng="{{ registro.longitud }}" 
+                                        data-lat="{{ registro.latitud|unlocalize }}" 
+                                        data-lng="{{ registro.longitud|unlocalize }}" 
                                         data-accuracy="{{ registro.precision|default:50 }}" 
                                         data-timestamp="{{ registro.fecha_local|date:'H:i:s' }}" 
                                         data-tipo="{{ registro.get_tipo_display|lower }}"
