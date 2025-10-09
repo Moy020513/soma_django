@@ -441,9 +441,10 @@ window.verMapa = function(registroId, nombre, lat, lng, tipo, precision) {
     document.getElementById('modalPrecision').textContent = precision ? `${precision}m` : 'N/A';
     document.getElementById('modalGoogleMapsLink').href = `https://www.google.com/maps?q=${lat},${lng}`;
     
-    // Actualizar iframe de Google Maps
+    // Actualizar iframe con OpenStreetMap
     const iframe = document.getElementById('modalMapaIframe');
-    const mapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${lat},${lng}&zoom=16&maptype=roadmap`;
+    // Usando OpenStreetMap con marcador
+    const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.01},${lat-0.01},${lng+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lng}`;
     iframe.src = mapUrl;
     
     // Mostrar el modal
