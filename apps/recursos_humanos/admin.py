@@ -51,8 +51,8 @@ class EmpleadoForm(forms.ModelForm):
 class EmpleadoAdmin(admin.ModelAdmin):
     form = EmpleadoForm
     save_on_top = True
-    list_display = ['numero_empleado', 'nombre_completo', 'puesto', 'fecha_ingreso', 'activo']
-    list_filter = ['puesto', 'activo', 'fecha_ingreso']
+    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'fecha_ingreso', 'activo']
+    list_filter = ['puesto', 'activo', 'fecha_ingreso', 'fecha_nacimiento']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
     list_editable = ['activo']

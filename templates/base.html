@@ -400,6 +400,19 @@
                            onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                             <i class="fas fa-clock text-white"></i>
                         </a>
+                        <!-- Icono Cumpleaños -->
+                        <a href="{% url 'proximos_cumpleanos' %}"
+                           class="btn btn-outline-light me-2 nav-icon-tooltip"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="bottom"
+                           data-bs-delay='{"show":0,"hide":100}'
+                           title="Cumpleaños"
+                           data-tooltip-custom="Cumpleaños"
+                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
+                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <i class="fas fa-birthday-cake text-white"></i>
+                        </a>
                         {% endif %}
                         <div class="dropdown">
                             <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">

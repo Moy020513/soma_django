@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2 text-gray-800">
+                        <i class="fas fa-birthday-cake text-primary me-2"></i>
+                        Cumpleaños Próximos
+                    </h1>
+                    <p class="text-muted mb-0">Gestión y seguimiento de celebraciones</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary fs-6">{{ empleados|length|add:contactos|length }} celebraciones</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de selección -->
+    <div class="mb-4 d-flex gap-3">
+        <a href="?tipo=empleados" class="btn {% if filtro == 'empleados' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            <i class="fas fa-users me-1"></i> Empleados
+        </a>
+        <a href="?tipo=contactos" class="btn {% if filtro == 'contactos' %}btn-success{% else %}btn-outline-success{% endif %}">
+            <i class="fas fa-address-book me-1"></i> Contactos
+        </a>
+    </div>
+    <!-- Filtros para empleados -->
+    {% if filtro == 'empleados' or filtro == '' %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3"><i class="fas fa-filter text-primary me-2"></i> Filtros de Empleados</h5>
+            <form method="get" class="row g-3 align-items-end">
+                <input type="hidden" name="tipo" value="empleados">
+                <div class="col-md-4">
+                    <label for="q" class="form-label small fw-bold text-uppercase text-muted">Buscar Nombre</label>
+                    <input type="text" name="q" id="q" placeholder="Ingresa nombre..." value="{{ busqueda }}" class="form-control form-control-sm" onchange="this.form.submit()">
+                </div>
+                <div class="col-md-4">
+                    <label for="dias" class="form-label small fw-bold text-uppercase text-muted">Días a Mostrar</label>
+                    <input type="number" id="dias" name="dias" min="1" max="365" value="{{ dias_adelante }}" class="form-control form-control-sm" onchange="this.form.submit()">
+                </div>
+                <div class="col-md-2">
+                    <a href="?tipo=empleados" class="btn btn-outline-secondary btn-sm w-100"><i class="fas fa-redo me-1"></i> Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Filtros para contactos -->
+    {% if filtro == 'contactos' %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3"><i class="fas fa-filter text-success me-2"></i> Filtros de Contactos</h5>
+            <form method="get" class="row g-3 align-items-end">
+                <input type="hidden" name="tipo" value="contactos">
+                <div class="col-md-4">
+                    <label for="q" class="form-label small fw-bold text-uppercase text-muted">Buscar Nombre</label>
+                    <input type="text" name="q" id="q" placeholder="Ingresa nombre..." value="{{ busqueda }}" class="form-control form-control-sm" onchange="this.form.submit()">
+                </div>
+                <div class="col-md-4">
+                    <label for="empresa" class="form-label small fw-bold text-uppercase text-muted">Empresa</label>
+                    <select name="empresa" id="empresa" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">Todas las empresas</option>
+                        {% for emp in empresas %}
+                        <option value="{{ emp.nombre }}" {% if empresa_busqueda == emp.nombre %}selected{% endif %}>{{ emp.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="dias" class="form-label small fw-bold text-uppercase text-muted">Días a Mostrar</label>
+                    <input type="number" id="dias" name="dias" min="1" max="365" value="{{ dias_adelante }}" class="form-control form-control-sm" onchange="this.form.submit()">
+                </div>
+                <div class="col-md-2">
+                    <a href="?tipo=contactos" class="btn btn-outline-secondary btn-sm w-100"><i class="fas fa-redo me-1"></i> Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tarjetas de Resumen -->
+    <div class="row mb-4">
+        {% if filtro == 'empleados' or filtro == '' %}
+        <div class="col-md-6">
+            <div class="card bg-primary text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 small text-uppercase mb-1">Empleados</h6>
+                            <h3 class="mb-0">{{ empleados|length }}</h3>
+                        </div>
+                        <div class="bg-white-20 p-3 rounded-circle">
+                            <i class="fas fa-users fa-2x text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if filtro == 'contactos' %}
+        <div class="col-md-6">
+            <div class="card bg-success text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 small text-uppercase mb-1">Contactos</h6>
+                            <h3 class="mb-0">{{ contactos|length }}</h3>
+                        </div>
+                        <div class="bg-white-20 p-3 rounded-circle">
+                            <i class="fas fa-address-book fa-2x text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sección Empleados -->
+    <div class="row">
+        {% if filtro == 'empleados' or filtro == '' %}
+        <div class="col-lg-12">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users text-primary me-2"></i>
+                        Empleados
+                        <span class="badge bg-primary ms-2">{{ empleados|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if empleados %}
+                    <div class="list-group list-group-flush">
+                        {% for e in empleados %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                                    <i class="fas fa-user text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">{{ e.nombre_completo }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ e.fecha_nacimiento|date:'d/m/Y' }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-birthday-cake text-warning me-1"></i>
+                                    {{ e.fecha_nacimiento|date:'d M' }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No hay empleados próximos a cumplir años</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if filtro == 'contactos' %}
+        <div class="col-lg-12">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-address-book text-success me-2"></i>
+                        Contactos
+                        <span class="badge bg-success ms-2">{{ contactos|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if contactos %}
+                    <div class="list-group list-group-flush">
+                        {% for c in contactos %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                                    <i class="fas fa-user-tie text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">
+                                        {{ c.nombre }} 
+                                        {% if c.apellidos %}
+                                        <span class="text-muted">{{ c.apellidos }}</span>
+                                        {% endif %}
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ c.fecha_nacimiento|date:'d/m/Y' }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-birthday-cake text-warning me-1"></i>
+                                    {{ c.fecha_nacimiento|date:'d M' }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-address-book fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No hay contactos próximos a cumplir años</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Información adicional -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light border-0">
+                <div class="card-body text-center py-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Mostrando cumpleaños en los próximos <strong>{{ dias_adelante }}</strong> días
+                        {% if busqueda %}
+                        • Filtrado por: <strong>"{{ busqueda }}"</strong>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.bg-white-20 {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.bg-opacity-10 {
+    --bs-bg-opacity: 0.1;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.card-header {
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.text-gray-800 {
+    color: #1e293b !important;
+}
+
+.shadow-sm {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+</style>
+{% endblock %}

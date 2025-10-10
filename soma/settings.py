@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'apps.herramientas',
     'apps.empresas',
     'apps.notificaciones',
+    'apps.cumpleanos',
     'apps.asignaciones',
     'apps.ubicaciones',
     'soma.apps.SomaConfig',  # App principal personalizada al final

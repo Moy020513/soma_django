@@ -37,6 +37,7 @@ urlpatterns = [
     path('flota/', include('apps.flota_vehicular.urls')),
     path('herramientas/', include('apps.herramientas.urls')),
     path('empresas/', include('apps.empresas.urls')),
+    path('cumpleanos/', include('apps.cumpleanos.urls')),
     path('notificaciones/', include('apps.notificaciones.urls')),
     path('asignaciones/', include('apps.asignaciones.urls')),
     path('ubicaciones/', include('apps.ubicaciones.urls')),

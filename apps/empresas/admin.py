@@ -51,8 +51,8 @@ class EmpresaAdmin(admin.ModelAdmin):
 
 @admin.register(Contacto)
 class ContactoAdmin(admin.ModelAdmin):
-    list_display = ('nombre_completo', 'empresa', 'telefono', 'correo')
-    list_filter = ('empresa',)
+    list_display = ('nombre_completo', 'empresa', 'telefono', 'correo', 'fecha_nacimiento')
+    list_filter = ('empresa', 'fecha_nacimiento')
     search_fields = ('nombre', 'apellidos', 'telefono', 'correo', 'empresa__nombre')
     verbose_name = 'Contacto'
     verbose_name_plural = 'Contactos'

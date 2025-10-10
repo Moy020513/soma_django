@@ -35,6 +35,7 @@ class Contacto(models.Model):
         validators=[RegexValidator(r'^\d{10}$', 'El teléfono debe contener exactamente 10 dígitos.')]
     )
     correo = models.EmailField(verbose_name='Correo electrónico', blank=True)
+    fecha_nacimiento = models.DateField(verbose_name='Fecha de nacimiento', blank=True, null=True)
 
     class Meta:
         verbose_name = 'Contacto'
