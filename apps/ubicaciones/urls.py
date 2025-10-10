@@ -21,4 +21,8 @@ urlpatterns = [
     
     # Vista de mapa individual
     path('mapa/<int:registro_id>/', views.MapaUbicacionView.as_view(), name='mapa_detalle'),
+    
+    # Empleados sin entrada y sin salida
+    path('sin-entrada/', views.EmpleadosSinEntradaView.as_view(), name='sin_entrada'),
+    path('sin-salida/', views.EmpleadosSinSalidaView.as_view(), name='sin_salida'),
 ]

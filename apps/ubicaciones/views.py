@@ -229,3 +229,50 @@ class MapaUbicacionView(AdminRequiredMixin, TemplateView):
             'registro': registro,
         })
         return context
+    
+
+class EmpleadosSinEntradaView(AdminRequiredMixin, TemplateView):
+    template_name = 'ubicaciones/lista_sin_entrada.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        fecha_param = kwargs.get('fecha') or self.request.GET.get('fecha')
+        if fecha_param:
+            try:
+                fecha_consulta = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+            except ValueError:
+                fecha_consulta = timezone.now().date()
+        else:
+            fecha_consulta = timezone.now().date()
+        empleados_activos = Empleado.objects.filter(activo=True)
+        registros_entrada = RegistroUbicacion.registros_del_dia(fecha_consulta).filter(tipo='entrada')
+        empleados_ids_entrada = registros_entrada.values_list('empleado_id', flat=True).distinct()
+        empleados_sin_entrada = empleados_activos.exclude(id__in=empleados_ids_entrada)
+        context.update({
+            'empleados_sin_entrada': empleados_sin_entrada,
+            'fecha_consulta': fecha_consulta,
+        })
+        return context
+
+class EmpleadosSinSalidaView(AdminRequiredMixin, TemplateView):
+    template_name = 'ubicaciones/lista_sin_salida.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        fecha_param = kwargs.get('fecha') or self.request.GET.get('fecha')
+        if fecha_param:
+            try:
+                fecha_consulta = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+            except ValueError:
+                fecha_consulta = timezone.now().date()
+        else:
+            fecha_consulta = timezone.now().date()
+        empleados_activos = Empleado.objects.filter(activo=True)
+        registros_salida = RegistroUbicacion.registros_del_dia(fecha_consulta).filter(tipo='salida')
+        empleados_ids_salida = registros_salida.values_list('empleado_id', flat=True).distinct()
+        empleados_sin_salida = empleados_activos.exclude(id__in=empleados_ids_salida)
+        context.update({
+            'empleados_sin_salida': empleados_sin_salida,
+            'fecha_consulta': fecha_consulta,
+        })
+        return context

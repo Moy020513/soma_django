@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Empleados Sin Entrada{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="fas fa-user-clock me-2"></i> Empleados Sin Entrada</h2>
+    <div class="card">
+        <div class="card-body">
+            {% if empleados_sin_entrada %}
+                <ul class="list-group">
+                {% for empleado in empleados_sin_entrada %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ empleado.nombre_completo }}</span>
+                        <span class="badge bg-warning text-dark">Sin entrada</span>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">Todos los empleados han registrado su entrada.</p>
+            {% endif %}
+        </div>
+    </div>
+    <a href="{% url 'ubicaciones:dashboard' %}" class="btn btn-secondary mt-3"><i class="fas fa-arrow-left me-2"></i>Volver al Dashboard</a>
+</div>
+{% endblock %}

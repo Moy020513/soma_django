@@ -36,7 +36,7 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     .table-ubicaciones thead {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #001369ff 0%, #1b0036ff 100%);
         color: white;
     }
     .table-ubicaciones tbody tr:hover {
@@ -70,10 +70,23 @@
     .nav-tabs .nav-link {
         border-radius: 10px 10px 0 0;
         margin-right: 5px;
+        color: white !important;
+    }
+    /* Entradas tab no activa (primer botón) */
+    .nav-tabs .nav-item:first-child .nav-link:not(.active) {
+        background-color: #28a745 !important;
+        color: #fff !important;
+        border-color: #28a745 !important;
+    }
+    /* Salidas tab no activa (segundo botón) */
+    .nav-tabs .nav-item:nth-child(2) .nav-link:not(.active) {
+        background-color: #dc3545 !important;
+        color: #fff !important;
+        border-color: #dc3545 !important;
     }
     .nav-tabs .nav-link.active {
         background-color: #007bff;
-        color: white;
+        color: white !important;
         border-color: #007bff;
     }
     .date-selector {
@@ -162,41 +175,19 @@
         </div>
     </div>
 
-    <!-- Empleados faltantes -->
+    <!-- Botones para ver empleados sin entrada/salida -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-warning text-dark">
-                    <h6 class="mb-0">
-                        <i class="fas fa-user-clock me-2"></i>
-                        Sin Entrada ({{ empleados_sin_entrada.count }})
-                    </h6>
-                </div>
-                <div class="card-body">
-                    {% for empleado in empleados_sin_entrada %}
-                        <span class="empleado-tag">{{ empleado.nombre_completo }}</span>
-                    {% empty %}
-                        <p class="text-muted mb-0">Todos los empleados han registrado su entrada.</p>
-                    {% endfor %}
-                </div>
-            </div>
+            <a href="{% url 'ubicaciones:sin_entrada' %}?fecha={{ fecha_consulta|date:'Y-m-d' }}" class="btn btn-success w-100 py-3 mb-2 text-white">
+                <i class="fas fa-user-clock me-2"></i>
+                Ver empleados sin entrada ({{ empleados_sin_entrada.count }})
+            </a>
         </div>
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0">
-                        <i class="fas fa-user-minus me-2"></i>
-                        Sin Salida ({{ empleados_sin_salida.count }})
-                    </h6>
-                </div>
-                <div class="card-body">
-                    {% for empleado in empleados_sin_salida %}
-                        <span class="empleado-tag">{{ empleado.nombre_completo }}</span>
-                    {% empty %}
-                        <p class="text-muted mb-0">Todos los empleados han registrado su salida.</p>
-                    {% endfor %}
-                </div>
-            </div>
+            <a href="{% url 'ubicaciones:sin_salida' %}?fecha={{ fecha_consulta|date:'Y-m-d' }}" class="btn btn-danger w-100 py-3 mb-2 text-white">
+                <i class="fas fa-user-minus me-2"></i>
+                Ver empleados sin salida ({{ empleados_sin_salida.count }})
+            </a>
         </div>
     </div>
 
@@ -204,19 +195,30 @@
     <ul class="nav nav-tabs" id="registrosTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="entradas-tab" data-bs-toggle="tab" data-bs-target="#entradas" 
-                    type="button" role="tab" aria-controls="entradas" aria-selected="true">
+                    type="button" role="tab" aria-controls="entradas" aria-selected="true"
+                    style="color: white;">
                 <i class="fas fa-sign-in-alt me-2"></i>
                 Entradas ({{ registros_entrada.count }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="salidas-tab" data-bs-toggle="tab" data-bs-target="#salidas" 
-                    type="button" role="tab" aria-controls="salidas" aria-selected="false">
+                    type="button" role="tab" aria-controls="salidas" aria-selected="false"
+                    style="color: #ff9800;">
                 <i class="fas fa-sign-out-alt me-2"></i>
                 Salidas ({{ registros_salida.count }})
             </button>
         </li>
     </ul>
+    <style>
+        /* Letra anaranjada para tabs no activas */
+        .nav-tabs .nav-link:not(.active) {
+            color: #ff9800 !important;
+        }
+        .nav-tabs .nav-link.active {
+            color: #fff !important;
+        }
+    </style>
 
     <div class="tab-content" id="registrosTabsContent">
         <!-- Tab de Entradas -->
