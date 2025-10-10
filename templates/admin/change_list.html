@@ -1,60 +1,177 @@
 {% extends "admin/base_site.html" %}
 {% load i18n admin_urls static admin_list %}
 
+{# ========== ESTILOS ========== #}
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static "admin/css/changelists.css" %}">
   {{ media.css }}
+  <style>
+    .changelist-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .changelist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 3px solid #f3f4f6;
+    }
+
+    .changelist-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #111827;
+      margin: 0;
+      letter-spacing: -0.025em;
+    }
+
+    .changelist-toolbar {
+      background: #ffffff;
+      padding: 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      margin-bottom: 1.5rem;
+    }
+
+    .changelist-content {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .breadcrumbs {
+      background: #f9fafb;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+
+    .breadcrumbs a {
+      color: #059669;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .breadcrumbs a:hover {
+      color: #047857;
+      text-decoration: underline;
+    }
+
+    .object-tools {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .object-tools a,
+    .object-tools a.addlink,
+    .object-tools a:link,
+    .object-tools a:visited {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: #ffffff !important;
+      padding: 0.625rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+    }
+
+    .object-tools a:hover,
+    .object-tools a.addlink:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.35) !important;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    }
+
+    #changelist-filter {
+      background: #f9fafb;
+      border-radius: 6px;
+      padding: 1rem;
+    }
+
+    #changelist table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    #changelist thead th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+      padding: 1rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    #changelist tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    #changelist tbody td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+  </style>
 {% endblock %}
 
+{# ========== SCRIPTS ========== #}
 {% block extrahead %}
-{{ block.super }}
-{{ media.js }}
+  {{ block.super }}
+  {{ media.js }}
 {% endblock %}
 
-{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
+{# ========== CLASES BODY ========== #}
+{% block bodyclass %}
+  {{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list
+{% endblock %}
 
+{# ========== BREADCRUMBS ========== #}
 {% block breadcrumbs %}
-<div class="breadcrumbs">
-<a href="{% url 'home' %}">{% translate 'Home' %}</a>
-&rsaquo; <a href="{% url 'admin:app_list' app_label=cl.opts.app_label %}">{{ cl.opts.app_config.verbose_name }}</a>
-&rsaquo; {{ cl.opts.verbose_name_plural|capfirst }}
-</div>
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Inicio' %}</a>
+    &rsaquo; 
+    <a href="{% url 'admin:app_list' app_label=cl.opts.app_label %}">
+      {{ cl.opts.app_config.verbose_name }}
+    </a>
+    &rsaquo; 
+    {{ cl.opts.verbose_name_plural|capfirst }}
+  </div>
 {% endblock %}
 
 {% block coltype %}{% endblock %}
 
+{# ========== CONTENIDO PRINCIPAL ========== #}
 {% block content %}
-  <div id="content-main">
-    {% block object-tools %}
-    <div class="object-tools d-flex justify-content-end gap-2" style="margin-bottom: 1rem;">
-      <a href="{% url 'home' %}" class="btn btn-main"><i class="fas fa-arrow-left me-2"></i>Volver al inicio</a>
-      {% change_list_object_tools %}
+  <div class="changelist-container">
+    
+    {# Encabezado con título #}
+    <div class="changelist-header">
+      <h1>{{ cl.opts.verbose_name_plural|capfirst }}</h1>
+      
+      {# Herramientas de objetos #}
+      {% block object-tools %}
+        <div class="object-tools">
+          {% change_list_object_tools %}
+        </div>
+      {% endblock %}
     </div>
-    <style>
-      .btn-main {
-        background: linear-gradient(45deg, var(--soma-orange), var(--soma-orange-light));
-        color: #fff !important;
-        border: none;
-        border-radius: 4px;
-        padding: 10px 28px;
-        font-size: 16px;
-        font-weight: 600;
-        margin-left: 8px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        transition: background 0.2s;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-      }
-      .btn-main:hover {
-        background: linear-gradient(45deg, var(--soma-orange-dark), var(--soma-orange));
-        opacity: 0.9;
-        text-decoration: underline;
-      }
-    </style>
-    {% endblock %}
 
-    {% include "admin/change_list_htmx.html" %}
+    {# Contenido del changelist #}
+    <div class="changelist-content">
+      {% include "admin/change_list_htmx.html" %}
+    </div>
+
   </div>
 {% endblock %}
