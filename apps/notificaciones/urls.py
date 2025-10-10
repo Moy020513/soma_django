@@ -11,4 +11,5 @@ urlpatterns = [
     path('admin-responder/<int:notificacion_id>/', views.ResponderNotificacionAdminView.as_view(), name='responder_admin'),
     path('admin-modificar-respuesta/<int:pk>/', views.ModificarRespuestaAdminView.as_view(), name='modificar_respuesta'),
     path('modificar-respuesta/<int:pk>/', views.ModificarRespuestaUsuarioView.as_view(), name='modificar_respuesta_usuario'),
+    path('cumpleanos/<int:pk>/', views.DetalleCumpleanosNotificacionView.as_view(), name='detalle_cumpleanos'),
 ]

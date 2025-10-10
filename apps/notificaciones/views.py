@@ -4,8 +4,6 @@ from .models import Notificacion, RespuestaNotificacion
 from django.views.generic import DetailView
 from .forms import RespuestaNotificacionForm
 
-# ...existing code...
-
 # Vista para que el usuario (empleado) modifique su propia respuesta
 class ModificarRespuestaUsuarioView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def form_valid(self, form):
@@ -61,6 +59,10 @@ class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        # Redirección automática para notificaciones de cumpleaños
+        if self.object.url and 'cumpleanos' in self.object.url:
+            from django.shortcuts import redirect
+            return redirect(self.object.url)
         # Redirección automática para notificaciones de inspección de herramienta enviada
         if self.object.titulo.startswith('📤 Inspección de Herramienta Enviada') and self.object.url.endswith('/responder/'):
             from django.shortcuts import redirect
@@ -162,6 +164,20 @@ class DetalleNotificacionAdminView(LoginRequiredMixin, UserPassesTestMixin, Deta
                 respuesta = None
         context['respuesta'] = respuesta
         return context
+
+# Vista para detalle de notificación de cumpleaños
+class DetalleCumpleanosNotificacionView(LoginRequiredMixin, DetailView):
+    model = Notificacion
+    template_name = 'notificaciones/detalle_cumpleanos.html'
+    context_object_name = 'notificacion'
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.object.leida:
+            self.object.leida = True
+            self.object.save()
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
 
 # Create your views here.
 
