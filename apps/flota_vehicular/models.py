@@ -122,10 +122,9 @@ class TenenciaVehicular(models.Model):
     año_fiscal = models.IntegerField()
     fecha_vencimiento = models.DateField()
     fecha_pago = models.DateField(null=True, blank=True)
-    monto = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    folio = models.CharField(max_length=50, null=True, blank=True)
+    # monto y folio eliminados
     estado = models.CharField(max_length=20, choices=ESTADOS_TENENCIA, default='pendiente')
-    comprobante_pago = models.FileField(upload_to='vehiculos/tenencias/', null=True, blank=True)
+    # comprobante_pago eliminado
     observaciones = models.TextField(blank=True)
     
     class Meta:
@@ -156,11 +155,8 @@ class VerificacionVehicular(models.Model):
     tipo_verificacion = models.CharField(max_length=20, choices=TIPOS_VERIFICACION)
     fecha_verificacion = models.DateField()
     fecha_vencimiento = models.DateField()
-    numero_certificado = models.CharField(max_length=50, unique=True)
-    centro_verificacion = models.CharField(max_length=200)
     estado = models.CharField(max_length=20, choices=ESTADOS_VERIFICACION, default='pendiente')
-    costo = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
-    certificado = models.FileField(upload_to='vehiculos/verificaciones/', null=True, blank=True)
+        # número_certificado, centro_verificacion, costo y certificado eliminados
     observaciones = models.TextField(blank=True)
     
     class Meta:
