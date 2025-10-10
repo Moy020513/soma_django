@@ -332,47 +332,45 @@ function mostrarInfoSinMapa(lat, lng, accuracy, timestamp, tipo) {
                 <div class="row">
                     <div class="col-md-8">
                         <h5 class="mb-3">📍 Información de Ubicación</h5>
-                        
                         <div class="info-grid">
                             <div class="info-item">
                                 <strong>🌐 Latitud:</strong>
                                 <span>${latNum.toFixed(6)}</span>
                             </div>
-                            
                             <div class="info-item">
                                 <strong>🌐 Longitud:</strong>
                                 <span>${lngNum.toFixed(6)}</span>
                             </div>
-                            
                             <div class="info-item">
                                 <strong>🎯 Precisión:</strong>
                                 <span>${accuracy ? accuracy.toFixed(0) : '50'}m (${precisionText})</span>
                             </div>
-                            
                             <div class="info-item">
                                 <strong>⏰ Hora:</strong>
                                 <span>${timestamp}</span>
                             </div>
-                            
                             <div class="info-item">
                                 <strong>📋 Tipo:</strong>
                                 <span>${tipo.charAt(0).toUpperCase() + tipo.slice(1)}</span>
                             </div>
                         </div>
                     </div>
-                    
                     <div class="col-md-4 text-center">
-                        <div class="map-placeholder">
-                            <i class="fas fa-map-marked-alt fa-3x text-primary mb-2"></i>
-                            <p class="text-muted small">Mapa no disponible</p>
-                            
-                            <a href="https://www.google.com/maps?q=${latNum},${lngNum}" 
-                               target="_blank" 
-                               class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-external-link-alt"></i>
-                                Ver en Google Maps
-                            </a>
-                        </div>
+                        <iframe 
+                            width="100%" 
+                            height="200" 
+                            frameborder="0" 
+                            style="border:0; border-radius: 8px;" 
+                            src="https://www.openstreetmap.org/export/embed.html?bbox=${lngNum-0.01},${latNum-0.01},${lngNum+0.01},${latNum+0.01}&layer=mapnik&marker=${latNum},${lngNum}" 
+                            allowfullscreen=""
+                            loading="lazy">
+                        </iframe>
+                        <a href="https://www.google.com/maps?q=${latNum},${lngNum}" 
+                           target="_blank" 
+                           class="btn btn-outline-primary btn-sm mt-2">
+                            <i class="fas fa-external-link-alt"></i>
+                            Ver en Google Maps
+                        </a>
                     </div>
                 </div>
             </div>
