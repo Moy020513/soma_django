@@ -250,7 +250,7 @@
                                 </span>
                                 <span class="info-value">{{ usuario.email|default:"No especificado" }}</span>
                             </div>
-                            
+
                             <div class="info-item">
                                 <span class="info-label">
                                     <i class="fas fa-calendar-plus" style="color: var(--soma-orange, #ff6b35);"></i>
@@ -258,13 +258,28 @@
                                 </span>
                                 <span class="info-value">{{ usuario.date_joined|date:"d/m/Y H:i" }}</span>
                             </div>
-                            
+
                             <div class="info-item">
                                 <span class="info-label">
                                     <i class="fas fa-clock" style="color: var(--soma-orange, #ff6b35);"></i>
                                     Último acceso:
                                 </span>
                                 <span class="info-value">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}</span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-flag" style="color: var(--soma-blue, #004e89);"></i>
+                                    Estatus actual:
+                                </span>
+                                {% if estatus_actual %}
+                                    <span class="badge"
+                                        style="background-color: {% if estatus_actual == 'activo' %}#28a745{% elif estatus_actual == 'vacaciones' %}#ffc107{% elif estatus_actual == 'incapacidad' %}#17a2b8{% else %}#6c757d{% endif %}; color: white; font-size: 0.95rem; padding: 0.4em 0.8em; border-radius: 0.7em;">
+                                        {{ estatus_actual|title }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Sin registro</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

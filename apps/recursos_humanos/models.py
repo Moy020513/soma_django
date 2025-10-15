@@ -143,7 +143,17 @@ class Empleado(models.Model):
         # Generar número de empleado si viene vacío
         if not self.numero_empleado:
             self.numero_empleado = self._generate_numero_empleado()
+        is_new = self.pk is None
         super().save(*args, **kwargs)
+        # Crear periodo de estatus 'activo' si es nuevo y no existe ninguno
+        if is_new and not self.periodos_estatus.exists():
+            from .models import PeriodoEstatusEmpleado
+            PeriodoEstatusEmpleado.objects.create(
+                empleado=self,
+                estatus='activo',
+                fecha_inicio=self.fecha_ingreso,
+                observaciones='Registro automático de alta.'
+            )
 
     def historial_estatus(self):
         """Devuelve el historial completo de periodos de estatus."""

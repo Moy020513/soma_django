@@ -238,6 +238,11 @@ def perfil_usuario(request):
             # Múltiples herramientas, se manejará en template
             herramienta_asignada = None
     
+    estatus_actual = None
+    if empleado:
+        periodo = empleado.periodos_estatus.order_by('-fecha_inicio').first()
+        if periodo:
+            estatus_actual = periodo.estatus
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
@@ -246,6 +251,7 @@ def perfil_usuario(request):
         'asignaciones_supervisadas_hoy': asignaciones_supervisadas_hoy if empleado else [],
         'asignaciones_pendientes': asignaciones_supervisadas_pendientes_perfil if empleado else [],
         'empleado': empleado,
+        'estatus_actual': estatus_actual,
         'vehiculo_asignado': vehiculo_asignado,
         'herramienta_asignada': herramienta_asignada,
         'herramientas_asignadas': herramientas_lista if empleado else [],
