@@ -50,6 +50,47 @@
         margin: 0.25rem 0 0 0;
         opacity: 0.9;
     }
+
+    .tab-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        justify-content: center;
+    }
+
+    .tab-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #e9ecef;
+        background: white;
+        color: #2c3e50;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .tab-button:hover {
+        border-color: var(--soma-orange, #ff6b35);
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-button.active {
+        background: var(--soma-orange, #ff6b35);
+        color: white;
+        border-color: var(--soma-orange, #ff6b35);
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    }
+
+    .tab-button.laboral.active {
+        background: var(--soma-blue, #004e89);
+        border-color: var(--soma-blue, #004e89);
+        box-shadow: 0 4px 12px rgba(0, 78, 137, 0.3);
+    }
     
     .info-card {
         background: white;
@@ -57,13 +98,23 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         border: none;
         overflow: hidden;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        height: 100%;
+        transition: all 0.3s ease;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
-    .info-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    .info-card.hidden {
+        display: none;
     }
     
     .info-card-header {
@@ -79,12 +130,16 @@
         color: #2c3e50;
     }
     
+    .info-card-header.laboral {
+        border-bottom-color: var(--soma-blue, #004e89);
+    }
+    
     .info-card-body {
-        padding: 1.5rem;
+        padding: 2rem;
     }
     
     .info-item {
-        padding: 0.75rem 0;
+        padding: 1rem 0;
         margin-bottom: 0;
         border-bottom: 1px solid #e9ecef;
         transition: all 0.2s ease;
@@ -108,7 +163,7 @@
         font-size: 0.875rem;
         color: #6c757d;
         font-weight: 500;
-        min-width: 140px;
+        min-width: 160px;
     }
     
     .info-label i {
@@ -183,6 +238,15 @@
         .info-card-body {
             padding: 1rem;
         }
+
+        .tab-buttons {
+            flex-direction: column;
+        }
+
+        .tab-button {
+            width: 100%;
+            justify-content: center;
+        }
     }
 </style>
 
@@ -207,155 +271,189 @@
     </div>
     {% endif %}
 
-    <div class="row g-4">
+    <!-- Botones de Tabs -->
+    <div class="tab-buttons">
+        <button class="tab-button active" onclick="showTab('personal')">
+            <i class="fas fa-user"></i>
+            Información Personal
+        </button>
+        <button class="tab-button laboral" onclick="showTab('laboral')">
+            <i class="fas fa-briefcase"></i>
+            Información Laboral
+        </button>
+    </div>
+
     <!-- Información Personal -->
-    <div class="col-12">
-            <div class="info-card">
-                <div class="info-card-header">
-                    <h5><i class="fas fa-user me-2" style="color: var(--soma-orange, #ff6b35);"></i>Información Personal</h5>
-                </div>
-                <div class="info-card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-item">
-                               <div class="info-item">
-                                   <span class="info-label">
-                                       <i class="fas fa-umbrella-beach" style="color: var(--soma-orange, #ff6b35);"></i>
-                                       Días de vacaciones disponibles:
-                                   </span>
-                                   <span class="info-value">
-                                       {% if dias_vacaciones_disponibles is not None %}{{ dias_vacaciones_disponibles }}{% else %}No disponible{% endif %}
-                                   </span>
-                               </div>
-                               <div class="info-item">
-                                   <span class="info-label">
-                                       <i class="fas fa-hourglass-end" style="color: var(--soma-blue, #004e89);"></i>
-                                       Días faltantes para poder pedir vacaciones:
-                                   </span>
-                                   <span class="info-value">
-                                       {% if dias_faltan_para_vacaciones is not None and dias_faltan_para_vacaciones > 0 %}
-                                           {{ dias_faltan_para_vacaciones }}
-                                       {% else %}
-                                           Ya puedes solicitar vacaciones
-                                       {% endif %}
-                                   </span>
-                               </div>
-                                <span class="info-label">
-                                    <i class="fas fa-user-tag" style="color: var(--soma-orange, #ff6b35);"></i>
-                                    Usuario:
-                                </span>
-                                <span class="info-value">{{ usuario.username }}</span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <span class="info-label">
-                                    <i class="fas fa-id-badge" style="color: var(--soma-orange, #ff6b35);"></i>
-                                    Nombre:
-                                </span>
-                                <span class="info-value">{{ usuario.first_name|default:"No especificado" }}</span>
-                            </div>
-                            
-                            <div class="info-item">
-                                <span class="info-label">
-                                    <i class="fas fa-user" style="color: var(--soma-orange, #ff6b35);"></i>
-                                    Apellidos:
-                                </span>
-                                <span class="info-value">{{ usuario.last_name|default:"No especificado" }}</span>
-                            </div>
-                               <div class="info-item">
-                                   <span class="info-label">
-                                       <i class="fas fa-calendar-check" style="color: var(--soma-blue, #004e89);"></i>
-                                       Fecha de ingreso:
-                                   </span>
-                                   <span class="info-value">
-                                       {% if fecha_ingreso %}{{ fecha_ingreso|date:"d/m/Y" }}{% else %}No especificado{% endif %}
-                                   </span>
-                               </div>
-                               <div class="info-item">
-                                   <span class="info-label">
-                                       <i class="fas fa-hourglass-half" style="color: var(--soma-blue, #004e89);"></i>
-                                       Días activo:
-                                   </span>
-                                   <span class="info-value">
-                                       {% if dias_activo is not None %}{{ dias_activo }}{% else %}No disponible{% endif %}
-                                   </span>
-                               </div>
-                               {% if historial_anual and historial_anual|length > 0 %}
-                               <div class="info-item">
-                                   <span class="info-label">
-                                       <i class="fas fa-calendar-alt" style="color: var(--soma-blue, #004e89);"></i>
-                                       Historial anual:
-                                   </span>
-                                   <span class="info-value">
-                                       <ul style="margin-bottom:0; padding-left:1em;">
-                                       {% for registro in historial_anual %}
-                                           <li>Año {{ registro.anio }}: {{ registro.dias }} días trabajados</li>
-                                       {% endfor %}
-                                       </ul>
-                                   </span>
-                               </div>
-                               {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <span class="info-label">
-                                    <i class="fas fa-envelope" style="color: var(--soma-orange, #ff6b35);"></i>
-                                    Email:
-                                </span>
-                                <span class="info-value">{{ usuario.email|default:"No especificado" }}</span>
-                            </div>
+    <div id="personal" class="info-card">
+        <div class="info-card-header">
+            <h5><i class="fas fa-user me-2" style="color: var(--soma-orange, #ff6b35);"></i>Información Personal</h5>
+        </div>
+        <div class="info-card-body">
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-user-tag" style="color: var(--soma-orange, #ff6b35);"></i>
+                    Usuario:
+                </span>
+                <span class="info-value">{{ usuario.username }}</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-id-badge" style="color: var(--soma-orange, #ff6b35);"></i>
+                    Nombre:
+                </span>
+                <span class="info-value">{{ usuario.first_name|default:"No especificado" }}</span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-user" style="color: var(--soma-orange, #ff6b35);"></i>
+                    Apellidos:
+                </span>
+                <span class="info-value">{{ usuario.last_name|default:"No especificado" }}</span>
+            </div>
 
-                            <div class="info-item">
-                                <span class="info-label">
-                                    <i class="fas fa-calendar-plus" style="color: var(--soma-orange, #ff6b35);"></i>
-                                    Registro:
-                                </span>
-                                <span class="info-value">{{ usuario.date_joined|date:"d/m/Y H:i" }}</span>
-                            </div>
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-envelope" style="color: var(--soma-orange, #ff6b35);"></i>
+                    Email:
+                </span>
+                <span class="info-value">{{ usuario.email|default:"No especificado" }}</span>
+            </div>
 
-                            <div class="info-item">
-                                <span class="info-label">
-                                    <i class="fas fa-clock" style="color: var(--soma-orange, #ff6b35);"></i>
-                                    Último acceso:
-                                </span>
-                                <span class="info-value">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}</span>
-                            </div>
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-calendar-plus" style="color: var(--soma-orange, #ff6b35);"></i>
+                    Registro:
+                </span>
+                <span class="info-value">{{ usuario.date_joined|date:"d/m/Y H:i" }}</span>
+            </div>
 
-                            <div class="info-item">
-                                <span class="info-label">
-                                    <i class="fas fa-flag" style="color: var(--soma-blue, #004e89);"></i>
-                                    Estatus actual:
-                                </span>
-                                {% if estatus_actual %}
-                                    <span class="badge"
-                                        style="background-color: {% if estatus_actual == 'activo' %}#28a745{% elif estatus_actual == 'vacaciones' %}#ffc107{% elif estatus_actual == 'incapacidad' %}#17a2b8{% else %}#6c757d{% endif %}; color: white; font-size: 0.95rem; padding: 0.4em 0.8em; border-radius: 0.7em;">
-                                        {{ estatus_actual|title }}
-                                    </span>
-                                    {% if periodo_actual %}
-                                        <div class="mt-2">
-                                            <small>
-                                                <i class="fas fa-calendar-day"></i> Inicio: {{ periodo_actual.fecha_inicio|date:"d/m/Y" }}<br>
-                                                {% if periodo_actual.fecha_fin %}
-                                                    <i class="fas fa-calendar-check"></i> Fin: {{ periodo_actual.fecha_fin|date:"d/m/Y" }}<br>
-                                                {% else %}
-                                                    <i class="fas fa-calendar-check"></i> Fin: Actual<br>
-                                                {% endif %}
-                                                {% if dias_en_estatus_actual %}
-                                                    <i class="fas fa-hourglass-half"></i> Días en estatus: {{ dias_en_estatus_actual }}{% if estatus_actual == 'vacaciones' %} <span class="text-muted" style="font-size:0.95em">(sin contar domingos)</span>{% endif %}
-                                                {% endif %}
-                                            </small>
-                                        </div>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="badge bg-secondary">Sin registro</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-clock" style="color: var(--soma-orange, #ff6b35);"></i>
+                    Último acceso:
+                </span>
+                <span class="info-value">{{ usuario.last_login|date:"d/m/Y H:i"|default:"Primer acceso" }}</span>
             </div>
         </div>
     </div>
+
+    <!-- Información Laboral -->
+    <div id="laboral" class="info-card hidden">
+        <div class="info-card-header laboral">
+            <h5><i class="fas fa-briefcase me-2" style="color: var(--soma-blue, #004e89);"></i>Información Laboral</h5>
+        </div>
+        <div class="info-card-body">
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-calendar-check" style="color: var(--soma-blue, #004e89);"></i>
+                    Fecha de ingreso:
+                </span>
+                <span class="info-value">
+                    {% if fecha_ingreso %}{{ fecha_ingreso|date:"d/m/Y" }}{% else %}No especificado{% endif %}
+                </span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-hourglass-half" style="color: var(--soma-blue, #004e89);"></i>
+                    Días activo:
+                </span>
+                <span class="info-value">
+                    {% if dias_activo is not None %}{{ dias_activo }}{% else %}No disponible{% endif %}
+                </span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-umbrella-beach" style="color: var(--soma-blue, #004e89);"></i>
+                    Días de vacaciones disponibles:
+                </span>
+                <span class="info-value">
+                    {% if dias_vacaciones_disponibles is not None %}{{ dias_vacaciones_disponibles }}{% else %}No disponible{% endif %}
+                </span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-hourglass-end" style="color: var(--soma-blue, #004e89);"></i>
+                    Días para solicitar vacaciones:
+                </span>
+                <span class="info-value">
+                    {% if dias_faltan_para_vacaciones is not None and dias_faltan_para_vacaciones > 0 %}
+                        {{ dias_faltan_para_vacaciones }}
+                    {% else %}
+                        Ya puedes solicitar vacaciones
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-flag" style="color: var(--soma-blue, #004e89);"></i>
+                    Estatus actual:
+                </span>
+                {% if estatus_actual %}
+                    <span class="badge"
+                        style="background-color: {% if estatus_actual == 'activo' %}#28a745{% elif estatus_actual == 'vacaciones' %}#ffc107{% elif estatus_actual == 'incapacidad' %}#17a2b8{% else %}#6c757d{% endif %}; color: white; font-size: 0.95rem; padding: 0.4em 0.8em; border-radius: 0.7em;">
+                        {{ estatus_actual|title }}
+                    </span>
+                    {% if periodo_actual %}
+                        <div class="mt-2">
+                            <small>
+                                <i class="fas fa-calendar-day"></i> Inicio: {{ periodo_actual.fecha_inicio|date:"d/m/Y" }}<br>
+                                {% if periodo_actual.fecha_fin %}
+                                    <i class="fas fa-calendar-check"></i> Fin: {{ periodo_actual.fecha_fin|date:"d/m/Y" }}<br>
+                                {% else %}
+                                    <i class="fas fa-calendar-check"></i> Fin: Actual<br>
+                                {% endif %}
+                                {% if dias_en_estatus_actual %}
+                                    <i class="fas fa-hourglass-half"></i> Días en estatus: {{ dias_en_estatus_actual }}{% if estatus_actual == 'vacaciones' %} <span class="text-muted" style="font-size:0.95em">(sin contar domingos)</span>{% endif %}
+                                {% endif %}
+                            </small>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <span class="badge bg-secondary">Sin registro</span>
+                {% endif %}
+            </div>
+
+            {% if historial_anual and historial_anual|length > 0 %}
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-calendar-alt" style="color: var(--soma-blue, #004e89);"></i>
+                    Historial anual:
+                </span>
+                <span class="info-value">
+                    <ul style="margin-bottom:0; padding-left:1em;">
+                    {% for registro in historial_anual %}
+                        <li>Año {{ registro.anio }}: {{ registro.dias }} días trabajados</li>
+                    {% endfor %}
+                    </ul>
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<script>
+    function showTab(tabName) {
+        // Ocultar todas las tarjetas
+        document.getElementById('personal').classList.add('hidden');
+        document.getElementById('laboral').classList.add('hidden');
+        
+        // Remover clase active de todos los botones
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Mostrar la tarjeta seleccionada
+        document.getElementById(tabName).classList.remove('hidden');
+        
+        // Agregar clase active al botón clickeado
+        event.target.closest('.tab-button').classList.add('active');
+    }
+</script>
 {% endblock %}
