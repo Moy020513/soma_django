@@ -8,8 +8,32 @@ from django.contrib.admin.utils import unquote
 from django.urls import reverse
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado
 # Admin para estatus de empleado
+
+# Formulario personalizado para PeriodoEstatusEmpleado
+class PeriodoEstatusEmpleadoForm(forms.ModelForm):
+    class Meta:
+        model = PeriodoEstatusEmpleado
+        fields = '__all__'
+        widgets = {
+            'fecha_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+            'fecha_fin': forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            css = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (css + ' form-control form-control-sm').strip()
+            style = field.widget.attrs.get('style', '')
+            compact_style = 'max-width: 400px; padding: .25rem .5rem; font-size: .875rem;'
+            field.widget.attrs['style'] = (style + ' ' + compact_style).strip()
+        # Forzar inicialización correcta de fecha_inicio si existe instancia
+        if self.instance and self.instance.pk and self.instance.fecha_inicio:
+            self.initial['fecha_inicio'] = self.instance.fecha_inicio.strftime('%Y-%m-%d')
+
 @admin.register(PeriodoEstatusEmpleado)
 class PeriodoEstatusEmpleadoAdmin(admin.ModelAdmin):
+    form = PeriodoEstatusEmpleadoForm
     list_display = ('empleado', 'estatus', 'fecha_inicio', 'fecha_fin', 'observaciones')
     list_filter = ('estatus', 'fecha_inicio', 'fecha_fin')
     search_fields = ('empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name', 'estatus')
