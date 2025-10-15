@@ -145,5 +145,66 @@ class Empleado(models.Model):
             self.numero_empleado = self._generate_numero_empleado()
         super().save(*args, **kwargs)
 
+    def historial_estatus(self):
+        """Devuelve el historial completo de periodos de estatus."""
+        return self.periodos_estatus.order_by('fecha_inicio')
+
+    def dias_trabajados(self):
+        """Suma los días en que el empleado estuvo en estatus 'Activo'."""
+        from datetime import date
+        total = 0
+        for periodo in self.periodos_estatus.filter(estatus="activo"):
+            fin = periodo.fecha_fin or date.today()
+            total += (fin - periodo.fecha_inicio).days + 1
+        return total
+
+    def dias_vacaciones(self):
+        """Suma los días en que el empleado estuvo en 'Vacaciones'."""
+        from datetime import date
+        total = 0
+        for periodo in self.periodos_estatus.filter(estatus="vacaciones"):
+            fin = periodo.fecha_fin or date.today()
+            total += (fin - periodo.fecha_inicio).days + 1
+        return total
+
+    def antiguedad_laboral(self):
+        """Calcula la antigüedad descontando periodos no activos."""
+        from datetime import date
+        if not self.fecha_ingreso:
+            return 0
+        hoy = date.today()
+        total_dias = (hoy - self.fecha_ingreso).days + 1
+        no_activos = 0
+        for periodo in self.periodos_estatus.exclude(estatus="activo"):
+            fin = periodo.fecha_fin or hoy
+            no_activos += (fin - periodo.fecha_inicio).days + 1
+        return max(0, total_dias - no_activos)
+
+
+
+# --- Modelo para historial de estatus laboral ---
+class PeriodoEstatusEmpleado(models.Model):
+    """Registra los periodos de estatus laboral de cada empleado."""
+    ESTATUS_CHOICES = [
+        ("activo", "Activo"),
+        ("inactivo", "Inactivo"),
+        ("vacaciones", "Vacaciones"),
+        ("incapacidad", "Incapacidad"),
+    ]
+    empleado = models.ForeignKey("Empleado", on_delete=models.CASCADE, related_name="periodos_estatus")
+    estatus = models.CharField(max_length=20, choices=ESTATUS_CHOICES, verbose_name="Estatus laboral")
+    fecha_inicio = models.DateField(verbose_name="Fecha de inicio del estatus")
+    fecha_fin = models.DateField(null=True, blank=True, verbose_name="Fecha de fin del estatus")
+    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+
+    class Meta:
+        verbose_name = "Periodo de estatus de empleado"
+        verbose_name_plural = "Periodos de estatus de empleados"
+        ordering = ["-fecha_inicio"]
+
+    def __str__(self):
+        fin = self.fecha_fin.strftime('%Y-%m-%d') if self.fecha_fin else "actual"
+        return f"{self.empleado} - {self.estatus} ({self.fecha_inicio} a {fin})"
+
 
  

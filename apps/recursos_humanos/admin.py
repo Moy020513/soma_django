@@ -5,7 +5,22 @@ from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
 from django.contrib.admin.utils import unquote
-from .models import Puesto, Empleado
+from .models import Puesto, Empleado, PeriodoEstatusEmpleado
+# Admin para estatus de empleado
+@admin.register(PeriodoEstatusEmpleado)
+class PeriodoEstatusEmpleadoAdmin(admin.ModelAdmin):
+    list_display = ('empleado', 'estatus', 'fecha_inicio', 'fecha_fin', 'observaciones')
+    list_filter = ('estatus', 'fecha_inicio', 'fecha_fin')
+    search_fields = ('empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name', 'estatus')
+    autocomplete_fields = ['empleado']
+
+# Inline para periodos de estatus laboral
+class PeriodoEstatusEmpleadoInline(admin.TabularInline):
+    model = PeriodoEstatusEmpleado
+    extra = 1
+    fields = ('estatus', 'fecha_inicio', 'fecha_fin', 'observaciones')
+    readonly_fields = ()
+    show_change_link = True
 from apps.asignaciones.models import Asignacion
 
 
@@ -56,7 +71,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
     list_editable = ['activo']
-    
+    inlines = [PeriodoEstatusEmpleadoInline]
     fieldsets = (
         ('Información del Usuario', {
             'fields': (
