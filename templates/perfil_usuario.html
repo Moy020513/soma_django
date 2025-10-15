@@ -208,8 +208,8 @@
     {% endif %}
 
     <div class="row g-4">
-        <!-- Información Personal -->
-        <div class="col-lg-8">
+    <!-- Información Personal -->
+    <div class="col-12">
             <div class="info-card">
                 <div class="info-card-header">
                     <h5><i class="fas fa-user me-2" style="color: var(--soma-orange, #ff6b35);"></i>Información Personal</h5>
@@ -352,33 +352,6 @@
                                 {% endif %}
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Panel de Acciones -->
-        <div class="col-lg-4">
-            <div class="info-card">
-                <div class="info-card-header">
-                    <h5><i class="fas fa-cog me-2" style="color: var(--soma-blue, #004e89);"></i>Acciones Rápidas</h5>
-                </div>
-                <div class="info-card-body">
-                    <div class="d-flex flex-column gap-3">
-                        <a href="{% url 'password_change' %}" class="action-button">
-                            <i class="fas fa-key"></i>
-                            <span>Cambiar Contraseña</span>
-                        </a>
-                        
-                        <a href="{% url 'notificaciones_usuario' %}" class="action-button">
-                            <i class="fas fa-bell"></i>
-                            <span>Mis Notificaciones</span>
-                        </a>
-                        
-                        <a href="{% url 'home' %}" class="action-button secondary">
-                            <i class="fas fa-home"></i>
-                            <span>Volver al Inicio</span>
-                        </a>
                     </div>
                 </div>
             </div>
