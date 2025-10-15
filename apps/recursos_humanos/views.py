@@ -30,7 +30,7 @@ def editar_empleado(request, empleado_id):
         'rfc': empleado_instance.rfc,
         'fecha_nacimiento': empleado_instance.fecha_nacimiento,
         'sexo': empleado_instance.sexo,
-        'fecha_ingreso': empleado_instance.fecha_ingreso,
+        'fecha_ingreso': empleado_instance.fecha_ingreso.strftime('%Y-%m-%d') if empleado_instance.fecha_ingreso else '',
         'puesto': empleado_instance.puesto.pk if empleado_instance.puesto else None,
     }
     if request.method == 'POST':

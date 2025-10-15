@@ -240,6 +240,39 @@
                                 </span>
                                 <span class="info-value">{{ usuario.last_name|default:"No especificado" }}</span>
                             </div>
+                               <div class="info-item">
+                                   <span class="info-label">
+                                       <i class="fas fa-calendar-check" style="color: var(--soma-blue, #004e89);"></i>
+                                       Fecha de ingreso:
+                                   </span>
+                                   <span class="info-value">
+                                       {% if fecha_ingreso %}{{ fecha_ingreso|date:"d/m/Y" }}{% else %}No especificado{% endif %}
+                                   </span>
+                               </div>
+                               <div class="info-item">
+                                   <span class="info-label">
+                                       <i class="fas fa-hourglass-half" style="color: var(--soma-blue, #004e89);"></i>
+                                       Días activo:
+                                   </span>
+                                   <span class="info-value">
+                                       {% if dias_activo is not None %}{{ dias_activo }}{% else %}No disponible{% endif %}
+                                   </span>
+                               </div>
+                               {% if historial_anual and historial_anual|length > 0 %}
+                               <div class="info-item">
+                                   <span class="info-label">
+                                       <i class="fas fa-calendar-alt" style="color: var(--soma-blue, #004e89);"></i>
+                                       Historial anual:
+                                   </span>
+                                   <span class="info-value">
+                                       <ul style="margin-bottom:0; padding-left:1em;">
+                                       {% for registro in historial_anual %}
+                                           <li>Año {{ registro.anio }}: {{ registro.dias }} días trabajados</li>
+                                       {% endfor %}
+                                       </ul>
+                                   </span>
+                               </div>
+                               {% endif %}
                         </div>
                         
                         <div class="col-md-6">

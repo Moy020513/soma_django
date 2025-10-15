@@ -243,6 +243,29 @@ def perfil_usuario(request):
         periodo = empleado.periodos_estatus.order_by('-fecha_inicio').first()
         if periodo:
             estatus_actual = periodo.estatus
+        fecha_ingreso = empleado.fecha_ingreso if empleado and empleado.fecha_ingreso else None
+        dias_activo = empleado.dias_trabajados() if empleado else None
+        historial_anual = []
+        if empleado:
+            from datetime import date
+            periodos = empleado.periodos_estatus.filter(estatus="activo")
+            if periodos.exists():
+                # Obtener rango de años
+                primer = periodos.order_by('fecha_inicio').first().fecha_inicio.year
+                ultimo = date.today().year
+                for anio in range(primer, ultimo+1):
+                    dias = 0
+                    for periodo in periodos:
+                        inicio = periodo.fecha_inicio
+                        fin = periodo.fecha_fin or date.today()
+                        # Si el periodo cruza el año
+                        if inicio.year <= anio <= fin.year:
+                            # Calcular días dentro del año
+                            ini = max(inicio, date(anio,1,1))
+                            fini = min(fin, date(anio,12,31))
+                            if ini <= fini:
+                                dias += (fini - ini).days + 1
+                    historial_anual.append({'anio': anio, 'dias': dias})
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
@@ -256,6 +279,9 @@ def perfil_usuario(request):
         'herramienta_asignada': herramienta_asignada,
         'herramientas_asignadas': herramientas_lista if empleado else [],
         'today': timezone.localdate(),
+            'fecha_ingreso': fecha_ingreso,
+            'dias_activo': dias_activo,
+            'historial_anual': historial_anual,
     }
     return render(request, 'perfil_usuario.html', context)
 
