@@ -38,6 +38,50 @@ class Puesto(models.Model):
 
 
 class Empleado(models.Model):
+    @property
+    def dias_faltan_para_vacaciones(self):
+        """Devuelve los días que faltan para cumplir el año y poder pedir vacaciones."""
+        from datetime import date
+        if not self.fecha_ingreso:
+            return None
+        hoy = date.today()
+        aniversario = date(self.fecha_ingreso.year + 1, self.fecha_ingreso.month, self.fecha_ingreso.day)
+        faltan = (aniversario - hoy).days
+        return faltan if faltan > 0 else 0
+    def dias_vacaciones_disponibles(self):
+        """Devuelve los días de vacaciones disponibles solo si el empleado ya cumplió el año correspondiente, según la tabla oficial de la LFT mexicana (2023+)."""
+        from datetime import date
+        if not self.fecha_ingreso:
+            return 0
+        hoy = date.today()
+        # Calcular años completos de servicio
+        anios = hoy.year - self.fecha_ingreso.year - ((hoy.month, hoy.day) < (self.fecha_ingreso.month, self.fecha_ingreso.day))
+        if anios < 1:
+            dias = 0
+        elif anios == 1:
+            dias = 12
+        elif anios == 2:
+            dias = 14
+        elif anios == 3:
+            dias = 16
+        elif anios == 4:
+            dias = 18
+        elif anios == 5:
+            dias = 20
+        elif 6 <= anios <= 10:
+            dias = 22
+        elif 11 <= anios <= 15:
+            dias = 24
+        elif 16 <= anios <= 20:
+            dias = 26
+        elif 21 <= anios <= 25:
+            dias = 28
+        elif 26 <= anios <= 30:
+            dias = 30
+        else:
+            dias = 30
+        usados = self.dias_vacaciones()
+        return max(0, dias - usados)
     """Modelo para representar empleados"""
     
     ESTADOS_CIVILES = [
@@ -169,12 +213,16 @@ class Empleado(models.Model):
         return total
 
     def dias_vacaciones(self):
-        """Suma los días en que el empleado estuvo en 'Vacaciones'."""
-        from datetime import date
+        """Suma los días en que el empleado estuvo en 'Vacaciones', sin contar domingos."""
+        from datetime import date, timedelta
         total = 0
         for periodo in self.periodos_estatus.filter(estatus="vacaciones"):
             fin = periodo.fecha_fin or date.today()
-            total += (fin - periodo.fecha_inicio).days + 1
+            temp = periodo.fecha_inicio
+            while temp <= fin:
+                if temp.weekday() != 6:  # 6 = domingo
+                    total += 1
+                temp += timedelta(days=1)
         return total
 
     def antiguedad_laboral(self):

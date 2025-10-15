@@ -239,33 +239,52 @@ def perfil_usuario(request):
             herramienta_asignada = None
     
     estatus_actual = None
+    periodo_actual = None
+    dias_en_estatus_actual = None
     if empleado:
-        periodo = empleado.periodos_estatus.order_by('-fecha_inicio').first()
-        if periodo:
-            estatus_actual = periodo.estatus
+        from datetime import date, timedelta
+        periodo_actual = empleado.periodos_estatus.order_by('-fecha_inicio').first()
+        if periodo_actual:
+            estatus_actual = periodo_actual.estatus
+            inicio = periodo_actual.fecha_inicio
+            fin = periodo_actual.fecha_fin or date.today()
+            if inicio:
+                if periodo_actual.estatus == 'vacaciones':
+                    dias = 0
+                    temp = inicio
+                    while temp <= fin:
+                        if temp.weekday() != 6:  # 6 = domingo
+                            dias += 1
+                        temp += timedelta(days=1)
+                    dias_en_estatus_actual = dias
+                else:
+                    dias_en_estatus_actual = (fin - inicio).days + 1
         fecha_ingreso = empleado.fecha_ingreso if empleado and empleado.fecha_ingreso else None
         dias_activo = empleado.dias_trabajados() if empleado else None
         historial_anual = []
-        if empleado:
-            from datetime import date
+        if empleado and empleado.fecha_ingreso:
+            from datetime import date, timedelta
+            import calendar
+            primer = empleado.fecha_ingreso.year
+            ultimo = date.today().year
             periodos = empleado.periodos_estatus.filter(estatus="activo")
-            if periodos.exists():
-                # Obtener rango de años
-                primer = periodos.order_by('fecha_inicio').first().fecha_inicio.year
-                ultimo = date.today().year
-                for anio in range(primer, ultimo+1):
-                    dias = 0
-                    for periodo in periodos:
-                        inicio = periodo.fecha_inicio
-                        fin = periodo.fecha_fin or date.today()
-                        # Si el periodo cruza el año
-                        if inicio.year <= anio <= fin.year:
-                            # Calcular días dentro del año
-                            ini = max(inicio, date(anio,1,1))
-                            fini = min(fin, date(anio,12,31))
-                            if ini <= fini:
-                                dias += (fini - ini).days + 1
-                    historial_anual.append({'anio': anio, 'dias': dias})
+            for anio in range(primer, ultimo+1):
+                dias_unicos = set()
+                for periodo in periodos:
+                    inicio = periodo.fecha_inicio
+                    fin = periodo.fecha_fin or date.today()
+                    # Si el periodo cruza el año
+                    if inicio.year <= anio <= fin.year:
+                        ini = max(inicio, date(anio,1,1))
+                        fini = min(fin, date(anio,12,31))
+                        if ini <= fini:
+                            delta = (fini - ini).days + 1
+                            for i in range(delta):
+                                dias_unicos.add(ini + timedelta(days=i))
+                # Limitar al máximo de días del año
+                max_dias = 366 if calendar.isleap(anio) else 365
+                dias = min(len(dias_unicos), max_dias)
+                historial_anual.append({'anio': anio, 'dias': dias})
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
@@ -275,13 +294,17 @@ def perfil_usuario(request):
         'asignaciones_pendientes': asignaciones_supervisadas_pendientes_perfil if empleado else [],
         'empleado': empleado,
         'estatus_actual': estatus_actual,
+        'periodo_actual': periodo_actual,
+        'dias_en_estatus_actual': dias_en_estatus_actual,
         'vehiculo_asignado': vehiculo_asignado,
         'herramienta_asignada': herramienta_asignada,
         'herramientas_asignadas': herramientas_lista if empleado else [],
         'today': timezone.localdate(),
-            'fecha_ingreso': fecha_ingreso,
-            'dias_activo': dias_activo,
-            'historial_anual': historial_anual,
+        'fecha_ingreso': fecha_ingreso,
+        'dias_activo': dias_activo,
+        'historial_anual': historial_anual,
+        'dias_vacaciones_disponibles': empleado.dias_vacaciones_disponibles() if empleado else None,
+        'dias_faltan_para_vacaciones': empleado.dias_faltan_para_vacaciones if empleado else None,
     }
     return render(request, 'perfil_usuario.html', context)
 

@@ -27,9 +27,12 @@ class PeriodoEstatusEmpleadoForm(forms.ModelForm):
             style = field.widget.attrs.get('style', '')
             compact_style = 'max-width: 400px; padding: .25rem .5rem; font-size: .875rem;'
             field.widget.attrs['style'] = (style + ' ' + compact_style).strip()
-        # Forzar inicialización correcta de fecha_inicio si existe instancia
-        if self.instance and self.instance.pk and self.instance.fecha_inicio:
-            self.initial['fecha_inicio'] = self.instance.fecha_inicio.strftime('%Y-%m-%d')
+        # Forzar inicialización correcta de fecha_inicio y fecha_fin si existen en la instancia
+        if self.instance and self.instance.pk:
+            if self.instance.fecha_inicio:
+                self.initial['fecha_inicio'] = self.instance.fecha_inicio.strftime('%Y-%m-%d')
+            if self.instance.fecha_fin:
+                self.initial['fecha_fin'] = self.instance.fecha_fin.strftime('%Y-%m-%d')
 
 @admin.register(PeriodoEstatusEmpleado)
 class PeriodoEstatusEmpleadoAdmin(admin.ModelAdmin):
@@ -40,12 +43,19 @@ class PeriodoEstatusEmpleadoAdmin(admin.ModelAdmin):
     autocomplete_fields = ['empleado']
 
 # Inline para periodos de estatus laboral
-class PeriodoEstatusEmpleadoInline(admin.TabularInline):
+class UltimoPeriodoEstatusInline(admin.TabularInline):
     model = PeriodoEstatusEmpleado
-    extra = 1
+    extra = 0
     fields = ('estatus', 'fecha_inicio', 'fecha_fin', 'observaciones')
     readonly_fields = ()
     show_change_link = True
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.order_by('-fecha_inicio')[:1]  # Solo el último periodo
+
+    def has_add_permission(self, request, obj=None):
+        return False  # No permitir añadir desde el inline
 from apps.asignaciones.models import Asignacion
 
 
@@ -96,7 +106,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
     list_editable = ['activo']
-    inlines = [PeriodoEstatusEmpleadoInline]
+    inlines = [UltimoPeriodoEstatusInline]
     fieldsets = (
         ('Información del Usuario', {
             'fields': (

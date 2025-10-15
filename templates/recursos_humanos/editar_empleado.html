@@ -83,6 +83,7 @@
               </div>
             </div>
 
+           
             <hr class="my-4" />
             <h5 class="mb-3">Datos laborales</h5>
             <div class="row g-3">
@@ -97,12 +98,162 @@
                 {{ form.puesto.errors }}
               </div>
             </div>
+            
+            <hr class="my-4" />
+             <div class="row g-3 mb-2">
+              <div class="col-md-6">
+                <label class="form-label"><i class="fas fa-flag"></i> Estatus actual</label>
+                {% if estatus_actual %}
+                  <span class="badge"
+                    style="background-color: {% if estatus_actual == 'activo' %}#28a745{% elif estatus_actual == 'vacaciones' %}#ffc107{% elif estatus_actual == 'incapacidad' %}#17a2b8{% else %}#6c757d{% endif %}; color: white; font-size: 0.95rem; padding: 0.4em 0.8em; border-radius: 0.7em;">
+                    {{ estatus_actual|title }}
+                  </span>
+                  {% if periodo_actual %}
+                    <div class="mt-2">
+                      <small>
+                        <i class="fas fa-calendar-day"></i> Inicio: {{ periodo_actual.fecha_inicio|date:"d/m/Y" }}<br>
+                        {% if periodo_actual.fecha_fin %}
+                          <i class="fas fa-calendar-check"></i> Fin: {{ periodo_actual.fecha_fin|date:"d/m/Y" }}
+                        {% else %}
+                          <i class="fas fa-calendar-check"></i> Fin: Actual
+                        {% endif %}
+                      </small>
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <span class="badge bg-secondary">Sin registro</span>
+                {% endif %}
+              </div>
+            </div>
+            <h5 class="mb-3">Agregar nuevo periodo de estatus</h5>
+            {% if periodo_form.initial.empleado_instance is not None %}
+              {% with disponibles=periodo_form.initial.empleado_instance.dias_vacaciones_disponibles %}
+                <div class="alert alert-info mb-3" id="vacaciones-disponibles" style="display:none;"></div>
+                <div class="alert alert-warning mb-3" id="vacaciones-calculo" style="display:none;"></div>
+                <script>
+                  document.addEventListener('DOMContentLoaded', function() {
+                    var select = document.getElementById('id_estatus');
+                    var aviso = document.getElementById('vacaciones-disponibles');
+                    var calculo = document.getElementById('vacaciones-calculo');
+                    var fechaInicio = document.getElementById('id_fecha_inicio');
+                    var fechaFin = document.getElementById('id_fecha_fin');
+                    var disponibles = {{ disponibles }};
+                    var cumpleAnio = disponibles > 0;
+                    function diasParaAnio() {
+                      {% if periodo_form.initial.empleado_instance and periodo_form.initial.empleado_instance.fecha_ingreso %}
+                        var fechaIngreso = new Date("{{ periodo_form.initial.empleado_instance.fecha_ingreso|date:'Y-m-d' }}");
+                        var hoy = new Date();
+                        var aniversario = new Date(fechaIngreso.getFullYear() + 1, fechaIngreso.getMonth(), fechaIngreso.getDate());
+                        var diff = Math.ceil((aniversario - hoy) / (1000 * 60 * 60 * 24));
+                        return diff > 0 ? diff : 0;
+                      {% else %}
+                        return 0;
+                      {% endif %}
+                    }
+                    function calcularDiasVacaciones() {
+                      if (select.value === 'vacaciones' && cumpleAnio && fechaInicio && fechaFin && fechaInicio.value && fechaFin.value) {
+                        var inicio = new Date(fechaInicio.value);
+                        var fin = new Date(fechaFin.value);
+                        var dias = 0;
+                        var temp = new Date(inicio);
+                        while (temp <= fin) {
+                          // 0 = domingo
+                          if (temp.getDay() !== 0) dias++;
+                          temp.setDate(temp.getDate() + 1);
+                        }
+                        if (dias > 0) {
+                          var restantes = disponibles - dias;
+                          calculo.innerHTML = 'Vas a tomar <strong>' + dias + '</strong> días de vacaciones (sin contar domingos).<br>Te quedarían <strong>' + (restantes >= 0 ? restantes : 0) + '</strong> días disponibles.';
+                          calculo.style.display = 'block';
+                        } else {
+                          calculo.innerHTML = '';
+                          calculo.style.display = 'none';
+                        }
+                      } else {
+                        calculo.innerHTML = '';
+                        calculo.style.display = 'none';
+                      }
+                    }
+                    function mostrarVacaciones() {
+                      if (select.value === 'vacaciones') {
+                        if (!cumpleAnio) {
+                          var faltan = diasParaAnio();
+                          aviso.innerHTML = 'ESTE EMPLEADO AÚN NO CUMPLE UN AÑO DE SERVICIO, NO PUEDE ASIGNARSE ESTATUS DE VACACIONES.<br>Faltan <strong>' + faltan + '</strong> días para que pueda solicitar vacaciones.';
+                          aviso.style.display = 'block';
+                          if (fechaInicio) fechaInicio.disabled = true;
+                          if (fechaFin) fechaFin.disabled = true;
+                        } else {
+                          aviso.innerHTML = 'Tienes <strong>' + disponibles + '</strong> días de vacaciones disponibles.';
+                          aviso.style.display = 'block';
+                          if (fechaInicio) fechaInicio.disabled = false;
+                          if (fechaFin) fechaFin.disabled = false;
+                        }
+                      } else {
+                        aviso.style.display = 'none';
+                        calculo.style.display = 'none';
+                        if (fechaInicio) fechaInicio.disabled = false;
+                        if (fechaFin) fechaFin.disabled = false;
+                      }
+                      calcularDiasVacaciones();
+                    }
+                    if (select && aviso) {
+                      select.addEventListener('change', mostrarVacaciones);
+                      if (fechaInicio) fechaInicio.addEventListener('change', calcularDiasVacaciones);
+                      if (fechaFin) fechaFin.addEventListener('change', calcularDiasVacaciones);
+                      mostrarVacaciones();
+                    }
+                  });
+                </script>
+              {% endwith %}
+            {% endif %}
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ periodo_form.estatus.label }}</label>
+                {{ periodo_form.estatus }}
+                {{ periodo_form.estatus.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ periodo_form.fecha_inicio.label }}</label>
+                {{ periodo_form.fecha_inicio }}
+                {{ periodo_form.fecha_inicio.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ periodo_form.fecha_fin.label }}</label>
+                {{ periodo_form.fecha_fin }}
+                {{ periodo_form.fecha_fin.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ periodo_form.observaciones.label }}</label>
+                {{ periodo_form.observaciones }}
+                {{ periodo_form.observaciones.errors }}
+              </div>
+            </div>
 
             <div class="d-flex gap-2 mt-4">
               <button class="btn btn-primary" type="submit">
                 <i class="fas fa-save me-1"></i> Guardar cambios
               </button>
               <a class="btn btn-outline-secondary" href="{% url 'admin:recursos_humanos_empleado_changelist' %}">Cancelar</a>
+              <button type="button" class="btn btn-info" data-bs-toggle="collapse" data-bs-target="#historial-estatus" aria-expanded="false" aria-controls="historial-estatus">
+                <i class="fas fa-history me-1"></i> Ver historial de estatus
+              </button>
+            </div>
+            <div class="collapse mt-4" id="historial-estatus">
+              <div class="card card-body">
+                <h6>Historial de estatus</h6>
+                <ul>
+                  {% for periodo in empleado.periodos_estatus.all|dictsortreversed:"fecha_inicio" %}
+                    <li>
+                      <strong>{{ periodo.get_estatus_display }}</strong>:
+                      {{ periodo.fecha_inicio|date:"d/m/Y" }}
+                      {% if periodo.fecha_fin %} - {{ periodo.fecha_fin|date:"d/m/Y" }}{% else %} - Actual{% endif %}
+                      {% if periodo.observaciones %}<br><small>{{ periodo.observaciones }}</small>{% endif %}
+                    </li>
+                  {% empty %}
+                    <li>No hay historial de estatus.</li>
+                  {% endfor %}
+                </ul>
+              </div>
             </div>
           </form>
         </div>

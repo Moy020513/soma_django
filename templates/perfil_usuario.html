@@ -218,6 +218,28 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="info-item">
+                               <div class="info-item">
+                                   <span class="info-label">
+                                       <i class="fas fa-umbrella-beach" style="color: var(--soma-orange, #ff6b35);"></i>
+                                       Días de vacaciones disponibles:
+                                   </span>
+                                   <span class="info-value">
+                                       {% if dias_vacaciones_disponibles is not None %}{{ dias_vacaciones_disponibles }}{% else %}No disponible{% endif %}
+                                   </span>
+                               </div>
+                               <div class="info-item">
+                                   <span class="info-label">
+                                       <i class="fas fa-hourglass-end" style="color: var(--soma-blue, #004e89);"></i>
+                                       Días faltantes para poder pedir vacaciones:
+                                   </span>
+                                   <span class="info-value">
+                                       {% if dias_faltan_para_vacaciones is not None and dias_faltan_para_vacaciones > 0 %}
+                                           {{ dias_faltan_para_vacaciones }}
+                                       {% else %}
+                                           Ya puedes solicitar vacaciones
+                                       {% endif %}
+                                   </span>
+                               </div>
                                 <span class="info-label">
                                     <i class="fas fa-user-tag" style="color: var(--soma-orange, #ff6b35);"></i>
                                     Usuario:
@@ -310,6 +332,21 @@
                                         style="background-color: {% if estatus_actual == 'activo' %}#28a745{% elif estatus_actual == 'vacaciones' %}#ffc107{% elif estatus_actual == 'incapacidad' %}#17a2b8{% else %}#6c757d{% endif %}; color: white; font-size: 0.95rem; padding: 0.4em 0.8em; border-radius: 0.7em;">
                                         {{ estatus_actual|title }}
                                     </span>
+                                    {% if periodo_actual %}
+                                        <div class="mt-2">
+                                            <small>
+                                                <i class="fas fa-calendar-day"></i> Inicio: {{ periodo_actual.fecha_inicio|date:"d/m/Y" }}<br>
+                                                {% if periodo_actual.fecha_fin %}
+                                                    <i class="fas fa-calendar-check"></i> Fin: {{ periodo_actual.fecha_fin|date:"d/m/Y" }}<br>
+                                                {% else %}
+                                                    <i class="fas fa-calendar-check"></i> Fin: Actual<br>
+                                                {% endif %}
+                                                {% if dias_en_estatus_actual %}
+                                                    <i class="fas fa-hourglass-half"></i> Días en estatus: {{ dias_en_estatus_actual }}{% if estatus_actual == 'vacaciones' %} <span class="text-muted" style="font-size:0.95em">(sin contar domingos)</span>{% endif %}
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    {% endif %}
                                 {% else %}
                                     <span class="badge bg-secondary">Sin registro</span>
                                 {% endif %}

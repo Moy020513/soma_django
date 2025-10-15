@@ -33,8 +33,11 @@ def editar_empleado(request, empleado_id):
         'fecha_ingreso': empleado_instance.fecha_ingreso.strftime('%Y-%m-%d') if empleado_instance.fecha_ingreso else '',
         'puesto': empleado_instance.puesto.pk if empleado_instance.puesto else None,
     }
+    periodo_form = NuevoPeriodoEstatusForm(initial={'empleado_instance': empleado_instance})
     if request.method == 'POST':
         form = EmpleadoEdicionForm(request.POST, initial=initial)
+        periodo_form = NuevoPeriodoEstatusForm(request.POST, initial={'empleado_instance': empleado_instance})
+        periodo_agregado = False
         if form.is_valid():
             cd = form.cleaned_data
             user = cd['usuario']
@@ -55,12 +58,45 @@ def editar_empleado(request, empleado_id):
             empleado_instance.fecha_ingreso = cd['fecha_ingreso']
             empleado_instance.save()
             messages.success(request, f"Empleado actualizado correctamente: {user.username}.")
+            periodo_agregado = False
+            if periodo_form.is_valid() and periodo_form.cleaned_data.get('estatus'):
+                # Actualizar fecha fin del último periodo si no está definida
+                ultimo = empleado_instance.periodos_estatus.order_by('-fecha_inicio').first()
+                nueva_fecha_inicio = periodo_form.cleaned_data['fecha_inicio']
+                nueva_fecha_fin = periodo_form.cleaned_data.get('fecha_fin')
+                if ultimo and not ultimo.fecha_fin and nueva_fecha_inicio:
+                    from datetime import timedelta
+                    ultimo.fecha_fin = nueva_fecha_inicio - timedelta(days=1)
+                    ultimo.save()
+                # Crear nuevo periodo
+                nuevo_periodo = periodo_form.save(commit=False)
+                nuevo_periodo.empleado = empleado_instance
+                # Si el usuario no puso fecha_fin, dejarla en None
+                if not nueva_fecha_fin:
+                    nuevo_periodo.fecha_fin = None
+                nuevo_periodo.save()
+                periodo_agregado = True
+                messages.success(request, "Nuevo periodo de estatus agregado correctamente.")
             return redirect('admin:recursos_humanos_empleado_changelist')
     else:
         form = EmpleadoEdicionForm(initial=initial)
+        periodo_form = NuevoPeriodoEstatusForm(initial={'empleado_instance': empleado_instance})
 
-    return render(request, 'recursos_humanos/editar_empleado.html', {'form': form, 'empleado': empleado_instance})
-from .models import Empleado
+    estatus_actual = None
+    periodo_actual = None
+    if empleado_instance:
+        periodo_actual = empleado_instance.periodos_estatus.order_by('-fecha_inicio').first()
+        if periodo_actual:
+            estatus_actual = periodo_actual.estatus
+    return render(request, 'recursos_humanos/editar_empleado.html', {
+        'form': form,
+        'empleado': empleado_instance,
+        'periodo_form': periodo_form,
+        'estatus_actual': estatus_actual,
+        'periodo_actual': periodo_actual,
+    })
+from .models import Empleado, PeriodoEstatusEmpleado
+from .forms_periodo import NuevoPeriodoEstatusForm
 
 def es_admin(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
@@ -91,12 +127,13 @@ def registrar_empleado(request):
             }
         except Empleado.DoesNotExist:
             empleado_instance = None
+    periodo_form = NuevoPeriodoEstatusForm()
     if request.method == 'POST':
         form = EmpleadoRegistroForm(request.POST, initial=initial)
+        periodo_form = NuevoPeriodoEstatusForm(request.POST)
         if form.is_valid():
             cd = form.cleaned_data
             user = cd['usuario']
-            # Actualizar datos básicos del usuario elegido (sin tocar credenciales)
             user.first_name = cd['nombre'].strip().title()
             user.last_name = f"{cd['apellido_paterno'].strip().title()} {cd.get('apellido_materno','').strip().title()}".strip()
             user.telefono = cd['telefono']
@@ -105,7 +142,6 @@ def registrar_empleado(request):
             user.save(update_fields=['first_name', 'last_name', 'telefono', 'tipo_usuario'])
 
             if empleado_instance:
-                # Actualizar empleado existente
                 empleado_instance.curp = cd['curp'].upper()
                 empleado_instance.rfc = cd.get('rfc','').upper()
                 empleado_instance.nss = cd.get('nss','')
@@ -117,15 +153,14 @@ def registrar_empleado(request):
                 empleado_instance.save()
                 messages.success(request, f"Empleado actualizado correctamente: {user.username}.")
             else:
-                # Crear empleado nuevo
                 empleado = Empleado(
                     usuario=user,
-                    numero_empleado='',  # se autogenera en save()
+                    numero_empleado='',
                     curp=cd['curp'].upper(),
                     rfc=cd.get('rfc','').upper(),
                     nss=cd.get('nss',''),
                     fecha_nacimiento=cd['fecha_nacimiento'],
-                    estado_civil='soltero',  # por defecto
+                    estado_civil='soltero',
                     tipo_sangre='',
                     sexo=cd['sexo'],
                     telefono_personal=cd['telefono'],
@@ -141,9 +176,16 @@ def registrar_empleado(request):
                     activo=True,
                 )
                 empleado.save()
+                # Crear periodo de estatus inicial
+                if periodo_form.is_valid():
+                    periodo = periodo_form.save(commit=False)
+                    periodo.empleado = empleado
+                    periodo.fecha_fin = None
+                    periodo.save()
                 messages.success(request, f"Empleado creado correctamente y vinculado al usuario {user.username}.")
             return redirect(reverse('admin:recursos_humanos_empleado_changelist'))
     else:
         form = EmpleadoRegistroForm(initial=initial)
+        periodo_form = NuevoPeriodoEstatusForm()
 
-    return render(request, 'recursos_humanos/registrar_empleado.html', {'form': form, 'empleado': empleado_instance})
+    return render(request, 'recursos_humanos/registrar_empleado.html', {'form': form, 'empleado': empleado_instance, 'periodo_form': periodo_form})

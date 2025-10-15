@@ -101,7 +101,26 @@
                 {{ form.puesto }}
                 {{ form.puesto.errors }}
               </div>
-              
+            </div>
+
+            <hr class="my-4" />
+            <h5 class="mb-3">Periodo de estatus inicial</h5>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ periodo_form.estatus.label }}</label>
+                {{ periodo_form.estatus }}
+                {{ periodo_form.estatus.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ periodo_form.fecha_inicio.label }}</label>
+                {{ periodo_form.fecha_inicio }}
+                {{ periodo_form.fecha_inicio.errors }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ periodo_form.observaciones.label }}</label>
+                {{ periodo_form.observaciones }}
+                {{ periodo_form.observaciones.errors }}
+              </div>
             </div>
 
             <div class="d-flex gap-2 mt-4">
