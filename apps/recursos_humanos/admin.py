@@ -5,6 +5,7 @@ from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
 from django.contrib.admin.utils import unquote
+from django.urls import reverse
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado
 # Admin para estatus de empleado
 @admin.register(PeriodoEstatusEmpleado)
@@ -123,6 +124,10 @@ class EmpleadoAdmin(admin.ModelAdmin):
     def add_view(self, request, form_url='', extra_context=None):
         # Redirigir siempre al nuevo flujo de registro de empleados
         return redirect('rh:registrar_empleado')
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        # Redirigir al formulario personalizado de edición
+        return redirect(reverse('rh:editar_empleado', args=[object_id]))
 
     def get_model_perms(self, request):
         # Ocultar el enlace "Añadir" también en el índice de la app del admin
