@@ -8,6 +8,7 @@ from django.contrib.admin.utils import unquote
 from django.urls import reverse
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado
 from .models import Inasistencia
+from .forms_inasistencia import InasistenciaForm
 # Admin para estatus de empleado
 
 # Formulario personalizado para PeriodoEstatusEmpleado
@@ -216,9 +217,9 @@ class EmpleadoAdmin(admin.ModelAdmin):
 
 @admin.register(Inasistencia)
 class InasistenciaAdmin(admin.ModelAdmin):
-    list_display = ('empleado', 'fecha', 'tipo', 'dias', 'registrada_por', 'fecha_creacion')
+    form = InasistenciaForm
+    list_display = ('empleado', 'fecha', 'tipo', 'dias', 'fecha_creacion')
     list_filter = ('tipo', 'fecha')
     search_fields = ('empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name')
-    autocomplete_fields = ['empleado', 'registrada_por']
 
 

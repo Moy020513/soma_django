@@ -110,7 +110,9 @@ def listar_inasistencias(request):
 @login_required
 @user_passes_test(es_admin)
 def registrar_inasistencia(request):
+    print('==== Vista registrar_inasistencia ejecutada ====', request.method)
     if request.method == 'POST':
+        print('Instanciando InasistenciaForm con POST')
         form = InasistenciaForm(request.POST)
         if form.is_valid():
             inas = form.save(commit=False)
@@ -130,7 +132,8 @@ def registrar_inasistencia(request):
                 initial['empleado'] = emp
             except Empleado.DoesNotExist:
                 pass
-        form = InasistenciaForm(initial=initial)
+    print('Instanciando InasistenciaForm con initial:', initial)
+    form = InasistenciaForm(initial=initial)
     return render(request, 'recursos_humanos/registrar_inasistencia.html', {'form': form})
 @login_required
 @user_passes_test(es_admin)

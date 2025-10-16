@@ -18,4 +18,20 @@
     <button class="btn btn-primary" type="submit">Registrar</button>
     <a class="btn btn-secondary" href="{% url 'rh:listar_inasistencias' %}">Cancelar</a>
 </form>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mostrar errores de JS en la consola
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Error JS:', msg, 'en', url, 'línea', line, 'columna', col, error);
+        };
+        // Buscar el select de empleados (ajusta el selector si el nombre del campo es diferente)
+        var selects = document.querySelectorAll('select');
+        selects.forEach(function(select) {
+            console.log('Select:', select.name, 'Opciones:', select.options.length);
+            for (var i = 0; i < select.options.length; i++) {
+                console.log('Opción', i, ':', select.options[i].text, select.options[i].value);
+            }
+        });
+    });
+    </script>
 {% endblock %}
