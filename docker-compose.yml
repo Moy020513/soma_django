@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: soma_db
+      POSTGRES_USER: soma_user
+      POSTGRES_PASSWORD: soma_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    command: gunicorn soma.wsgi:application --bind 0.0.0.0:8000 --workers=3
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DEBUG: 'False'
+      DJANGO_SETTINGS_MODULE: soma.settings
+      DATABASE_URL: postgres://soma_user:soma_pass@db:5432/soma_db
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_HOST_USER: moises299martinez@gmail.com
+      EMAIL_HOST_PASSWORD: bijo vxzh tzag sgzl
+      EMAIL_USE_TLS: 'True'
+      EMAIL_PORT: 587
+
+volumes:
+  postgres_data:
