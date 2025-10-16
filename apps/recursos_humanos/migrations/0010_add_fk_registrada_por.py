@@ -18,9 +18,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             sql=(
-                # copiar datos legacy
-                "UPDATE public.recursos_humanos_inasistencia SET observaciones = motivo WHERE (observaciones IS NULL OR observaciones = '') AND motivo IS NOT NULL;"
-                "UPDATE public.recursos_humanos_inasistencia SET fecha_creacion = fecha_registro WHERE fecha_creacion IS NULL AND fecha_registro IS NOT NULL;"
                 # crear FK si no existe
                 "DO $$\nBEGIN\n    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'recursos_inasistencia_registrada_por_fk') THEN\n        ALTER TABLE public.recursos_humanos_inasistencia\n        ADD CONSTRAINT recursos_inasistencia_registrada_por_fk FOREIGN KEY (registrada_por_id) REFERENCES public.usuarios_usuario(id) ON DELETE SET NULL;\n    END IF;\nEND$$;"
             ),

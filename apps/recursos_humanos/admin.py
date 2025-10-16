@@ -6,8 +6,23 @@ from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
 from django.contrib.admin.utils import unquote
 from django.urls import reverse
-from .models import Puesto, Empleado, PeriodoEstatusEmpleado
+from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador
 from .models import Inasistencia
+# Admin Contrato
+@admin.register(Contrato)
+class ContratoAdmin(admin.ModelAdmin):
+    list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "periodo_ejecucion", "cantidad_empleados")
+    list_filter = ("empresa", "fecha_inicio", "fecha_termino")
+    search_fields = ("numero_contrato", "empresa__nombre")
+    autocomplete_fields = ["empresa"]
+
+# Admin AsignacionPorTrabajador
+@admin.register(AsignacionPorTrabajador)
+class AsignacionPorTrabajadorAdmin(admin.ModelAdmin):
+    list_display = ("contrato", "empleado")
+    list_filter = ("contrato", "empleado")
+    search_fields = ("contrato__numero_contrato", "empleado__numero_empleado", "empleado__usuario__first_name", "empleado__usuario__last_name")
+    autocomplete_fields = ["contrato", "empleado"]
 from .forms_inasistencia import InasistenciaForm
 # Admin para estatus de empleado
 

@@ -2,7 +2,37 @@ from django.db import models
 from django.core.validators import RegexValidator
 from django.urls import reverse
 from apps.usuarios.models import Usuario
+from apps.empresas.models import Empresa
 import re
+# --- Modelo Contrato ---
+class Contrato(models.Model):
+    numero_contrato = models.CharField(max_length=30, unique=True, verbose_name="No. contrato")
+    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name="contratos", verbose_name="Empresa")
+    fecha_inicio = models.DateField(verbose_name="Fecha de inicio")
+    fecha_termino = models.DateField(verbose_name="Fecha de término")
+    periodo_ejecucion = models.CharField(max_length=100, blank=True, verbose_name="Periodo de ejecución")
+    cantidad_empleados = models.PositiveIntegerField(verbose_name="Cantidad de empleados")
+
+    class Meta:
+        verbose_name = "Contrato"
+        verbose_name_plural = "Contratos"
+        ordering = ["-fecha_inicio"]
+
+    def __str__(self):
+        return f"{self.numero_contrato} - {self.empresa.nombre}"
+
+# --- Modelo Asignación por Trabajador ---
+class AsignacionPorTrabajador(models.Model):
+    contrato = models.ForeignKey(Contrato, on_delete=models.CASCADE, related_name="asignaciones", verbose_name="No. contrato")
+    empleado = models.ForeignKey("Empleado", on_delete=models.PROTECT, related_name="asignaciones_contrato", verbose_name="Trabajador")
+
+    class Meta:
+        verbose_name = "Asignación por trabajador"
+        verbose_name_plural = "Asignaciones por trabajador"
+        unique_together = ("contrato", "empleado")
+
+    def __str__(self):
+        return f"{self.contrato.numero_contrato} - {self.empleado.nombre_completo}"
 
 
 class Puesto(models.Model):
