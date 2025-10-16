@@ -241,6 +241,9 @@ def perfil_usuario(request):
     estatus_actual = None
     periodo_actual = None
     dias_en_estatus_actual = None
+    fecha_ingreso = None
+    dias_activo = None
+    historial_anual = []
     if empleado:
         from datetime import date, timedelta
         periodo_actual = empleado.periodos_estatus.order_by('-fecha_inicio').first()

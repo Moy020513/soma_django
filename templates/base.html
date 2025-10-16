@@ -24,18 +24,253 @@
     <!-- Tema opcional (airbnb) para mejor visibilidad) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
     
-   
     <link rel="stylesheet" href="{% static 'css/base_custom.css' %}?v=20251006">
     
     <style>
         :root {
             --admin-offcanvas-width: 320px;
+            --navy-primary: #0c2340;
+            --navy-secondary: #1e3a5f;
+            --navy-accent: #2d5aa0;
+            --navy-light: #4a6fa5;
+            --navy-bg: #f8fafc;
+            --navy-card: #ffffff;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
         }
 
         @media (max-width: 576px) {
             :root {
                 --admin-offcanvas-width: min(90vw, 320px);
             }
+        }
+
+        /* Botón Hamburguesa - Se oculta cuando el panel está abierto */
+        .hamburger-btn {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            z-index: 1100;
+            background: linear-gradient(135deg, var(--navy-accent) 0%, var(--navy-light) 100%);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(45, 90, 160, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hamburger-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(45, 90, 160, 0.4);
+        }
+        
+        .hamburger-btn i {
+            color: white;
+            font-size: 1.25rem;
+        }
+        
+        /* Oculta el botón cuando el panel está abierto */
+        body.panel-open .hamburger-btn {
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.8);
+        }
+        
+        /* Overlay para cerrar el menú */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(2px);
+        }
+        
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Logo y nombre en navbar - FIJOS */
+        .navbar-brand-custom {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-left: 80px; /* Espacio fijo para el botón hamburguesa */
+        }
+        
+        .soma-logo-navbar {
+            height: 40px;
+        }
+        
+        .brand-text-navbar {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+        
+        .brand-name-navbar {
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .brand-subtitle-navbar {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        /* Header principal - FIJO */
+        .main-header {
+            min-height: 100px;
+            padding-left: 80px !important; /* Espacio fijo para el botón hamburguesa */
+        }
+
+        .page-title-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .welcome-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 0;
+        }
+
+        /* Offcanvas personalizado con X en la esquina */
+        .admin-offcanvas {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            width: var(--admin-offcanvas-width);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .admin-offcanvas.show {
+            transform: translateX(0);
+        }
+
+        .admin-offcanvas .offcanvas-body {
+            padding: 0;
+        }
+
+        .admin-offcanvas .offcanvas-header {
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.5rem;
+            position: relative;
+        }
+
+        /* Botón de cerrar personalizado en la esquina superior */
+        .close-panel-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1100;
+        }
+
+        .close-panel-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
+
+        .close-panel-btn i {
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .admin-offcanvas-title {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            font-size: 1.1rem;
+            margin-right: 50px; /* Espacio para el botón de cerrar */
+        }
+
+        .admin-modules-accordion .accordion-item {
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .admin-modules-accordion .accordion-button {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.9);
+            box-shadow: none;
+            padding: 0.75rem 1.5rem;
+            border: none;
+        }
+
+        .admin-modules-accordion .accordion-button.collapsed {
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .admin-modules-accordion .accordion-button:not(.collapsed) {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .admin-modules-accordion .accordion-button::after {
+            filter: invert(1);
+            transform: scale(0.8);
+        }
+
+        .admin-module-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 0.4rem;
+            background: rgba(255, 255, 255, 0.12);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem;
+            color: #ffcc80;
+            font-size: 0.9rem;
+        }
+
+        .admin-module-links .list-group-item {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.6rem 1.5rem 0.6rem 3rem;
+            border: none;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .admin-module-links .list-group-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border-left-color: #ff6b35;
+            transform: translateX(5px);
         }
 
         /* Estilos para iconos de navegación principal */
@@ -52,21 +287,8 @@
             transform: translateY(-2px) !important;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
         }
-        
-        .btn-outline-light:focus {
-            background-color: rgba(255, 255, 255, 0.15) !important;
-            border-color: rgba(255, 255, 255, 0.5) !important;
-            color: white !important;
-            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25) !important;
-        }
-        
-        .btn-outline-light:active {
-            background-color: rgba(255, 255, 255, 0.25) !important;
-            border-color: rgba(255, 255, 255, 0.6) !important;
-            color: white !important;
-        }
-        
-        /* Tooltips personalizados instantáneos para los iconos */
+
+        /* Tooltips personalizados para los iconos */
         .nav-icon-tooltip {
             position: relative;
         }
@@ -86,7 +308,7 @@
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.1s ease; /* Transición mucho más rápida */
+            transition: opacity 0.1s ease;
             z-index: 1050;
         }
         
@@ -103,7 +325,7 @@
             border-bottom: 4px solid var(--soma-orange, #ff6b35);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.1s ease; /* Transición mucho más rápida */
+            transition: opacity 0.1s ease;
             z-index: 1051;
         }
         
@@ -111,139 +333,168 @@
         .nav-icon-tooltip:hover::after {
             opacity: 1;
         }
-        
-        /* Ocultar tooltips CSS cuando Bootstrap tooltip está visible */
-        .nav-icon-tooltip[aria-describedby]::before,
-        .nav-icon-tooltip[aria-describedby]::after {
-            display: none;
-        }
-        
-        /* Asegurar que los iconos no cambien de color en hover */
-        .btn-outline-light:hover .text-white,
-        .btn-outline-light:focus .text-white,
-        .btn-outline-light:active .text-white {
-            color: white !important;
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hamburger-btn {
+                top: 1rem;
+                left: 1rem;
+                width: 45px;
+                height: 45px;
+            }
+            
+            .navbar-brand-custom {
+                margin-left: 60px;
+            }
+            
+            .soma-logo-navbar {
+                height: 35px;
+            }
+            
+            .brand-name-navbar {
+                font-size: 1rem;
+            }
+            
+            .brand-subtitle-navbar {
+                font-size: 0.75rem;
+            }
+            
+            .main-header {
+                padding-left: 60px !important;
+            }
+
+            .close-panel-btn {
+                top: 0.8rem;
+                right: 0.8rem;
+                width: 35px;
+                height: 35px;
+            }
+
+            .close-panel-btn i {
+                font-size: 1rem;
+            }
         }
 
-        /* Evitar que el menú admin aparezca durante la carga inicial */
-        .admin-offcanvas {
-            visibility: hidden;
-            transform: translate3d(-100%, 0, 0);
-        }
+        @media (max-width: 576px) {
+            .navbar-brand-custom {
+                margin-left: 50px;
+            }
+            
+            .brand-text-navbar {
+                display: none;
+            }
+            
+            .main-header {
+                padding-left: 50px !important;
+            }
 
-        .admin-offcanvas.show {
-            visibility: visible;
-            transform: none;
-        }
+            .admin-offcanvas .offcanvas-header {
+                padding: 1rem;
+            }
 
-        body.offcanvas-open {
-            overflow: hidden !important;
-        }
+            .admin-modules-accordion .accordion-button {
+                padding: 0.75rem 1rem;
+            }
 
-        .admin-offcanvas {
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-        }
-
-        .admin-offcanvas .offcanvas-body {
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
-            min-height: 0;
-            touch-action: pan-y;
-            padding-top: 0.75rem;
-            padding-bottom: 1rem;
+            .admin-module-links .list-group-item {
+                padding: 0.6rem 1rem 0.6rem 2.5rem;
+            }
         }
     </style>
-    {% block extrastyle %}{% endblock %}
 </head>
 <body>
-    <!-- Admin Sidebar -->
+    <!-- Botón Hamburguesa - Se oculta cuando el panel está abierto -->
     {% if user.is_authenticated and user.is_staff %}
-    <template id="adminModulesOffcanvasTemplate">
-        <div class="offcanvas offcanvas-start admin-offcanvas text-bg-dark" tabindex="-1" id="adminModulesOffcanvas" aria-labelledby="adminModulesOffcanvasLabel">
-            <div class="offcanvas-header border-bottom border-secondary">
-                <div class="d-flex align-items-center">
-                    <img src="{% static 'images/logo_soma.png' %}" alt="SOMA Logo" style="height: 28px;">
-                    <span class="fw-semibold ms-2 admin-offcanvas-title" id="adminModulesOffcanvasLabel">Panel admin</span>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
-            </div>
-            <div class="offcanvas-body p-0">
-                {% if app_list %}
-                <div class="accordion accordion-flush admin-modules-accordion" id="adminModulesAccordion">
-                    {% for app in app_list %}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading-{{ app.app_label }}">
-                            <button class="accordion-button collapsed admin-module-header" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ app.app_label }}" aria-expanded="false" aria-controls="collapse-{{ app.app_label }}">
-                                <span class="admin-module-icon me-2">
-                                    <i class="{% if app.app_label == 'auth' %}fas fa-user-shield
-                                            {% elif app.app_label == 'usuarios' %}fas fa-users-cog
-                                            {% elif app.app_label == 'empresas' %}fas fa-building
-                                            {% elif app.app_label == 'flota_vehicular' %}fas fa-car
-                                            {% elif app.app_label == 'herramientas' %}fas fa-tools
-                                            {% elif app.app_label == 'notificaciones' %}fas fa-bell
-                                            {% elif app.app_label == 'recursos_humanos' %}fas fa-users
-                                            {% elif app.app_label == 'ubicaciones' %}fas fa-map-marker-alt
-                                            {% else %}fas fa-cube{% endif %}"></i>
-                                </span>
-                                <span>
-                                    {% if app.app_label == 'auth' %}Autenticación
-                                    {% elif app.app_label == 'usuarios' %}Usuarios
-                                    {% elif app.app_label == 'empresas' %}Empresas
-                                    {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
-                                    {% elif app.app_label == 'herramientas' %}Herramientas
-                                    {% elif app.app_label == 'notificaciones' %}Notificaciones
-                                    {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
-                                    {% elif app.app_label == 'ubicaciones' %}Control de Asistencia
-                                    {% else %}{{ app.name }}{% endif %}
-                                </span>
-                            </button>
-                        </h2>
-                        <div id="collapse-{{ app.app_label }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ app.app_label }}" data-bs-parent="#adminModulesAccordion">
-                            <div class="accordion-body p-0">
-                                {% if app.models %}
-                                <div class="list-group list-group-flush admin-module-links">
-                                    {% for model in app.models %}
-                                    <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
-                                        <i class="fas fa-angle-right me-2"></i>{{ model.name }}
-                                    </a>
-                                    {% endfor %}
-                                </div>
-                                {% else %}
-                                <div class="text-muted small px-3 py-2">Sin modelos disponibles.</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="p-4 text-center text-muted small">No hay módulos disponibles.</div>
-                {% endif %}
-            </div>
-        </div>
-    </template>
-
-    <!-- Toggle button for admin sidebar -->
-    <button class="admin-sidebar-toggle" id="sidebarToggle" type="button" aria-controls="adminModulesOffcanvas" aria-expanded="false">
+    <button class="hamburger-btn" id="hamburgerBtn">
         <i class="fas fa-bars"></i>
     </button>
+    
+    <!-- Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    {% endif %}
+    
+    <!-- Admin Sidebar (Offcanvas) -->
+    {% if user.is_authenticated and user.is_staff %}
+    <div class="offcanvas offcanvas-start admin-offcanvas text-bg-dark" tabindex="-1" id="adminModulesOffcanvas" aria-labelledby="adminModulesOffcanvasLabel">
+        <div class="offcanvas-header">
+            <div class="d-flex align-items-center">
+                <img src="{% static 'images/logo_soma.png' %}" alt="SOMA Logo" style="height: 28px;">
+                <span class="fw-semibold ms-2 admin-offcanvas-title" id="adminModulesOffcanvasLabel">Panel Administrativo</span>
+            </div>
+            <!-- Botón de cerrar personalizado -->
+            <button type="button" class="close-panel-btn" id="closePanelBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="offcanvas-body p-0">
+            {% if app_list %}
+            <div class="accordion accordion-flush admin-modules-accordion" id="adminModulesAccordion">
+                {% for app in app_list %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-{{ app.app_label }}">
+                        <button class="accordion-button collapsed admin-module-header" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ app.app_label }}" aria-expanded="false" aria-controls="collapse-{{ app.app_label }}">
+                            <span class="admin-module-icon">
+                                <i class="{% if app.app_label == 'auth' %}fas fa-user-shield
+                                        {% elif app.app_label == 'usuarios' %}fas fa-users-cog
+                                        {% elif app.app_label == 'empresas' %}fas fa-building
+                                        {% elif app.app_label == 'flota_vehicular' %}fas fa-car
+                                        {% elif app.app_label == 'herramientas' %}fas fa-tools
+                                        {% elif app.app_label == 'notificaciones' %}fas fa-bell
+                                        {% elif app.app_label == 'recursos_humanos' %}fas fa-users
+                                        {% elif app.app_label == 'ubicaciones' %}fas fa-map-marker-alt
+                                        {% else %}fas fa-cube{% endif %}"></i>
+                            </span>
+                            <span>
+                                {% if app.app_label == 'auth' %}Autenticación
+                                {% elif app.app_label == 'usuarios' %}Usuarios
+                                {% elif app.app_label == 'empresas' %}Empresas
+                                {% elif app.app_label == 'flota_vehicular' %}Flota Vehicular
+                                {% elif app.app_label == 'herramientas' %}Herramientas
+                                {% elif app.app_label == 'notificaciones' %}Notificaciones
+                                {% elif app.app_label == 'recursos_humanos' %}Recursos Humanos
+                                {% elif app.app_label == 'ubicaciones' %}Control de Asistencia
+                                {% else %}{{ app.name }}{% endif %}
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="collapse-{{ app.app_label }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ app.app_label }}" data-bs-parent="#adminModulesAccordion">
+                        <div class="accordion-body p-0">
+                            {% if app.models %}
+                            <div class="list-group list-group-flush admin-module-links">
+                                {% for model in app.models %}
+                                <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                    <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-muted small px-3 py-2">Sin modelos disponibles.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-4 text-center text-muted small">No hay módulos disponibles.</div>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
     
     <div class="container-fluid" id="mainContainer">
         <div class="row">
             <!-- Main content -->
             <main class="col-12 px-md-4" id="mainContent">
-                <!-- Header con logo y navegación -->
-                <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom py-4" style="min-height:100px; display: flex; align-items: center;">
+                <!-- Header con logo y nombre de empresa - FIJO -->
+                <div class="main-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center border-bottom py-4">
                     <div class="d-flex align-items-center px-4">
-                        <img src="{% static 'images/logo_soma.png' %}" alt="SOMA Logo" class="soma-logo" style="max-height:40px;">
-                        <div class="ms-3">
-                            <h1 class="h2 mb-1">{% block page_title %}Dashboard{% endblock %}</h1>
-                            {% if descripcion %}
-                            <p class="text-white-50 mb-0 small">{{ descripcion }}</p>
-                            {% endif %}
+                        <div class="navbar-brand-custom">
+                            <img src="{% static 'images/logo_soma.png' %}" alt="SOMA Logo" class="soma-logo-navbar">
+                            <div class="brand-text-navbar">
+                                <div class="brand-name-navbar">Servicios Industriales SOMA</div>
+                                <div class="brand-subtitle-navbar">Sistema de Gestión Empresarial</div>
+                            </div>
                         </div>
                     </div>
                     {% if user.is_authenticated %}
@@ -253,12 +504,8 @@
                            class="btn btn-outline-light me-2 nav-icon-tooltip" 
                            data-bs-toggle="tooltip" 
                            data-bs-placement="bottom" 
-                           data-bs-delay='{"show":0,"hide":100}'
                            title="Inicio"
-                           data-tooltip-custom="Inicio"
-                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
-                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                           data-tooltip-custom="Inicio">
                             <i class="fas fa-home text-white"></i>
                         </a>
                         
@@ -275,11 +522,7 @@
                                     hx-get="{% url 'dropdown_notificaciones' %}" 
                                     hx-trigger="click" 
                                     hx-target="#dropdownNotificacionesMenu" 
-                                    hx-swap="innerHTML"
-                                    style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                                    onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'; this.setAttribute('title', 'Notificaciones')"
-                                    onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'"
-                                    onclick="console.log('Dropdown clicked'); this.blur();">
+                                    hx-swap="innerHTML">
                                 <i class="fas fa-bell text-white"></i>
                                 {% if notificaciones_pendientes|default:0 > 0 %}
                                     <span id="badgeNotificaciones" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;">
@@ -298,61 +541,52 @@
                            class="btn btn-outline-light me-2 nav-icon-tooltip" 
                            data-bs-toggle="tooltip" 
                            data-bs-placement="bottom" 
-                           data-bs-delay='{"show":0,"hide":100}'
                            title="Mi Vehículo - {{ vehiculo_menu.placas }}"
-                           data-tooltip-custom="Mi Vehículo - {{ vehiculo_menu.placas }}"
-                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
-                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                           data-tooltip-custom="Mi Vehículo - {{ vehiculo_menu.placas }}">
                             <i class="fas fa-car text-white"></i>
                         </a>
                         {% endif %}
-                                                <!-- Icono / Dropdown de Herramientas -->
-                                                {% if herramientas_count|default:0 > 1 %}
-                                                <div class="dropdown d-inline-block me-2">
-                                                    <button class="btn btn-outline-light nav-icon-tooltip position-relative" type="button" data-bs-toggle="dropdown"
-                                                                    data-bs-placement="bottom" data-bs-delay='{"show":0,"hide":100}' title="Herramientas"
-                                                                    style="border-color: rgba(255,255,255,0.3); transition:all .3s ease;"
-                                                                    onmouseover="this.style.backgroundColor='rgba(255,255,255,0.15)'; this.style.borderColor='rgba(255,255,255,0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,.2)'"
-                                                                    onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255,255,255,0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                                                        <i class="fas fa-tools text-white"></i>
-                                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:0.55rem;">{{ herramientas_count }}</span>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm small" style="min-width:260px; max-height:300px; overflow:auto;">
-                                                        <li class="dropdown-header d-flex justify-content-between align-items-center">
-                                                            <span class="fw-semibold"><i class="fas fa-toolbox me-1"></i>Herramientas</span>
-                                                            <a href="{% url 'herramientas:mis_herramientas' %}" class="text-decoration-none small">ver todas</a>
-                                                        </li>
-                                                        <li><hr class="dropdown-divider my-1"></li>
-                                                        {% for h in herramientas_menu %}
-                                                            <li>
-                                                                <a class="dropdown-item d-flex justify-content-between align-items-center" href="{% url 'herramientas:solicitar_transferencia' %}?h={{ h.id }}">
-                                                                    <span>
-                                                                        <span class="fw-semibold">{{ h.codigo }}</span> – {{ h.nombre|truncatechars:28 }}
-                                                                        <small class="d-block text-muted">{{ h.get_categoria_display }}{% if h.marca %} · {{ h.marca }}{% endif %}</small>
-                                                                    </span>
-                                                                    <i class="fas fa-exchange-alt text-muted"></i>
-                                                                </a>
-                                                            </li>
-                                                        {% empty %}
-                                                            <li class="px-3 py-2 text-muted">Sin herramientas activas.</li>
-                                                        {% endfor %}
-                                                    </ul>
-                                                </div>
-                                                {% elif herramienta_menu %}
-                                                <a href="{% url 'herramientas:mis_herramientas' %}" 
-                                                     class="btn btn-outline-light me-2 nav-icon-tooltip" 
-                                                     data-bs-toggle="tooltip" 
-                                                     data-bs-placement="bottom" 
-                                                     data-bs-delay='{"show":0,"hide":100}'
-                                                     title="Herramientas"
-                                                     data-tooltip-custom="Herramientas"
-                                                     style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                                                     onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
-                                                     onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                                                        <i class="fas fa-tools text-white"></i>
-                                                </a>
-                                                {% endif %}
+                        
+                        <!-- Icono / Dropdown de Herramientas -->
+                        {% if herramientas_count|default:0 > 1 %}
+                        <div class="dropdown d-inline-block me-2">
+                            <button class="btn btn-outline-light nav-icon-tooltip position-relative" type="button" data-bs-toggle="dropdown"
+                                            data-bs-placement="bottom" title="Herramientas"
+                                            data-tooltip-custom="Herramientas">
+                                    <i class="fas fa-tools text-white"></i>
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:0.55rem;">{{ herramientas_count }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm small" style="min-width:260px; max-height:300px; overflow:auto;">
+                                <li class="dropdown-header d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold"><i class="fas fa-toolbox me-1"></i>Herramientas</span>
+                                    <a href="{% url 'herramientas:mis_herramientas' %}" class="text-decoration-none small">ver todas</a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                {% for h in herramientas_menu %}
+                                    <li>
+                                        <a class="dropdown-item d-flex justify-content-between align-items-center" href="{% url 'herramientas:solicitar_transferencia' %}?h={{ h.id }}">
+                                            <span>
+                                                <span class="fw-semibold">{{ h.codigo }}</span> – {{ h.nombre|truncatechars:28 }}
+                                                <small class="d-block text-muted">{{ h.get_categoria_display }}{% if h.marca %} · {{ h.marca }}{% endif %}</small>
+                                            </span>
+                                            <i class="fas fa-exchange-alt text-muted"></i>
+                                        </a>
+                                    </li>
+                                {% empty %}
+                                    <li class="px-3 py-2 text-muted">Sin herramientas activas.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% elif herramienta_menu %}
+                        <a href="{% url 'herramientas:mis_herramientas' %}" 
+                             class="btn btn-outline-light me-2 nav-icon-tooltip" 
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="bottom" 
+                             title="Herramientas"
+                             data-tooltip-custom="Herramientas">
+                                <i class="fas fa-tools text-white"></i>
+                        </a>
+                        {% endif %}
                         
                         <!-- Icono de Ubicaciones para empleados -->
                         {% if user.empleado %}
@@ -360,60 +594,47 @@
                            class="btn btn-outline-light me-2 nav-icon-tooltip" 
                            data-bs-toggle="tooltip" 
                            data-bs-placement="bottom" 
-                           data-bs-delay='{"show":0,"hide":100}'
                            title="Registro de Asistencia"
-                           data-tooltip-custom="Registro de Asistencia"
-                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
-                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                           data-tooltip-custom="Registro de Asistencia">
                             <i class="fas fa-map-marker-alt text-white"></i>
                         </a>
                         {% endif %}
                         
-                        {% if user.is_staff %}
                         <!-- Dashboard de ubicaciones para administradores -->
+                        {% if user.is_staff %}
                         <a href="{% url 'ubicaciones:dashboard' %}" 
                            class="btn btn-outline-light me-2 nav-icon-tooltip" 
                            data-bs-toggle="tooltip" 
                            data-bs-placement="bottom" 
-                           data-bs-delay='{"show":0,"hide":100}'
                            title="Dashboard de Asistencia"
-                           data-tooltip-custom="Dashboard de Asistencia"
-                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
-                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                           data-tooltip-custom="Dashboard de Asistencia">
                             <i class="fas fa-map-marked-alt text-white"></i>
                         </a>
-                        
                         {% endif %}
                         
+                        <!-- Icono de Acciones Recientes -->
                         {% if user.is_staff %}
                         <a href="{% url 'acciones_recientes' %}" 
                            class="btn btn-outline-light me-2 nav-icon-tooltip" 
                            data-bs-toggle="tooltip" 
                            data-bs-placement="bottom" 
-                           data-bs-delay='{"show":0,"hide":100}'
                            title="Acciones Recientes"
-                           data-tooltip-custom="Acciones Recientes"
-                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
-                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                           data-tooltip-custom="Acciones Recientes">
                             <i class="fas fa-clock text-white"></i>
                         </a>
+                        
                         <!-- Icono Cumpleaños -->
                         <a href="{% url 'cumpleanos:lista' %}"
                            class="btn btn-outline-light me-2 nav-icon-tooltip"
                            data-bs-toggle="tooltip"
                            data-bs-placement="bottom"
-                           data-bs-delay='{"show":0,"hide":100}'
                            title="Cumpleaños"
-                           data-tooltip-custom="Cumpleaños"
-                           style="border-color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease;"
-                           onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.2)'"
-                           onmouseout="this.style.backgroundColor='transparent'; this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                           data-tooltip-custom="Cumpleaños">
                             <i class="fas fa-birthday-cake text-white"></i>
                         </a>
                         {% endif %}
+                        
+                        <!-- Dropdown de Perfil de Usuario -->
                         <div class="dropdown">
                             <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user me-1 text-white"></i><span class="text-white">{{ user.username }}</span>
@@ -434,528 +655,143 @@
                     </div>
                     {% endif %}
                 </div>
-                {% block nav_below %}{% endblock %}
 
-                <!-- Flash messages -->
-                {% if messages %}
-                <div class="container-fluid mt-3">
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <!-- Contenido principal -->
+                <div class="container-fluid mt-4">
+
+                    <!-- Flash messages -->
+                    {% if messages %}
+                    <div class="row">
+                        <div class="col-12">
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+                    </div>
+                    {% endif %}
 
-                <!-- Content -->
-                <div class="container-fluid">
-                    {% block content %}
-                    {% endblock %}
+                    <!-- Content -->
+                    <div class="row">
+                        <div class="col-12">
+                            {% block content %}
+                            <!-- Contenido específico de la página -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title mb-0">Asignaciones de hoy</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <a href="#" class="btn btn-outline-primary btn-sm me-2">Ver todas</a>
+                                            <a href="#" class="btn btn-outline-secondary btn-sm">Mis asignaciones</a>
+                                        </div>
+                                    </div>
+                                    <div class="text-center py-4">
+                                        <p class="text-muted mb-0">No tienes asignaciones para hoy.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endblock %}
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
-
-            {# Modal de acciones recientes eliminado; ahora es una página dedicada #}
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     
-        <!-- Flatpickr JS y localización ES -->
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (window.flatpickr) {
-                    const commonOptions = {
-                        allowInput: true,
-                        locale: flatpickr.l10ns.es,
-                        altInput: true,
-                        altInputClass: 'form-control form-control-sm',
-                    };
-
-                    // Fecha (date)
-                    flatpickr('input[type="date"], input.vDateField', Object.assign({}, commonOptions, {
-                        dateFormat: 'Y-m-d',
-                        altFormat: 'd/m/Y',
-                    }));
-
-                    // Fecha y hora (datetime)
-                    flatpickr('input[type="datetime-local"], input.vDateTimeField', Object.assign({}, commonOptions, {
-                        enableTime: true,
-                        dateFormat: 'Y-m-d H:i',
-                        altFormat: 'd/m/Y H:i',
-                        time_24hr: true,
-                    }));
-
-                    // Hora (time)
-                    flatpickr('input[type="time"], input.vTimeField', Object.assign({}, commonOptions, {
-                        enableTime: true,
-                        noCalendar: true,
-                        dateFormat: 'H:i',
-                        altFormat: 'H:i',
-                        time_24hr: true,
-                    }));
+    <!-- Script corregido - Botón se oculta, X aparece en el panel -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const adminOffcanvas = document.getElementById('adminModulesOffcanvas');
+            const closePanelBtn = document.getElementById('closePanelBtn');
+            const body = document.body;
+            
+            if (hamburgerBtn && sidebarOverlay && adminOffcanvas && closePanelBtn) {
+                // Crear instancia del offcanvas
+                const offcanvas = new bootstrap.Offcanvas(adminOffcanvas);
+                
+                // Función para abrir el panel
+                function openPanel() {
+                    offcanvas.show();
+                    sidebarOverlay.classList.add('active');
+                    body.classList.add('panel-open');
                 }
-            });
-        </script>
-        <script>
-            // Polling ligero cada 60s para actualizar sólo el badge si cambia el conteo
-            document.addEventListener('DOMContentLoaded', function(){
-                function actualizarBadge(){
-                    fetch('{% url 'api_conteo_notificaciones' %}', {headers: {'X-Requested-With':'XMLHttpRequest'}})
-                        .then(r=>r.json())
-                        .then(data=>{
-                            let badge = document.getElementById('badgeNotificaciones');
-                            if(data.pendientes > 0){
-                                if(!badge){
-                                    const btn = document.getElementById('btnDropdownNotificaciones');
-                                    badge = document.createElement('span');
-                                    badge.id = 'badgeNotificaciones';
-                                    badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
-                                    badge.style.fontSize = '0.65rem';
-                                    btn.appendChild(badge);
-                                }
-                                badge.textContent = data.pendientes > 9 ? '9+' : data.pendientes;
-                            } else if(badge) {
-                                badge.remove();
-                            }
-                        }).catch(()=>{});
+                
+                // Función para cerrar el panel
+                function closePanel() {
+                    offcanvas.hide();
+                    sidebarOverlay.classList.remove('active');
+                    body.classList.remove('panel-open');
                 }
-                setInterval(actualizarBadge, 60000);
-            });
-        </script>
-        <script>
-        // Delegación para marcar como leída desde el dropdown antes de navegar
-        document.addEventListener('click', function(e){
-            const a = e.target.closest('#dropdownNotificacionesMenu a.notif-item');
-            if(!a) return;
-            if(a.dataset.unread === '1'){
-                // Marcar rápido y ajustar UI
-                fetch(`/api/notificaciones/${a.dataset.id}/leer/`, {method:'POST', headers:{'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/)||[])[1] || ''}})
-                    .then(r=>r.json()).then(data=>{
-                        if(data.ok){
-                            a.dataset.unread = '0';
-                            const pill = a.querySelector('.badge');
-                            if(pill) pill.remove();
-                            a.classList.remove('fw-bold');
-                            const badge = document.getElementById('badgeNotificaciones');
-                            if(badge){
-                                const nuevo = data.pendientes;
-                                if(nuevo>0){ badge.textContent = nuevo>9 ? '9+' : nuevo; }
-                                else { badge.remove(); }
-                            }
-                        }
-                    }).catch(()=>{});
+                
+                // Evento click en el botón hamburguesa
+                hamburgerBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openPanel();
+                });
+                
+                // Evento click en el botón de cerrar del panel
+                closePanelBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closePanel();
+                });
+                
+                // Evento click en el overlay
+                sidebarOverlay.addEventListener('click', function() {
+                    closePanel();
+                });
+                
+                // Cerrar al hacer clic en cualquier enlace del panel
+                const panelLinks = adminOffcanvas.querySelectorAll('a');
+                panelLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        setTimeout(closePanel, 300);
+                    });
+                });
+                
+                // Eventos del offcanvas de Bootstrap
+                adminOffcanvas.addEventListener('show.bs.offcanvas', function () {
+                    sidebarOverlay.classList.add('active');
+                    body.classList.add('panel-open');
+                });
+                
+                adminOffcanvas.addEventListener('hide.bs.offcanvas', function () {
+                    sidebarOverlay.classList.remove('active');
+                    body.classList.remove('panel-open');
+                });
+                
+                // Cerrar con tecla Escape
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && body.classList.contains('panel-open')) {
+                        closePanel();
+                    }
+                });
             }
-        });
-        </script>
-        
-        <script>
-        // Inicializar tooltips de Bootstrap con configuración instantánea
-        document.addEventListener('DOMContentLoaded', function () {
-            // Configurar tooltips con respuesta instantánea
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle*="tooltip"]:not(#btnDropdownNotificaciones)'));
+
+            // Inicializar tooltips de Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl, {
-                    delay: { show: 0, hide: 50 }, // Instantáneo mostrar, rápido ocultar
-                    animation: false, // Sin animación CSS
-                    trigger: 'hover', // Solo hover para evitar conflictos
-                    template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>',
-                    customClass: 'tooltip-instant'
+                    delay: { show: 0, hide: 50 },
+                    animation: false,
+                    trigger: 'hover'
                 });
             });
-            
-            // Manejar tooltip del botón de notificaciones manualmente
-            const notifBtn = document.getElementById('btnDropdownNotificaciones');
-            if (notifBtn) {
-                let notifTooltip = null;
-                
-                notifBtn.addEventListener('mouseenter', function() {
-                    if (!this.classList.contains('show')) { // Solo mostrar tooltip si dropdown no está abierto
-                        notifTooltip = new bootstrap.Tooltip(this, {
-                            title: 'Notificaciones',
-                            delay: { show: 0, hide: 50 },
-                            animation: false,
-                            customClass: 'tooltip-instant'
-                        });
-                        notifTooltip.show();
-                    }
-                });
-                
-                notifBtn.addEventListener('mouseleave', function() {
-                    if (notifTooltip) {
-                        notifTooltip.dispose();
-                        notifTooltip = null;
-                    }
-                });
-                
-                notifBtn.addEventListener('click', function(e) {
-                    if (notifTooltip) {
-                        notifTooltip.dispose();
-                        notifTooltip = null;
-                    }
-                    console.log('Notificaciones button clicked');
-                });
-                
-                // Verificar que el dropdown funcione correctamente
-                notifBtn.addEventListener('shown.bs.dropdown', function() {
-                    console.log('Dropdown opened');
-                });
-                
-                notifBtn.addEventListener('hidden.bs.dropdown', function() {
-                    console.log('Dropdown closed');
-                });
-            }
-            
-            // Debug: Verificar que HTMX esté funcionando
-            document.body.addEventListener('htmx:beforeRequest', function(evt) {
-                console.log('HTMX request started:', evt.detail.requestConfig.path);
-            });
-            
-            document.body.addEventListener('htmx:afterRequest', function(evt) {
-                console.log('HTMX request completed:', evt.detail.xhr.status);
-            });
-            
-            // Asegurar que el dropdown se cierre al hacer click fuera
-            document.addEventListener('click', function(e) {
-                const dropdownWrapper = document.getElementById('dropdownNotificacionesWrapper');
-                const dropdown = document.getElementById('btnDropdownNotificaciones');
-                const dropdownMenu = document.getElementById('dropdownNotificacionesMenu');
-                
-                if (dropdownWrapper && dropdown && dropdownMenu) {
-                    // Si el click no es dentro del dropdown wrapper
-                    if (!dropdownWrapper.contains(e.target)) {
-                        // Si el dropdown está abierto
-                        if (dropdown.classList.contains('show') || dropdown.getAttribute('aria-expanded') === 'true') {
-                            // Cerrar el dropdown usando Bootstrap
-                            const dropdownInstance = bootstrap.Dropdown.getInstance(dropdown);
-                            if (dropdownInstance) {
-                                dropdownInstance.hide();
-                            } else {
-                                // Fallback manual
-                                dropdown.classList.remove('show');
-                                dropdown.setAttribute('aria-expanded', 'false');
-                                dropdownMenu.classList.remove('show');
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // Prevenir que clicks dentro del dropdown lo cierren accidentalmente
-            document.addEventListener('click', function(e) {
-                const dropdownMenu = document.getElementById('dropdownNotificacionesMenu');
-                if (dropdownMenu && dropdownMenu.contains(e.target)) {
-                    // Solo cerrar si se hace click en un enlace específico
-                    if (e.target.tagName === 'A' || e.target.closest('a')) {
-                        // Permitir que el enlace funcione y luego cerrar
-                        setTimeout(() => {
-                            const dropdown = document.getElementById('btnDropdownNotificaciones');
-                            if (dropdown) {
-                                const dropdownInstance = bootstrap.Dropdown.getInstance(dropdown);
-                                if (dropdownInstance) {
-                                    dropdownInstance.hide();
-                                }
-                            }
-                        }, 100);
-                    } else {
-                        // Prevenir cierre al hacer click en el contenido del dropdown
-                        e.stopPropagation();
-                    }
-                }
-            });
-            
-            // Agregar CSS para tooltips instantáneos con colores SOMA
-            const style = document.createElement('style');
-            style.textContent = `
-                .tooltip-instant {
-                    --bs-tooltip-opacity: 1;
-                }
-                .tooltip-instant .tooltip-inner {
-                    background-color: var(--soma-orange, #ff6b35) !important;
-                    color: white !important;
-                    font-size: 0.75rem !important;
-                    padding: 0.4rem 0.6rem !important;
-                    font-weight: 500 !important;
-                }
-                .tooltip-instant .tooltip-arrow::before {
-                    border-top-color: var(--soma-orange, #ff6b35) !important;
-                    border-bottom-color: var(--soma-orange, #ff6b35) !important;
-                    border-left-color: var(--soma-orange, #ff6b35) !important;
-                    border-right-color: var(--soma-orange, #ff6b35) !important;
-                }
-            `;
-            document.head.appendChild(style);
         });
-        </script>
-        
-        <!-- Admin Sidebar Styles and Scripts -->
-        <style>
-            .admin-offcanvas {
-                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-                width: var(--admin-offcanvas-width);
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .admin-offcanvas .offcanvas-body {
-                flex: 1;
-                overflow-y: auto;
-            }
-
-            .admin-offcanvas .offcanvas-header {
-                background: rgba(255, 255, 255, 0.05);
-            }
-
-            .admin-modules-accordion .accordion-item {
-                background: transparent;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            }
-
-            .admin-modules-accordion .accordion-button {
-                background: transparent;
-                color: rgba(255, 255, 255, 0.9);
-                box-shadow: none;
-                padding-top: 0.75rem;
-                padding-bottom: 0.75rem;
-                gap: 0.5rem;
-            }
-
-            .admin-modules-accordion .accordion-button.collapsed {
-                color: rgba(255, 255, 255, 0.75);
-            }
-
-            .admin-modules-accordion .accordion-button:not(.collapsed) {
-                background: rgba(255, 255, 255, 0.08);
-                color: #fff;
-            }
-
-            .admin-modules-accordion .accordion-button::after {
-                filter: invert(1);
-            }
-
-            .admin-module-icon {
-                width: 1.75rem;
-                height: 1.75rem;
-                border-radius: 0.55rem;
-                background: rgba(255, 255, 255, 0.12);
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                color: #ffcc80;
-            }
-
-            .admin-module-links .list-group-item {
-                background: transparent;
-                color: rgba(255, 255, 255, 0.8);
-                padding-top: 0.55rem;
-                padding-bottom: 0.55rem;
-                padding-left: 2.4rem;
-                border: none;
-                border-left: 3px solid transparent;
-                transition: all 0.2s ease;
-            }
-
-            .admin-module-links .list-group-item:hover {
-                background: rgba(255, 255, 255, 0.08);
-                color: #fff;
-                border-left-color: #ff6b35;
-            }
-
-            .admin-offcanvas-title {
-                color: #ffffff !important;
-                font-weight: 700 !important;
-            }
-
-            .admin-sidebar-toggle {
-                position: fixed;
-                top: 96px;
-                left: 1rem;
-                z-index: 1051;
-                background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
-                color: white;
-                border: none;
-                width: 52px;
-                height: 52px;
-                border-radius: 50%;
-                box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .admin-sidebar-toggle:focus {
-                outline: none;
-                box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
-            }
-
-            .admin-sidebar-toggle:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 18px rgba(255, 102, 0, 0.45);
-            }
-
-            .admin-sidebar-toggle.is-open {
-                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-                left: calc(var(--admin-offcanvas-width) + 1.25rem);
-            }
-
-            @media (max-width: 992px) {
-                .admin-sidebar-toggle {
-                    top: 88px;
-                }
-            }
-
-            @media (max-width: 576px) {
-                .admin-sidebar-toggle {
-                    top: 82px;
-                    width: 46px;
-                    height: 46px;
-                }
-
-                .admin-sidebar-toggle.is-open {
-                    left: calc(var(--admin-offcanvas-width) + 0.75rem);
-                }
-            }
-        </style>
-
-        <script>
-            (function() {
-                const STORAGE_KEY = 'soma.admin.lastModule';
-
-                if (typeof bootstrap === 'undefined') {
-                    return;
-                }
-
-                const toggleButton = document.getElementById('sidebarToggle');
-                const offcanvasTemplate = document.getElementById('adminModulesOffcanvasTemplate');
-                let offcanvasElement = null;
-                let offcanvasInstance = null;
-
-                function ensureOffcanvas() {
-                    if (offcanvasInstance) {
-                        return offcanvasInstance;
-                    }
-
-                    if (!offcanvasTemplate || !offcanvasTemplate.content.firstElementChild) {
-                        return null;
-                    }
-
-                    offcanvasElement = offcanvasTemplate.content.firstElementChild.cloneNode(true);
-                    offcanvasElement.style.visibility = 'hidden';
-                    offcanvasElement.style.display = 'none';
-                    document.body.appendChild(offcanvasElement);
-
-                    offcanvasElement.addEventListener('show.bs.offcanvas', function() {
-                        offcanvasElement.style.display = 'block';
-                        requestAnimationFrame(() => {
-                            offcanvasElement.style.visibility = 'visible';
-                        });
-
-                        if (toggleButton) {
-                            toggleButton.setAttribute('aria-expanded', 'true');
-                            toggleButton.classList.add('is-open');
-                        }
-
-                        document.body.classList.add('offcanvas-open');
-                        document.body.classList.remove('modal-open');
-                    });
-
-                    offcanvasElement.addEventListener('shown.bs.offcanvas', function() {
-                        const storedId = localStorage.getItem(STORAGE_KEY);
-                        const firstCollapse = offcanvasElement.querySelector('.accordion-collapse');
-                        const targetId = storedId || (firstCollapse ? firstCollapse.id : null);
-
-                        if (!targetId) {
-                            return;
-                        }
-
-                        const collapseElement = document.getElementById(targetId);
-                        if (collapseElement && !collapseElement.classList.contains('show')) {
-                            new bootstrap.Collapse(collapseElement, { toggle: true });
-                        }
-                    });
-
-                    offcanvasElement.addEventListener('hidden.bs.offcanvas', function() {
-                        offcanvasElement.style.visibility = 'hidden';
-                        offcanvasElement.style.display = 'none';
-
-                        if (toggleButton) {
-                            toggleButton.setAttribute('aria-expanded', 'false');
-                            toggleButton.classList.remove('is-open');
-                        }
-
-                        document.body.classList.remove('offcanvas-open');
-                    });
-
-                    offcanvasElement.addEventListener('shown.bs.collapse', function(event) {
-                        if (event.target.classList.contains('accordion-collapse')) {
-                            localStorage.setItem(STORAGE_KEY, event.target.id);
-
-                            requestAnimationFrame(() => {
-                                const scrollContainer = offcanvasElement.querySelector('.offcanvas-body');
-
-                                if (!scrollContainer) {
-                                    return;
-                                }
-
-                                const containerScrollTop = scrollContainer.scrollTop;
-                                const containerHeight = scrollContainer.clientHeight;
-                                const targetTop = event.target.offsetTop - scrollContainer.offsetTop;
-                                const targetHeight = event.target.offsetHeight;
-                                const targetBottom = targetTop + targetHeight;
-
-                                if (targetBottom > containerScrollTop + containerHeight) {
-                                    const newScrollTop = targetBottom - containerHeight + 16;
-                                    scrollContainer.scrollTo({
-                                        top: newScrollTop,
-                                        behavior: 'smooth'
-                                    });
-                                } else if (targetTop < containerScrollTop) {
-                                    const newScrollTop = Math.max(targetTop - 16, 0);
-                                    scrollContainer.scrollTo({
-                                        top: newScrollTop,
-                                        behavior: 'smooth'
-                                    });
-                                }
-                            });
-                        }
-                    });
-
-                    offcanvasElement.addEventListener('hidden.bs.collapse', function(event) {
-                        if (event.target.classList.contains('accordion-collapse') && localStorage.getItem(STORAGE_KEY) === event.target.id) {
-                            localStorage.removeItem(STORAGE_KEY);
-                        }
-                    });
-
-                    offcanvasInstance = new bootstrap.Offcanvas(offcanvasElement);
-                    return offcanvasInstance;
-                }
-
-                if (toggleButton) {
-                    toggleButton.addEventListener('click', function(event) {
-                        event.preventDefault();
-                        const instance = ensureOffcanvas();
-
-                        if (!instance || !offcanvasElement) {
-                            return;
-                        }
-
-                        if (offcanvasElement.classList.contains('show')) {
-                            instance.hide();
-                        } else {
-                            instance.show();
-                        }
-                    });
-                }
-            })();
-        </script>
-        
-        {% block extra_js %}{% endblock %}
+    </script>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
