@@ -22,7 +22,7 @@ class AsignacionPorTrabajadorAdmin(admin.ModelAdmin):
     list_display = ("contrato", "empleado")
     list_filter = ("contrato", "empleado")
     search_fields = ("contrato__numero_contrato", "empleado__numero_empleado", "empleado__usuario__first_name", "empleado__usuario__last_name")
-    autocomplete_fields = ["contrato", "empleado"]
+    # autocomplete_fields = ["contrato", "empleado"]
 from .forms_inasistencia import InasistenciaForm
 # Admin para estatus de empleado
 
