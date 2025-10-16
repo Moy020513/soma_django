@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Registrar inasistencia</h1>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="form-row">
+        {% for field in form %}
+            <div class="form-group col-md-6">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+                {% for err in field.errors %}<div class="text-danger">{{ err }}</div>{% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <button class="btn btn-primary" type="submit">Registrar</button>
+    <a class="btn btn-secondary" href="{% url 'rh:listar_inasistencias' %}">Cancelar</a>
+</form>
+{% endblock %}

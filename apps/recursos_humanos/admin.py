@@ -7,6 +7,7 @@ from django.utils.translation import gettext as _
 from django.contrib.admin.utils import unquote
 from django.urls import reverse
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado
+from .models import Inasistencia
 # Admin para estatus de empleado
 
 # Formulario personalizado para PeriodoEstatusEmpleado
@@ -211,5 +212,13 @@ class EmpleadoAdmin(admin.ModelAdmin):
         if extra_context:
             context.update(extra_context)
         return TemplateResponse(request, "admin/delete_confirmation.html", context)
+
+
+@admin.register(Inasistencia)
+class InasistenciaAdmin(admin.ModelAdmin):
+    list_display = ('empleado', 'fecha', 'tipo', 'dias', 'registrada_por', 'fecha_creacion')
+    list_filter = ('tipo', 'fecha')
+    search_fields = ('empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name')
+    autocomplete_fields = ['empleado', 'registrada_por']
 
 

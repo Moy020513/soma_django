@@ -1,10 +1,13 @@
+from .models import Inasistencia, Empleado
+
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from .forms import EmpleadoRegistroForm
 from .forms_edicion import EmpleadoEdicionForm
+from .forms_periodo import NuevoPeriodoEstatusForm
+from .forms_inasistencia import InasistenciaForm
 
 def es_admin(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
@@ -95,12 +98,40 @@ def editar_empleado(request, empleado_id):
         'estatus_actual': estatus_actual,
         'periodo_actual': periodo_actual,
     })
-from .models import Empleado, PeriodoEstatusEmpleado
-from .forms_periodo import NuevoPeriodoEstatusForm
 
-def es_admin(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
+# Vista para listar inasistencias
+@login_required
+@user_passes_test(es_admin)
+def listar_inasistencias(request):
+    inasistencias = Inasistencia.objects.select_related('empleado', 'registrada_por').order_by('-fecha')
+    return render(request, 'recursos_humanos/listar_inasistencias.html', {'inasistencias': inasistencias})
 
+
+@login_required
+@user_passes_test(es_admin)
+def registrar_inasistencia(request):
+    if request.method == 'POST':
+        form = InasistenciaForm(request.POST)
+        if form.is_valid():
+            inas = form.save(commit=False)
+            inas.registrada_por = request.user
+            inas.save()
+            messages.success(request, 'Inasistencia registrada correctamente.')
+            return redirect('rh:listar_inasistencias')
+        else:
+            messages.error(request, 'Corrige los errores en el formulario.')
+    else:
+        # permitir filtrar empleado por ?empleado=ID
+        empleado_id = request.GET.get('empleado')
+        initial = {}
+        if empleado_id:
+            try:
+                emp = Empleado.objects.get(pk=empleado_id)
+                initial['empleado'] = emp
+            except Empleado.DoesNotExist:
+                pass
+        form = InasistenciaForm(initial=initial)
+    return render(request, 'recursos_humanos/registrar_inasistencia.html', {'form': form})
 @login_required
 @user_passes_test(es_admin)
 def registrar_empleado(request):

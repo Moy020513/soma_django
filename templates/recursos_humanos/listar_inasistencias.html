@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Inasistencias</h1>
+<p><a class="btn btn-primary" href="{% url 'rh:registrar_inasistencia' %}">Registrar inasistencia</a></p>
+<table class="table table-sm table-striped">
+    <thead>
+        <tr>
+            <th>Empleado</th>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Días</th>
+            <th>Registrada por</th>
+            <th>Observaciones</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for i in inasistencias %}
+        <tr>
+            <td>{{ i.empleado.nombre_completo }}</td>
+            <td>{{ i.fecha }}</td>
+            <td>{{ i.get_tipo_display }}</td>
+            <td>{{ i.dias }}</td>
+            <td>{{ i.registrada_por.get_full_name }}</td>
+            <td>{{ i.observaciones|default_if_none:"" }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="6">No hay registros.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

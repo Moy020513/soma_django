@@ -264,5 +264,31 @@ class PeriodoEstatusEmpleado(models.Model):
         fin = self.fecha_fin.strftime('%Y-%m-%d') if self.fecha_fin else "actual"
         return f"{self.empleado} - {self.estatus} ({self.fecha_inicio} a {fin})"
 
+from django.conf import settings
+
+class Inasistencia(models.Model):
+    """Registra inasistencias, permisos o retardos de empleados."""
+    TIPOS = [
+        ("inasistencia", "Inasistencia"),
+        ("permiso", "Permiso"),
+        ("retardo", "Retardo"),
+    ]
+
+    empleado = models.ForeignKey("Empleado", on_delete=models.CASCADE, related_name="inasistencias")
+    fecha = models.DateField(verbose_name="Fecha de la inasistencia")
+    tipo = models.CharField(max_length=20, choices=TIPOS, default="inasistencia")
+    dias = models.IntegerField(default=1, verbose_name="Días")
+    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+    registrada_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Registrada por")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
+
+    class Meta:
+        verbose_name = "Inasistencia"
+        verbose_name_plural = "Inasistencias"
+        ordering = ["-fecha"]
+        unique_together = ("empleado", "fecha")
+
+    def __str__(self):
+        return f"{self.empleado} - {self.fecha} ({self.tipo})"
 
  
