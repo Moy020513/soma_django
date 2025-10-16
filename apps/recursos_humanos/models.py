@@ -277,7 +277,7 @@ class Inasistencia(models.Model):
     empleado = models.ForeignKey("Empleado", on_delete=models.CASCADE, related_name="inasistencias")
     fecha = models.DateField(verbose_name="Fecha de la inasistencia")
     tipo = models.CharField(max_length=20, choices=TIPOS, default="inasistencia")
-    dias = models.IntegerField(default=1, verbose_name="Días")
+    # El campo 'dias' ha sido eliminado
     observaciones = models.TextField(blank=True, verbose_name="Observaciones")
     # registrada_por eliminado
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")

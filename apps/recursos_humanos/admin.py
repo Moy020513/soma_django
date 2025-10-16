@@ -218,7 +218,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
 @admin.register(Inasistencia)
 class InasistenciaAdmin(admin.ModelAdmin):
     form = InasistenciaForm
-    list_display = ('empleado', 'fecha', 'tipo', 'dias', 'fecha_creacion')
+    list_display = ('empleado', 'fecha', 'tipo', 'fecha_creacion')
     list_filter = ('tipo', 'fecha')
     search_fields = ('empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name')
 
