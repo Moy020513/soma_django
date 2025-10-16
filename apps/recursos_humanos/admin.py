@@ -14,7 +14,7 @@ class ContratoAdmin(admin.ModelAdmin):
     list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "periodo_ejecucion", "cantidad_empleados")
     list_filter = ("empresa", "fecha_inicio", "fecha_termino")
     search_fields = ("numero_contrato", "empresa__nombre")
-    autocomplete_fields = ["empresa"]
+    # autocomplete_fields = ["empresa"]
 
 # Admin AsignacionPorTrabajador
 @admin.register(AsignacionPorTrabajador)
