@@ -28,6 +28,11 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,142.93.65.133,soma.tecnoy.me').split(',')
 
+# Permitir CSRF desde el subdominio en producción
+CSRF_TRUSTED_ORIGINS = [
+    'https://soma.tecnoy.me', 'http://soma.tecnoy.me'
+]
+
 
 # Application definition
 
