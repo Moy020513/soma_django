@@ -88,13 +88,43 @@
                     {% endblock %}
                 {% endif %}
 
-                {% if errors %}
+                {% comment %} Mostrar errores del form principal y de todos los inlines/formsets.
+                          Solo mostrar cuando el formulario está ligado (is_bound), es decir tras envío. {% endcomment %}
+                {% if adminform.form.is_bound %}
+                    {% comment %} Si estamos en POST, mostrar los errores que existan. {% endcomment %}
                     <div class="form-errors">
                         <div class="alert alert-danger">
                             <h5><i class="fas fa-exclamation-triangle me-2"></i>{% trans 'Please correct the errors below.' %}</h5>
                             <ul class="mb-0">
+                                {# Errores no asociados a campos del formulario principal #}
                                 {% for error in adminform.form.non_field_errors %}
                                     <li>{{ error }}</li>
+                                {% endfor %}
+
+                                {# Errores de campos del formulario principal #}
+                                {% for field_name, field_errors in adminform.form.errors.items %}
+                                    {% for err in field_errors %}
+                                        <li><strong>{{ field_name }}:</strong> {{ err }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+
+                                {# Errores de los inlines/formsets (non_field + field errors) #}
+                                {% for inline_admin_formset in inline_admin_formsets %}
+                                    {% for err in inline_admin_formset.non_form_errors %}
+                                        <li><strong>{{ inline_admin_formset.opts.verbose_name }}:</strong> {{ err }}</li>
+                                    {% endfor %}
+                                    {% for inline_admin_form in inline_admin_formset %}
+                                        {% if inline_admin_form.non_field_errors %}
+                                            {% for err in inline_admin_form.non_field_errors %}
+                                                <li><strong>{{ inline_admin_formset.opts.verbose_name }}:</strong> {{ err }}</li>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% for field in inline_admin_form %}
+                                            {% for err in field.errors %}
+                                                <li><strong>{{ field.name }}:</strong> {{ err }}</li>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endfor %}
                                 {% endfor %}
                             </ul>
                         </div>
@@ -104,7 +134,9 @@
                 {% block field_sets %}
                     {% for fieldset in adminform %}
                         <div class="fieldset">
-                            {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
+                            {% if fieldset.name and 'contacto' not in fieldset.name|lower %}
+                                <h2>{{ fieldset.name }}</h2>
+                            {% endif %}
                             {% if fieldset.description %}<div class="fieldset-description">{{ fieldset.description|safe }}</div>{% endif %}
                             <div class="fieldset-fields">
                                 {% for line in fieldset %}
@@ -153,32 +185,59 @@
 
                 {% block after_field_sets %}{% endblock %}
 
-                {% if add and adminform.formsets %}
-                    {% for formset in adminform.formsets %}
-                        <div class="inline-formset">
-                            <h3>{{ formset.opts.verbose_name_plural|capfirst }}</h3>
-                            {{ formset.management_form }}
-                            {% for form in formset %}
-                                <div class="inline-form">
-                                    {% for field in form %}
-                                        <div class="field-wrapper">
-                                            {{ field.errors }}
-                                            <div class="field-container">
-                                                <div class="field-input">
-                                                    {{ field.field.label_tag }}
-                                                    {% if field.is_readonly %}
-                                                        <div class="readonly">{{ field.contents }}</div>
-                                                    {% else %}
-                                                        {{ field.field }}
-                                                        {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
-                                                    {% endif %}
-                                                </div>
-                                            </div>
+                {% if inline_admin_formsets %}
+                    {% for inline_admin_formset in inline_admin_formsets %}
+                        {# Omitir el inline de 'Contactos' porque existe una sección independiente de Contactos. #}
+                        {% with name=inline_admin_formset.opts.verbose_name_plural|lower %}
+                            {% if 'contacto' in name or name == 'contactos' %}
+                                {# Mostrar solo el campo 'direccion' del inline Contactos y su management_form. #}
+                                <div class="inline-formset">
+                                    <h3>{{ inline_admin_formset.opts.verbose_name|capfirst }}</h3>
+                                    {{ inline_admin_formset.management_form }}
+                                    {% for inline_admin_form in inline_admin_formset %}
+                                        <div class="fieldset-fields">
+                                            {% for field in inline_admin_form %}
+                                                {% if field.name == 'direccion' or field.field.name == 'direccion' %}
+                                                    <div class="field-wrapper">
+                                                        {{ field.errors }}
+                                                        <div class="field-container">
+                                                            <div class="field-input">
+                                                                {{ field.field.label_tag }}
+                                                                {% if field.is_readonly %}
+                                                                    <div class="readonly">{{ field.contents }}</div>
+                                                                {% else %}
+                                                                    {{ field.field }}
+                                                                    {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
                                         </div>
                                     {% endfor %}
                                 </div>
-                            {% endfor %}
-                        </div>
+                            {% else %}
+                                <div class="inline-formset">
+                                    <h3>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h3>
+                                    {{ inline_admin_formset.management_form }}
+                                    {# Mostrar errores no asociados a campos del formset (non_form_errors) #}
+                                    {% if inline_admin_formset.non_form_errors %}
+                                        <div class="form-errors">
+                                            <div class="alert alert-danger">
+                                                <ul class="mb-0">
+                                                    {% for err in inline_admin_formset.non_form_errors %}
+                                                        <li>{{ err }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    {# Use the inline's configured template so Django renders management form and fields correctly #}
+                                    {% include inline_admin_formset.opts.template %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
                     {% endfor %}
                 {% endif %}
 

@@ -27,7 +27,9 @@ class EmpresaAdmin(admin.ModelAdmin):
 
     list_display = ['logo_preview', 'nombre', 'direccion_preview', 'activa']
     list_display_links = ['nombre']
-    inlines = [ContactoInline]
+    # No incluir el inline Contacto aquí: los Contactos se gestionan en su
+    # propio apartado del admin. Evita que el formulario de Empresa muestre
+    # la tabla de Contactos y problemas con el ManagementForm.
     list_filter = ['activa']
     search_fields = ['nombre']
     list_editable = ['activa']
@@ -36,7 +38,7 @@ class EmpresaAdmin(admin.ModelAdmin):
         ('Información Básica', {
             'fields': ('nombre',)
         }),
-        ('Contacto', {
+        ('Dirección', {
             'fields': ('direccion',)
         }),
         ('Imagen', {
