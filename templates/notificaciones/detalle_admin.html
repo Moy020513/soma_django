@@ -34,15 +34,7 @@
     </div>
     <div class="mt-3 d-flex gap-2">
         <a href="{% url 'notificaciones:index' %}" class="btn btn-secondary">Volver a notificaciones</a>
-        {% if not request.user.is_superuser %}
-            {% if not notificacion.respuestas.filter(usuario=request.user).exists %}
-                <a href="{% url 'notificaciones:responder_admin' notificacion.id %}" class="btn btn-success">Responder</a>
-            {% else %}
-                {% with respuesta=notificacion.respuestas.get(usuario=request.user) %}
-                    <a href="{% url 'notificaciones:modificar_respuesta' respuesta.id %}" class="btn btn-warning">Modificar respuesta</a>
-                {% endwith %}
-            {% endif %}
-        {% endif %}
+        {# No mostrar acciones de respuesta para administradores: política aplicada en backend y UI #}
     </div>
 </div>
 {% endblock %}

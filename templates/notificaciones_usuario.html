@@ -85,9 +85,7 @@
                                     <div class="notification-actions mt-3 d-flex gap-2">
                                         {% if notificacion.url %}
                                             {% if request.user.is_superuser %}
-                                                <a href="{{ notificacion.url }}" class="btn btn-sm btn-outline-secondary action-link">
-                                                    <i class="fas fa-external-link-alt me-1"></i>Ver más
-                                                </a>
+                                                {# Admin: no mostrar acciones adicionales #}
                                             {% else %}
                                                 <a href="{{ notificacion.url }}?from_notification={{ notificacion.id }}" class="btn btn-sm btn-primary action-link">
                                                     <i class="fas fa-reply me-1"></i>Responder
@@ -97,9 +95,11 @@
                                                 </a>
                                             {% endif %}
                                         {% else %}
-                                            <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-primary action-link">
-                                                <i class="fas fa-external-link-alt me-1"></i>Ver más
-                                            </a>
+                                            {% if not request.user.is_superuser %}
+                                                <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-primary action-link">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Ver más
+                                                </a>
+                                            {% endif %}
                                         {% endif %}
                                         {% if not notificacion.leida %}
                                             <span class="btn btn-sm btn-secondary disabled">No leída</span>
