@@ -8,6 +8,7 @@ from apps.recursos_humanos.models import Empleado
 from .models import Herramienta, AsignacionHerramienta, TransferenciaHerramienta
 from apps.notificaciones.models import Notificacion
 from django.contrib.auth import get_user_model
+from django.http import HttpResponseForbidden
 from .forms import SolicitudTransferenciaHerramientaForm, RespuestaTransferenciaHerramientaForm
 from django import forms
 
@@ -210,6 +211,9 @@ def transferencia_detalle(request, pk):
 @login_required
 def responder_transferencia_herramienta(request, pk):
     transferencia = get_object_or_404(TransferenciaHerramienta.objects.select_related('herramienta', 'empleado_origen__usuario', 'empleado_destino__usuario'), pk=pk)
+    # Si la vista fue abierta desde una notificación, los administradores no deben poder responder
+    if request.GET.get('from_notification') and request.user.is_superuser:
+        return HttpResponseForbidden('Los administradores no pueden responder notificaciones.')
     empleado = Empleado.objects.filter(usuario=request.user).first()
     es_destino = empleado and transferencia.empleado_destino == empleado
     es_origen = empleado and transferencia.empleado_origen == empleado
@@ -368,6 +372,9 @@ def responder_transferencia_herramienta(request, pk):
 @login_required
 def inspeccionar_herramienta(request, pk):
     transferencia = get_object_or_404(TransferenciaHerramienta, pk=pk)
+    # Bloquear administración desde notificaciones
+    if request.GET.get('from_notification') and request.user.is_superuser:
+        return HttpResponseForbidden('Los administradores no pueden responder notificaciones.')
     empleado = Empleado.objects.filter(usuario=request.user).first()
     if not empleado or transferencia.empleado_destino != empleado:
         messages.error(request, 'No puedes inspeccionar esta transferencia.')

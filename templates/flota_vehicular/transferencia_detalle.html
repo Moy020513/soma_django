@@ -106,7 +106,7 @@
                 <h6><i class="fas fa-cog me-2"></i>Acciones</h6>
             </div>
             <div class="card-body">
-                {% if es_destino and transferencia.estado == 'solicitada' %}
+                {% if es_destino and transferencia.estado == 'solicitada' and not request.user.is_superuser %}
                     <a href="{% url 'flota:responder_solicitud' transferencia.pk %}" class="btn btn-success w-100 mb-2">
                         <i class="fas fa-reply me-2"></i>Responder Solicitud
                     </a>
@@ -115,7 +115,7 @@
                     </a>
                 {% endif %}
                 
-                {% if es_origen and transferencia.estado == 'inspeccion' %}
+                {% if es_origen and transferencia.estado == 'inspeccion' and not request.user.is_superuser %}
                     <a href="{% url 'flota:responder_inspeccion' transferencia.pk %}" class="btn btn-warning w-100 mb-2">
                         <i class="fas fa-reply me-2"></i>Responder Inspección
                     </a>

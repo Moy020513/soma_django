@@ -133,14 +133,16 @@ def transferencia_detalle(request, pk):
 @login_required
 def responder_solicitud(request, pk):
     """Vista para que el empleado destino responda directamente a la solicitud"""
-    
+    # Comprobar si viene de notificación y bloquear admins inmediatamente
+    from_notification = request.GET.get('from_notification')
+    if from_notification and request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('Los administradores no pueden responder notificaciones.')
+
     empleado = Empleado.objects.filter(usuario=request.user).first()
     if not empleado:
         messages.error(request, 'Tu usuario no está asociado a un empleado.')
         return redirect('home')
-    
-    # Marcar notificación como leída si se accede desde una notificación
-    from_notification = request.GET.get('from_notification')
     if from_notification:
         try:
             notificacion = Notificacion.objects.get(
@@ -261,6 +263,12 @@ def inspeccionar_vehiculo(request, pk):
         messages.error(request, 'Tu usuario no está asociado a un empleado.')
         return redirect('home')
     
+    # Comprobar si viene de notificación y bloquear admins inmediatamente
+    from_notification = request.GET.get('from_notification')
+    if from_notification and request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('Los administradores no pueden responder notificaciones.')
+
     transferencia = get_object_or_404(
         TransferenciaVehicular.objects.select_related('vehiculo', 'empleado_origen__usuario'),
         pk=pk,
@@ -310,6 +318,12 @@ def responder_inspeccion(request, pk):
         messages.error(request, 'Tu usuario no está asociado a un empleado.')
         return redirect('home')
     
+    # Comprobar si viene de notificación y bloquear admins inmediatamente
+    from_notification = request.GET.get('from_notification')
+    if from_notification and request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('Los administradores no pueden responder notificaciones.')
+
     transferencia = get_object_or_404(
         TransferenciaVehicular.objects.select_related('vehiculo', 'empleado_destino__usuario'),
         pk=pk,

@@ -60,7 +60,7 @@
                                         <a href="{% url 'flota:transferencia_detalle' transferencia.pk %}" class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-eye me-1"></i>Ver
                                         </a>
-                                        {% if transferencia.estado == 'solicitada' %}
+                                        {% if transferencia.estado == 'solicitada' and not request.user.is_superuser %}
                                             <a href="{% url 'flota:inspeccionar_vehiculo' transferencia.pk %}" class="btn btn-info btn-sm">
                                                 <i class="fas fa-search me-1"></i>Inspeccionar
                                             </a>
@@ -133,7 +133,7 @@
                                         <a href="{% url 'flota:transferencia_detalle' transferencia.pk %}" class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-eye me-1"></i>Ver
                                         </a>
-                                        {% if transferencia.estado == 'inspeccion' %}
+                                        {% if transferencia.estado == 'inspeccion' and not request.user.is_superuser %}
                                             <a href="{% url 'flota:responder_inspeccion' transferencia.pk %}" class="btn btn-warning btn-sm">
                                                 <i class="fas fa-reply me-1"></i>Responder
                                             </a>

@@ -127,3 +127,12 @@ La mejora está **100% implementada y probada**, lista para uso en producción.
 **Fecha de implementación:** 02 de Octubre, 2025  
 **Desarrollador:** GitHub Copilot  
 **Estado:** ✅ Completado y probado
+
+## 🔔 Restricción: administradores no pueden responder notificaciones
+
+- Fecha: 21/10/2025
+- Se implementó que los usuarios con privilegios de administrador (superuser) ya no puedan RESPONDER a notificaciones desde la interfaz ni desde endpoints relacionados. Esto incluye:
+	- Ocultar/deshabilitar botones "Responder" en listados, dropdowns y vistas de detalle para admins.
+	- Evitar server-side cualquier intento de responder (redirección con aviso) si la acción se inicia desde una notificación.
+
+Esta modificación previene que los administradores interactúen con respuestas diseñadas para empleados y mantiene la separación de roles.

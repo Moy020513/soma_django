@@ -101,9 +101,16 @@ class ResponderNotificacionAdminView(LoginRequiredMixin, UserPassesTestMixin, Cr
     template_name = 'notificaciones/responder_admin.html'
 
     def test_func(self):
-        return self.request.user.is_superuser
+        # Los administradores NO pueden responder notificaciones según la nueva política.
+        # Devolvemos False para que UserPassesTestMixin devuelva 403; además sobreescribimos
+        # dispatch para redirigir con mensaje más amable.
+        return False
 
     def dispatch(self, request, *args, **kwargs):
+        # Bloquear el acceso a este view para superusers -> devolver 403
+        from django.http import HttpResponseForbidden
+        if request.user.is_authenticated and request.user.is_superuser:
+            return HttpResponseForbidden('Los administradores no pueden responder notificaciones.')
         self.notificacion = get_object_or_404(Notificacion, pk=kwargs['notificacion_id'])
         return super().dispatch(request, *args, **kwargs)
 
@@ -131,7 +138,14 @@ class ModificarRespuestaAdminView(LoginRequiredMixin, UserPassesTestMixin, Updat
     template_name = 'notificaciones/responder_admin.html'
 
     def test_func(self):
-        return self.request.user.is_superuser
+        # Bloqueamos modificación de respuestas por parte de administradores
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        from django.http import HttpResponseForbidden
+        if request.user.is_authenticated and request.user.is_superuser:
+            return HttpResponseForbidden('Los administradores no pueden modificar respuestas a notificaciones.')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return reverse('notificaciones:admin_detalle', args=[self.object.notificacion.pk])

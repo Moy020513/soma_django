@@ -3,11 +3,16 @@
 <div class="container mt-5">
     <div class="card shadow-lg">
         <div class="card-header bg-primary text-white">
-            <h4>Responder Notificación</h4>
+            {% if not request.user.is_superuser %}
+                <h4>Responder Notificación</h4>
+            {% else %}
+                <h4>Acceso restringido</h4>
+            {% endif %}
         </div>
         <div class="card-body">
             <h5 class="mb-3">{{ notificacion.titulo }}</h5>
             <p class="text-muted">{{ notificacion.mensaje }}</p>
+            {% if not request.user.is_superuser %}
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="mb-3">
@@ -21,6 +26,13 @@
                 <button type="submit" class="btn btn-success">Enviar respuesta</button>
                 <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-secondary ms-2">Cancelar</a>
             </form>
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Acceso no permitido para administradores.</strong>
+                    <p class="mb-0">Los administradores no pueden responder notificaciones desde esta interfaz.</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

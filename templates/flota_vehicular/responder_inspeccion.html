@@ -89,6 +89,7 @@
                     {% endif %}
                 </div>
                 
+                {% if not request.user.is_superuser %}
                 <form method="post">
                     {% csrf_token %}
                     
@@ -156,6 +157,13 @@
                         </a>
                     </div>
                 </form>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Acceso no permitido para administradores.</strong>
+                        <p class="mb-0">Los administradores no pueden responder inspecciones desde esta interfaz.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

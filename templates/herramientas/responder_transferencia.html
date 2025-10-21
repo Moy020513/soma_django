@@ -3,15 +3,29 @@
 {% block page_title %}Responder Transferencia de Herramienta{% endblock %}
 {% block content %}
 <div class="card">
-  <div class="card-header"><h5 class="mb-0"><i class="fas fa-reply me-2"></i>Responder Transferencia</h5></div>
+  <div class="card-header"><h5 class="mb-0">
+    {% if not request.user.is_superuser %}
+      <i class="fas fa-reply me-2"></i>Responder Transferencia
+    {% else %}
+      <i class="fas fa-ban me-2"></i>Acceso restringido
+    {% endif %}
+  </h5></div>
   <div class="card-body">
     <p><strong>Herramienta:</strong> {{ transferencia.herramienta.nombre }} ({{ transferencia.herramienta.codigo }})</p>
     <p><strong>Origen:</strong> {{ transferencia.empleado_origen }}</p>
+    {% if not request.user.is_superuser %}
     <form method="post">{% csrf_token %}
       {{ form.as_p }}
       <button class="btn btn-success">Enviar Respuesta</button>
       <a href="{% url 'herramientas:transferencia_detalle' transferencia.pk %}" class="btn btn-secondary">Cancelar</a>
     </form>
+    {% else %}
+      <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Acceso no permitido para administradores.</strong>
+        <p class="mb-0">Los administradores no pueden responder transferencias desde esta interfaz.</p>
+      </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

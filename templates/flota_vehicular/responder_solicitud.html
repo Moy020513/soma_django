@@ -10,8 +10,13 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-reply me-2"></i>
-                    Responder Solicitud de Transferencia
+                    {% if not request.user.is_superuser %}
+                        <i class="fas fa-reply me-2"></i>
+                        Responder Solicitud de Transferencia
+                    {% else %}
+                        <i class="fas fa-ban me-2"></i>
+                        Acceso restringido
+                    {% endif %}
                 </h5>
             </div>
             <div class="card-body">
@@ -46,6 +51,7 @@
                 </div>
                 
                 <!-- Formulario de respuesta -->
+                {% if not request.user.is_superuser %}
                 <form method="post" class="mt-4">
                     {% csrf_token %}
                     
@@ -75,6 +81,13 @@
                         </button>
                     </div>
                 </form>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Acceso no permitido para administradores.</strong>
+                        <p class="mb-0">Los administradores no pueden responder solicitudes desde esta interfaz.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -1,17 +1,37 @@
 <div class="list-group list-group-flush" style="min-width:260px;">
     {% if notificaciones %}
         {% for n in notificaciones %}
-            {% if n.url and 'transferencia' in n.titulo|lower %}
+                {% if n.url and 'transferencia' in n.titulo|lower %}
                 {% if 'inspección' in n.titulo|lower %}
-                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #ffc107;">
+                    {% if request.user.is_superuser %}
+                        <a href="{{ n.url }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #ffc107;">
+                    {% else %}
+                        <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #ffc107;">
+                    {% endif %}
                 {% elif 'aceptada' in n.titulo|lower or 'aprobada' in n.titulo|lower %}
-                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                    {% if request.user.is_superuser %}
+                        <a href="{{ n.url }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                    {% else %}
+                        <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                    {% endif %}
                 {% elif 'rechazada' in n.titulo|lower %}
-                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #dc3545;">
+                    {% if request.user.is_superuser %}
+                        <a href="{{ n.url }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #dc3545;">
+                    {% else %}
+                        <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #dc3545;">
+                    {% endif %}
                 {% elif 'cancelada' in n.titulo|lower %}
-                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #6c757d;">
+                    {% if request.user.is_superuser %}
+                        <a href="{{ n.url }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #6c757d;">
+                    {% else %}
+                        <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #6c757d;">
+                    {% endif %}
                 {% else %}
-                    <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                    {% if request.user.is_superuser %}
+                        <a href="{{ n.url }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                    {% else %}
+                        <a href="{{ n.url }}?from_notification={{ n.id }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #28a745;">
+                    {% endif %}
                 {% endif %}
             {% else %}
                 <a href="/notificaciones/detalle/{{ n.id }}/" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem;">

@@ -16,11 +16,11 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 <div class="container mt-4">
     <div class="card shadow">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-blue">
             <h5 class="mb-0">{{ notificacion.titulo }}</h5>
         </div>
         <div class="card-body">
-            <div class="mb-2"><strong>Mensaje:</strong><br><div style="white-space: pre-line; font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px;">{{ notificacion.mensaje }}</div></div>
+            <div class="mb-2"><strong>Mensaje:</strong><br><div style="white-space: pre-line; font-family: monospace; background: skyblue; padding: 10px; border-radius: 5px; margin-top: 5px;">{{ notificacion.mensaje }}</div></div>
             <p class="mb-2"><strong>Fecha:</strong> {{ notificacion.fecha_creacion|date:'d/m/Y H:i' }}</p>
             {% if request.user.is_superuser and todas_respuestas %}
                 <hr>
@@ -46,7 +46,9 @@ document.addEventListener('DOMContentLoaded', function(){
                     <p class="text-muted"><small>Fecha de respuesta: {{ respuesta_usuario.fecha_respuesta|date:'d/m/Y H:i' }}</small></p>
                 </div>
             {% else %}
-                <div class="alert alert-info">No has respondido esta notificación.</div>
+                {% if not request.user.is_superuser %}
+                    <div class="alert alert-info">No has respondido esta notificación.</div>
+                {% endif %}
             {% endif %}
         </div>
     </div>
