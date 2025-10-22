@@ -24,7 +24,7 @@
     <!-- Tema opcional (airbnb) para mejor visibilidad) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
     
-    <link rel="stylesheet" href="{% static 'css/base_custom.css' %}?v=20251006">
+    <link rel="stylesheet" href="{% static 'css/base_custom.css' %}?v=20251018">
     <link rel="stylesheet" href="{% static 'css/soma_custom.css' %}?v=20251016">
     {% block extra_css %}{% endblock %}
 </head>
@@ -417,6 +417,58 @@
             });
         });
     </script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle para filtros
+    const filterToggle = document.querySelector('.filter-toggle');
+    const filterPanel = document.getElementById('changelist-filter');
+    const filterOverlay = document.querySelector('.filter-overlay');
+    
+    if (filterToggle && filterPanel) {
+        // Crear overlay si no existe
+        if (!filterOverlay) {
+            const overlay = document.createElement('div');
+            overlay.className = 'filter-overlay';
+            document.body.appendChild(overlay);
+        }
+        
+        const overlay = document.querySelector('.filter-overlay');
+        
+        // Mostrar filtros
+        filterToggle.addEventListener('click', function() {
+            filterPanel.classList.add('filter-visible');
+            overlay.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        });
+        
+        // Ocultar filtros
+        function hideFilters() {
+            filterPanel.classList.remove('filter-visible');
+            overlay.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+        
+        // Ocultar al hacer clic en overlay
+        overlay.addEventListener('click', hideFilters);
+        
+        // Ocultar con Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && filterPanel.classList.contains('filter-visible')) {
+                hideFilters();
+            }
+        });
+    }
+    
+    // Si no hay filtros, ocultar el botón de toggle
+    const filterItems = document.querySelectorAll('#changelist-filter h3');
+    if (filterItems.length === 0) {
+        const filterToggle = document.querySelector('.filter-toggle');
+        if (filterToggle) {
+            filterToggle.style.display = 'none';
+        }
+    }
+});
+</script>
     
     {% block extra_js %}{% endblock %}
 </body>

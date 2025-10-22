@@ -3,37 +3,11 @@
 
 {% block extrastyle %}
     {{ block.super }}
-    <style>
-        /* Compactar formularios en admin (neutraliza estilo de tarjetas) */
-    .change-form-content { font-size: 1rem; padding: 0.75rem; box-shadow: none !important; }
-        .change-form-content .form-container { padding: 0.25rem; }
-        .fieldset { margin-bottom: 0.5rem; padding: 0.25rem 0; background: transparent !important; border: none !important; box-shadow: none !important; }
-        .fieldset h2 { font-size: 0.95rem; margin: 0 0 0.25rem; color: var(--soma-blue); border: none; padding: 0; }
-        .fieldset-description { margin: 0.25rem 0 0.5rem 0; }
-        .fieldset-fields { gap: 0.5rem !important; }
-        .fieldset-fields .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; align-items: start; padding: 0; border: none; }
-        .fieldset-fields .form-row-single { grid-template-columns: 1fr; }
-        .field-wrapper { margin: 0; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
-        .field-container { margin: 0; }
-    .field-input label { font-size: 0.9rem; margin-bottom: 0.1rem; font-weight: 600; }
-    .field-input input,
-    .related-widget-wrapper select { height: 2.1rem; padding: 0.25rem 0.5rem; font-size: 0.95rem; }
-    .field-input select { height: 2.1rem; padding: 0.25rem 0.5rem; font-size: 0.95rem; }
-    .field-input textarea { padding: 0.3rem 0.5rem; font-size: 0.95rem; min-height: 56px; line-height: 1.35; }
-    .readonly { padding: 0.35rem 0.5rem; background: #f8f9fa; border-radius: 0.25rem; font-size: 0.95rem; }
-        .field-help { margin-top: 0.15rem; font-size: 0.8rem; }
-        .submit-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 0.5rem 0.75rem; margin: 0.75rem 0 0 0; background: transparent; box-shadow: none; }
-        .submit-row input[type="submit"], .submit-row .deletelink { margin: 0; }
-
-        /* Neutralizar separación heredada del base */
-        .admin-main-content .change-form-content { padding: 1rem !important; }
-        .admin-main-content .fieldset { border-left: none !important; }
-        .admin-main-content .field-wrapper:hover { box-shadow: none !important; border-color: transparent !important; }
-        .admin-main-content .form-row { padding: 0 !important; border: none !important; }
-    </style>
+   
 {% endblock %}
 
 {% block content %}
+<!-- ⭐ MARCA VISIBLE: Template admin/empresas/contacto/change_form.html -->
     {% if messages %}
         <div class="container-fluid mt-2">
             {% for message in messages %}
