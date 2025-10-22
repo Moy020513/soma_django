@@ -2,71 +2,344 @@
 
 <!-- HTMX Response: Only return changelist content -->
 <div class="module{% if cl.has_filters %} filtered{% endif %}" id="changelist">
+  <style>
+    /* Barra superior con filtros modernos */
+    .filters-topbar {
+      display: flex;
+      align-items: stretch;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* Search wrapper */
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 500px;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-wrapper form {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .search-wrapper input[type='search'],
+    #searchbar, 
+    .searchbar {
+      width: 100%;
+      height: 44px !important;
+      border: 2px solid #e9ecef !important;
+      border-radius: 8px !important;
+      box-shadow: none !important;
+      font-size: 15px !important;
+      padding: 0 12px !important;
+      transition: all 0.2s ease;
+    }
+
+    .search-wrapper input[type='search']:focus,
+    #searchbar:focus,
+    .searchbar:focus {
+      border-color: var(--soma-orange) !important;
+      box-shadow: 0 0 0 4px rgba(243, 148, 62, 0.12) !important;
+      outline: none;
+    }
+
+    /* Botón de filtros moderno */
+    .filter-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      background: #f8f9fa;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #495057;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .filter-toggle-btn:hover {
+      background: #e9ecef;
+      border-color: #ced4da;
+    }
+
+    .filter-toggle-btn.active {
+      background: var(--soma-orange);
+      border-color: var(--soma-orange);
+      color: white;
+    }
+
+    .filter-toggle-btn .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      background: white;
+      color: var(--soma-orange);
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .filter-toggle-btn.active .badge {
+      background: rgba(255,255,255,0.3);
+      color: white;
+    }
+
+    /* Panel de filtros moderno */
+    .filters-panel {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100vh;
+      background: white;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+      z-index: 9999;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filters-panel.open {
+      right: 0;
+    }
+
+    .filters-panel-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 9998;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .filters-panel-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .filters-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e9ecef;
+      background: #f8f9fa;
+    }
+
+    .filters-panel-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #212529;
+    }
+
+    .filters-panel-close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: #6c757d;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 20px;
+    }
+
+    .filters-panel-close:hover {
+      background: #e9ecef;
+      color: #212529;
+    }
+
+    .filters-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    .filters-panel-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #e9ecef;
+      background: #f8f9fa;
+    }
+
+    .btn-clear-all-filters {
+      width: 100%;
+      padding: 0.75rem;
+      background: white;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      color: #495057;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-clear-all-filters:hover {
+      background: #f8f9fa;
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    /* Estilos de filtros individuales */
+    .filter-item {
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .filter-item h4 {
+      margin: 0 0 0.75rem 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-item ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .filter-item li {
+      margin-bottom: 0.5rem;
+    }
+
+    .filter-item a {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      color: #495057;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      font-size: 14px;
+    }
+
+    .filter-item a:hover {
+      background: #f8f9fa;
+      color: #212529;
+    }
+
+    .filter-item a.selected {
+      background: rgba(243, 148, 62, 0.1);
+      color: var(--soma-orange);
+      font-weight: 500;
+    }
+
+    .filter-item a.selected::before {
+      content: '✓';
+      margin-right: 0.5rem;
+      font-weight: bold;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .filters-panel {
+        width: 100%;
+        right: -100%;
+      }
+      
+      .filters-topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-wrapper {
+        max-width: 100%;
+      }
+    }
+
+    /* Animation */
+    @keyframes slideIn {
+      from { right: -400px; }
+      to { right: 0; }
+    }
+  </style>
+
   <div class="changelist-form-container">
-    <!-- Filtros arriba eliminados -->
-    <div class="d-flex align-items-center" style="margin-bottom: 1rem; gap: 1rem;">
-      <div style="flex:1; max-width: 500px;">
-        <style>
-          #searchbar, .searchbar, input[type='search'] {
-            border: 2px solid var(--soma-orange) !important;
-            box-shadow: 0 0 0 0.1rem rgba(243, 148, 62, 0.15);
-            height: 36px !important;
-            font-size: 16px !important;
-            padding-left: 40px !important;
-          }
-          .search-wrapper {
-            position: static;
-          }
-            #searchbar, .searchbar, input[type='search'] {
-              border: 2px solid var(--soma-orange) !important;
-              box-shadow: 0 0 0 0.1rem rgba(243, 148, 62, 0.15);
-              height: 36px !important;
-              font-size: 16px !important;
-              padding-left: 40px !important;
-            }
-        </style>
-        <div>
-          <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              var searchInput = document.querySelector('.searchbar, #searchbar, input[type="search"]');
-              if (searchInput) {
-                searchInput.setAttribute('placeholder', 'Buscar...');
-                searchInput.addEventListener('input', function() {
-                  if (this.value.length > 0) {
-                    this.setAttribute('placeholder', '');
-                  } else {
-                    this.setAttribute('placeholder', 'Buscar...');
-                  }
-                });
-              }
-            });
-          </script>
-          {% search_form cl %}
-        </div>
+    <!-- Barra superior moderna -->
+    <div class="filters-topbar">
+      <div class="search-wrapper">
+        {% search_form cl %}
       </div>
+      
       {% if cl.has_filters %}
-      <div id="changelist-filter" style="max-width: 300px;"
-        hx-boost="true"
-        hx-target="#changelist-results"
-        hx-select="#changelist-results, #changelist-filter"
-        hx-swap="outerHTML"
-        hx-push-url="true"
-        hx-swap-oob="true">
-        <details class="filters-collapse">
-          <summary>
-            <span><i class="fas fa-filter me-2"></i>Filtros</span>
-            {% if cl.has_active_filters %}
-              <a href="{{ cl.clear_all_filters_qs }}" class="btn-clear-filters ms-auto">&#10006; Limpiar</a>
-            {% endif %}
-          </summary>
-          <div class="filters-body">
-            {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+      <button type="button" class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilters()">
+        <i class="fas fa-sliders-h"></i>
+        <span>Filtros</span>
+        {% if cl.has_active_filters %}
+          <span class="badge">{{ cl.filter_specs|length }}</span>
+        {% endif %}
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- Overlay -->
+    <div class="filters-panel-overlay" id="filters-overlay" onclick="toggleFilters()"></div>
+
+    <!-- Panel lateral de filtros -->
+    {% if cl.has_filters %}
+    <div class="filters-panel" id="filters-panel"
+      hx-boost="true"
+      hx-target="#changelist-results"
+      hx-select="#changelist-results"
+      hx-swap="outerHTML"
+      hx-push-url="true">
+      
+      <div class="filters-panel-header">
+        <h3><i class="fas fa-filter me-2"></i>Filtros</h3>
+        <button type="button" class="filters-panel-close" onclick="toggleFilters()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="filters-panel-body">
+        {% for spec in cl.filter_specs %}
+          <div class="filter-item">
+            {% admin_list_filter cl spec %}
           </div>
-        </details>
+        {% endfor %}
+      </div>
+
+      {% if cl.has_active_filters %}
+      <div class="filters-panel-footer">
+        <a href="{{ cl.clear_all_filters_qs }}" class="btn-clear-all-filters">
+          <i class="fas fa-redo me-2"></i>Limpiar todos los filtros
+        </a>
       </div>
       {% endif %}
     </div>
-    <form id="changelist-form" method="post" novalidate>{% csrf_token %}
+    {% endif %}
+
+    <!-- Formulario y resultados -->
+    <form id="changelist-form" method="post" novalidate>
+      {% csrf_token %}
       <div id="changelist-results">
         {% result_list cl %}
         {% pagination cl %}
@@ -74,3 +347,47 @@
     </form>
   </div>
 </div>
+
+<script>
+  function toggleFilters() {
+    const panel = document.getElementById('filters-panel');
+    const overlay = document.getElementById('filters-overlay');
+    const btn = document.getElementById('filter-toggle-btn');
+    
+    panel.classList.toggle('open');
+    overlay.classList.toggle('open');
+    btn.classList.toggle('active');
+    
+    // Prevenir scroll del body cuando el panel está abierto
+    if (panel.classList.contains('open')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }
+
+  // Cerrar con tecla ESC
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const panel = document.getElementById('filters-panel');
+      if (panel && panel.classList.contains('open')) {
+        toggleFilters();
+      }
+    }
+  });
+
+  // Inicializar placeholder del search
+  document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.querySelector('.searchbar, #searchbar, input[type="search"]');
+    if (searchInput) {
+      searchInput.setAttribute('placeholder', 'Buscar...');
+      searchInput.addEventListener('input', function() {
+        if (this.value.length > 0) {
+          this.setAttribute('placeholder', '');
+        } else {
+          this.setAttribute('placeholder', 'Buscar...');
+        }
+      });
+    }
+  });
+</script>
