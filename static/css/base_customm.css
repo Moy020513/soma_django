@@ -579,3 +579,285 @@ body {
     opacity: 1 !important;
     visibility: visible !important;
 }
+
+
+/* ========================================
+   NAVEGACIÓN MÓVIL - RESPONSIVE
+   ======================================== */
+
+/* Header principal - Fixed top en móvil */
+@media (max-width: 768px) {
+    .main-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1030;
+        padding: 0.5rem 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Ajustar contenido principal para que no quede debajo del header fixed */
+    #mainContent {
+        padding-top: 70px;
+    }
+    
+    /* Container del header - Una sola fila */
+    .main-header > div {
+        padding: 0.5rem 0.5rem !important;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    /* Logo y marca - Compacto y pegado al hamburguesa */
+    .main-header .d-flex.align-items-center.px-4 {
+        padding: 0 !important;
+        flex-shrink: 1;
+        min-width: 0;
+    }
+    
+    .navbar-brand-custom {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    
+    .soma-logo-navbar {
+        height: 28px;
+        flex-shrink: 0;
+    }
+    
+    .brand-text-navbar {
+        display: flex !important;
+        flex-direction: column;
+        min-width: 0;
+    }
+    
+    .brand-name-navbar {
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .brand-subtitle-navbar {
+        font-size: 0.65rem;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Toolbar - Iconos en una sola fila horizontal */
+    .btn-toolbar {
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.3rem;
+        flex-shrink: 0;
+    }
+    
+    /* Botones de iconos - Todos iguales */
+    .btn-toolbar .btn,
+    .btn-toolbar .dropdown > button {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        position: relative;
+        flex-shrink: 0;
+        margin: 0 !important;
+    }
+    
+    /* Iconos tamaño apropiado */
+    .btn-toolbar .btn i,
+    .btn-toolbar .dropdown > button i {
+        font-size: 0.95rem;
+    }
+    
+    /* Badges de notificaciones */
+    .btn .badge,
+    .dropdown > button .badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        font-size: 0.6rem;
+    }
+    
+    /* Dropdown de perfil - Igual que los demás iconos */
+    .btn-toolbar .dropdown:last-child .btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 50%;
+    }
+    
+    /* Ocultar texto del usuario en móvil */
+    .btn-toolbar .dropdown:last-child .btn span {
+        display: none;
+    }
+    
+    .btn-toolbar .dropdown:last-child .btn i {
+        margin: 0;
+    }
+    
+    /* Dropdowns adaptados */
+    .dropdown-menu {
+        max-width: calc(100vw - 2rem) !important;
+        font-size: 0.9rem;
+    }
+    
+    #dropdownNotificacionesMenu {
+        min-width: 280px !important;
+        max-width: calc(100vw - 2rem) !important;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    /* Tooltips deshabilitados en móvil */
+    .tooltip {
+        display: none !important;
+    }
+    
+    /* Botón hamburguesa más pequeño */
+    .hamburger-btn {
+        width: 36px;
+        height: 36px;
+        top: 17px;
+        left: 10px;
+    }
+    
+    .hamburger-btn i {
+        font-size: 1.1rem;
+    }
+}
+
+/* ========================================
+   MÓVILES MUY PEQUEÑOS (< 360px)
+   ======================================== */
+@media (max-width: 359.98px) {
+    .main-header > div {
+        padding: 0.5rem 0.25rem !important;
+        gap: 0.25rem;
+    }
+    
+    .soma-logo-navbar {
+        height: 26px;
+    }
+    
+    .brand-name-navbar {
+        font-size: 0.75rem;
+    }
+    
+    .brand-subtitle-navbar {
+        font-size: 0.6rem;
+    }
+    
+    .btn-toolbar {
+        gap: 0.2rem;
+    }
+    
+    .btn-toolbar .btn,
+    .btn-toolbar .dropdown > button,
+    .btn-toolbar .dropdown:last-child .btn {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+    }
+    
+    .btn-toolbar .btn i,
+    .btn-toolbar .dropdown > button i {
+        font-size: 0.9rem;
+    }
+    
+    .hamburger-btn {
+        width: 34px;
+        height: 34px;
+        left: 8px;
+    }
+}
+
+/* ========================================
+   TABLETS (768px - 992px)
+   ======================================== */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .main-header > div {
+        padding: 0.5rem 1rem !important;
+    }
+    
+    .btn-toolbar {
+        gap: 0.4rem;
+    }
+    
+    .btn-toolbar .btn,
+    .btn-toolbar .dropdown > button {
+        width: 38px;
+        height: 38px;
+    }
+}
+
+/* ========================================
+   ESCRITORIO (> 992px)
+   ======================================== */
+@media (min-width: 992px) {
+    .main-header > div {
+        padding: 0.5rem 1.5rem !important;
+    }
+    
+    .btn-toolbar {
+        gap: 0.5rem;
+        padding: 0 !important;
+    }
+    
+    .btn-toolbar .btn,
+    .btn-toolbar .dropdown > button {
+        width: 40px;
+        height: 40px;
+    }
+    
+    /* Dropdown de perfil con texto */
+    .btn-toolbar .dropdown:last-child .btn {
+        width: auto;
+        border-radius: 20px;
+        padding: 0 0.75rem;
+        gap: 0.35rem;
+    }
+    
+    .btn-toolbar .dropdown:last-child .btn span {
+        display: inline;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+}
+
+/* ========================================
+   ESTILOS GENERALES
+   ======================================== */
+
+/* Animaciones suaves */
+.btn-toolbar .btn,
+.btn-toolbar .dropdown > button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus states para accesibilidad */
+.btn-toolbar .btn:focus,
+.btn-toolbar .dropdown > button:focus {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
