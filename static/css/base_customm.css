@@ -594,27 +594,35 @@ body {
         right: 0;
         z-index: 1030;
         padding: 0.5rem 0 !important;
+        padding-right: 2rem !important;
         margin: 0 !important;
     }
     
     /* Ajustar contenido principal para que no quede debajo del header fixed */
     #mainContent {
-        padding-top: 70px;
+        padding-top: 100px;
+        width: 100vw;
+        max-width: 100%;
+        margin: 0;
+        padding-left: 0;
+        padding-right: 0;
+        box-sizing: border-box;
     }
-    
     /* Container del header - Una sola fila */
     .main-header > div {
-        padding: 0.5rem 0.5rem !important;
+        padding: 0rem !important;
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.7rem;
+        
     }
     
     /* Logo y marca - Compacto y pegado al hamburguesa */
     .main-header .d-flex.align-items-center.px-4 {
         padding: 0 !important;
+        padding-top: 0.7rem !important;
         flex-shrink: 1;
         min-width: 0;
     }
@@ -626,19 +634,22 @@ body {
     }
     
     .soma-logo-navbar {
-        height: 28px;
+        height: 38px !important;
         flex-shrink: 0;
+        padding-right: 0rem;
+        padding-left: 0rem  !important;
     }
     
     .brand-text-navbar {
         display: flex !important;
         flex-direction: column;
         min-width: 0;
+        padding-left: 0rem !important;
     }
     
     .brand-name-navbar {
-        font-size: 0.8rem;
-        font-weight: 600;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
         line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
@@ -646,7 +657,7 @@ body {
     }
     
     .brand-subtitle-navbar {
-        font-size: 0.65rem;
+        font-size: 0.65rem !important;
         line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
@@ -655,6 +666,8 @@ body {
     
     /* Toolbar - Iconos en una sola fila horizontal */
     .btn-toolbar {
+        height: 50px !important;
+        width: auto !important;
         padding: 0 !important;
         margin: 0 !important;
         display: flex;
@@ -668,14 +681,14 @@ body {
     /* Botones de iconos - Todos iguales */
     .btn-toolbar .btn,
     .btn-toolbar .dropdown > button {
-        width: 36px;
-        height: 36px;
+        width: auto !important;
+        height: 36px !important;
         min-width: 36px;
         padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
+        border-radius: 30%;
         position: relative;
         flex-shrink: 0;
         margin: 0 !important;
@@ -684,7 +697,7 @@ body {
     /* Iconos tamaño apropiado */
     .btn-toolbar .btn i,
     .btn-toolbar .dropdown > button i {
-        font-size: 0.95rem;
+        font-size: 1.4rem;
     }
     
     /* Badges de notificaciones */
@@ -704,7 +717,7 @@ body {
         width: 36px;
         height: 36px;
         padding: 0;
-        border-radius: 50%;
+        border-radius: 40%;
     }
     
     /* Ocultar texto del usuario en móvil */
@@ -726,6 +739,8 @@ body {
         min-width: 280px !important;
         max-width: calc(100vw - 2rem) !important;
         max-height: 400px;
+        height: 400px !important;
+        width: auto !important;
         overflow-y: auto;
     }
     
@@ -740,6 +755,7 @@ body {
         height: 36px;
         top: 17px;
         left: 10px;
+        padding: 0rem;
     }
     
     .hamburger-btn i {
