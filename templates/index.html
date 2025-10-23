@@ -5,6 +5,45 @@
 {% block page_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
+<style>
+    /* Estilos específicos para la card de bienvenida */
+    .welcome-card {
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 6px 18px rgba(20,24,40,0.08);
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid rgba(15, 33, 80, 0.04);
+    }
+    .welcome-card .card-body { padding: 1rem; }
+    .welcome-row { display: flex; gap: 0.85rem; align-items: center; }
+    .welcome-avatar { flex: 0 0 64px; width:64px; height:64px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#ffd9b3,#ffc58f); color:#fff; font-weight:700; font-size:1.25rem; }
+    .welcome-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+    .welcome-content { flex:1 1 auto; min-width:0 }
+    .welcome-title { font-size:1.15rem; font-weight:700; margin:0; line-height:1.05 }
+    .welcome-sub { margin:0; color: #6c757d; font-size:0.9rem }
+    .welcome-meta { text-align:right; flex:0 0 150px; font-size:0.85rem; color:#6c757d }
+    @media (max-width:576px) {
+        .welcome-row { flex-direction:row; }
+        .welcome-meta { text-align:left; }
+    }
+    /* Full-bleed utility for mobile: hace que el elemento ocupe todo el ancho del viewport */
+    @media (max-width:576px) {
+        .full-bleed {
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            width: 100vw;
+            border-radius: 0 !important;
+        }
+        /* Ajuste interno para que el contenido no toque los bordes del viewport */
+        .full-bleed .card-body {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+    }
+</style>
 {% if es_admin %}
 
 <!-- Mostrar mensajes si los hay -->
@@ -20,10 +59,42 @@
 {# Mensaje de bienvenida simplificado #}
 <div class="row mt-0">
     <div class="col-12">
-        <div class="card user-info-card mb-3">
+        <div class="card user-info-card mb-3 welcome-card full-bleed">
             <div class="card-body py-3">
-                <h6 class="welcome-text mb-1">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
-                <p class="text-muted small mb-0">Tienes permisos de administrador en el sistema SOMA.</p>
+                <div class="welcome-row">
+                    <div class="welcome-avatar">
+                        {% if empleado and empleado.foto %}
+                            <img src="{{ empleado.foto.url }}" alt="Foto {{ empleado.nombre_completo }}">
+                        {% else %}
+                            {{ user.first_name|default:user.username|slice:":1"|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="welcome-content">
+                        <p class="welcome-title">
+                            {% if empleado and empleado.sexo %}
+                                {% if empleado.sexo|upper == 'F' %}
+                                    Bienvenida,
+                                {% elif empleado.sexo|upper == 'M' %}
+                                    Bienvenido,
+                                {% else %}
+                                    Bienvenid@,
+                                {% endif %}
+                            {% else %}
+                                Bienvenido,
+                            {% endif %}
+                            <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span>
+                        </p>
+                        <p class="welcome-sub mb-0">Tienes permisos de administrador en el sistema SOMA.</p>
+                    </div>
+                    <div class="welcome-meta d-none d-sm-block">
+                        {% if empleado %}
+                            <div><strong>#{{ empleado.numero_empleado }}</strong></div>
+                            <div>{{ empleado.puesto.nombre }}</div>
+                        {% else %}
+                            <div>{{ user.email }}</div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -32,12 +103,14 @@
 {# Asignaciones debajo del saludo #}
 <div class="row mt-0">
     <div class="col-12">
-        <div class="card mb-3">
+        <div class="card mb-3 full-bleed">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>Asignaciones de hoy</strong>
                 <div class="btn-group btn-group-sm">
                     <a href="{% url 'asignaciones:todas' %}" class="btn btn-outline-primary">Ver todas</a>
-                    <a href="{% url 'asignaciones:mias' %}" class="btn btn-outline-secondary">Mis asignaciones</a>
+                    {% if not user.is_staff %}
+                        <a href="{% url 'asignaciones:mias' %}" class="btn btn-outline-secondary">Mis asignaciones</a>
+                    {% endif %}
                     {% if user.is_staff %}
                         <a href="{% url 'asignaciones:exportar_hoy_pdf' %}" class="btn btn-outline-success" title="Exportar asignaciones de hoy a PDF">
                             <i class="fas fa-file-pdf"></i> PDF
@@ -134,10 +207,54 @@
 {% else %}
 {# Mensaje de bienvenida para usuario estándar #}
 <div class="row mt-0">
+    <style>
+        .welcome-card {
+            border: 2px solid rgba(15, 33, 80, 0.21);
+            box-shadow: 0 28px 24px rgba(20,24,40,0.12);
+            transition: box-shadow .15s ease-in-out;
+        }
+        .welcome-card:hover {
+            box-shadow: 0 12px 36px rgba(20,24,40,0.14);
+        }
+       
+    </style>
     <div class="col-12">
-        <div class="card user-info-card mb-3">
+        <div class="card user-info-card mb-3 welcome-card full-bleed">
             <div class="card-body py-3">
-                <h6 class="welcome-text mb-0">Bienvenido, <span style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</span></h6>
+                <div class="welcome-row">
+                    <div class="welcome-avatar">
+                        {% if empleado and empleado.foto %}
+                            <img src="{{ empleado.foto.url }}" alt="Foto {{ empleado.nombre_completo }}">
+                        {% else %}
+                            {{ user.first_name|default:user.username|slice:":1"|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="welcome-content">
+                        <p class="welcome-title">
+                            {% if empleado and empleado.sexo %}
+                                {% if empleado.sexo|upper == 'F' %}
+                                    Bienvenida,
+                                {% elif empleado.sexo|upper == 'M' %}
+                                    Bienvenido,
+                                {% else %}
+                                    Bienvenid@,
+                                {% endif %}
+                            {% else %}
+                                Bienvenido,
+                            {% endif %}
+                            <strong style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</strong>
+                        </p>
+                        <p class="welcome-sub mb-0">¡Que tengas un buen día!</p>
+                    </div>
+                    <div class="welcome-meta d-none d-sm-block">
+                        {% if empleado %}
+                            <div><strong>#{{ empleado.numero_empleado }}</strong></div>
+                            <div>{{ empleado.puesto.nombre }}</div>
+                        {% else %}
+                            <div>{{ user.email }}</div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -146,7 +263,7 @@
 {# Asignaciones debajo del saludo para usuario estándar #}
 <div class="row mt-0">
     <div class="col-12">
-        <div class="card mb-3">
+        <div class="card mb-3 full-bleed">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>Asignaciones de hoy</strong>
                 <div class="btn-group btn-group-sm">
