@@ -2,18 +2,32 @@
 {% load static %}
 {% load l10n %}
 
-{% block title %}Dashboard de Asistencia{% endblock %}
+{% block title %}Ubicaciones de Asistencia{% endblock %}
 
 {% block extra_css %}
 <style>
     .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border-radius: 15px;
         transition: transform 0.2s;
     }
     .stats-card:hover {
         transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    /* Colores específicos para cada card */
+    .stats-card-activos {
+        background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%);
+    }
+    .stats-card-entrada {
+        background: linear-gradient(135deg, #56AB2F 0%, #A8E063 100%);
+    }
+    .stats-card-salida {
+        background: linear-gradient(135deg, #F2994A 0%, #F2C94C 100%);
+    }
+    .stats-card-total {
+        background: linear-gradient(135deg, #B06AB3 0%, #4568DC 100%);
     }
     .stats-number {
         font-size: 2.5rem;
@@ -72,13 +86,11 @@
         margin-right: 5px;
         color: white !important;
     }
-    /* Entradas tab no activa (primer botón) */
     .nav-tabs .nav-item:first-child .nav-link:not(.active) {
         background-color: #28a745 !important;
         color: #fff !important;
         border-color: #28a745 !important;
     }
-    /* Salidas tab no activa (segundo botón) */
     .nav-tabs .nav-item:nth-child(2) .nav-link:not(.active) {
         background-color: #dc3545 !important;
         color: #fff !important;
@@ -88,6 +100,9 @@
         background-color: #007bff;
         color: white !important;
         border-color: #007bff;
+    }
+    .nav-tabs .nav-link:not(.active) {
+        color: #ff9800 !important;
     }
     .date-selector {
         background: white;
@@ -109,6 +124,173 @@
         top: 20px;
         z-index: 1000;
     }
+
+    /* ESTILOS PARA MÓVIL */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        /* Stats cards en una sola fila horizontal - ajustadas al contenido */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: nowrap;
+        }
+        
+        .stats-row .col-md-3 {
+            flex: 1 1 auto;
+            padding: 0;
+            min-width: 0;
+        }
+
+        .stats-card {
+            padding: 10px 8px !important;
+            margin: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stats-number {
+            font-size: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .stats-card > div:last-child {
+            font-size: 0.7rem;
+            line-height: 1.2;
+            margin-top: 3px;
+        }
+
+        /* Selector de fecha más compacto */
+        .date-selector {
+            padding: 15px;
+        }
+
+        .date-selector form {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .date-selector .form-control,
+        .date-selector .btn {
+            width: 100%;
+            margin: 0 !important;
+        }
+
+        /* Botones de acción */
+        .action-buttons {
+            position: static;
+            margin-bottom: 15px;
+        }
+
+        .action-buttons .btn {
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+
+        /* Botones sin entrada/salida más compactos */
+        .row.mb-4 .btn {
+            padding: 10px !important;
+            font-size: 0.9rem;
+        }
+
+        /* Tabs más compactos */
+        .nav-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav-tabs .nav-link {
+            white-space: nowrap;
+            font-size: 0.9rem;
+            padding: 10px 15px;
+        }
+
+        /* Tabla con scroll horizontal */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -10px;
+            padding: 0 10px;
+        }
+
+        .table-ubicaciones table {
+            min-width: 800px;
+        }
+
+        .table th,
+        .table td {
+            font-size: 0.85rem;
+            padding: 8px 5px;
+            white-space: nowrap;
+        }
+
+        .btn-map {
+            padding: 3px 6px;
+            font-size: 0.75rem;
+        }
+
+        /* Modal más pequeño */
+        .modal-dialog {
+            margin: 10px;
+        }
+
+        .modal-body iframe {
+            height: 300px;
+        }
+
+        /* Título más compacto */
+        h2 {
+            font-size: 1.3rem;
+        }
+
+        /* Ajustar alerta de info */
+        .alert {
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+    }
+
+    /* Para pantallas muy pequeñas */
+    @media (max-width: 576px) {
+        .stats-row {
+            gap: 3px;
+        }
+
+        .stats-card {
+            padding: 8px 5px !important;
+        }
+
+        .stats-number {
+            font-size: 1.3rem;
+        }
+
+        .stats-card > div:last-child {
+            font-size: 0.65rem;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+        }
+
+        .nav-tabs .nav-link {
+            font-size: 0.85rem;
+            padding: 8px 12px;
+        }
+
+        .table th,
+        .table td {
+            font-size: 0.75rem;
+            padding: 6px 4px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -119,7 +301,7 @@
         <div class="col-12">
             <h2 class="mb-3">
                 <i class="fas fa-map-marked-alt me-2"></i>
-                Dashboard de Asistencia - {{ fecha_consulta|date:"d/m/Y" }}
+                Ubicaciones de Asistencia de empleados- {{ fecha_consulta|date:"d/m/Y" }}
             </h2>
         </div>
     </div>
@@ -148,27 +330,27 @@
     </div>
 
     <!-- Estadísticas -->
-    <div class="row mb-4">
+    <div class="stats-row row mb-4">
         <div class="col-md-3">
-            <div class="card stats-card text-center p-3">
+            <div class="card stats-card stats-card-activos text-center p-3">
                 <div class="stats-number">{{ total_empleados_activos }}</div>
-                <div>Empleados Activos</div>
+                <div>Activos</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card stats-card text-center p-3">
+            <div class="card stats-card stats-card-entrada text-center p-3">
                 <div class="stats-number">{{ empleados_con_entrada }}</div>
                 <div>Con Entrada</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card stats-card text-center p-3">
+            <div class="card stats-card stats-card-salida text-center p-3">
                 <div class="stats-number">{{ empleados_con_salida }}</div>
                 <div>Con Salida</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card stats-card text-center p-3">
+            <div class="card stats-card stats-card-total text-center p-3">
                 <div class="stats-number">{{ total_registros }}</div>
                 <div>Total Registros</div>
             </div>
@@ -195,30 +377,19 @@
     <ul class="nav nav-tabs" id="registrosTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="entradas-tab" data-bs-toggle="tab" data-bs-target="#entradas" 
-                    type="button" role="tab" aria-controls="entradas" aria-selected="true"
-                    style="color: white;">
+                    type="button" role="tab" aria-controls="entradas" aria-selected="true">
                 <i class="fas fa-sign-in-alt me-2"></i>
                 Entradas ({{ registros_entrada.count }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="salidas-tab" data-bs-toggle="tab" data-bs-target="#salidas" 
-                    type="button" role="tab" aria-controls="salidas" aria-selected="false"
-                    style="color: #ff9800;">
+                    type="button" role="tab" aria-controls="salidas" aria-selected="false">
                 <i class="fas fa-sign-out-alt me-2"></i>
                 Salidas ({{ registros_salida.count }})
             </button>
         </li>
     </ul>
-    <style>
-        /* Letra anaranjada para tabs no activas */
-        .nav-tabs .nav-link:not(.active) {
-            color: #ff9800 !important;
-        }
-        .nav-tabs .nav-link.active {
-            color: #fff !important;
-        }
-    </style>
 
     <div class="tab-content" id="registrosTabsContent">
         <!-- Tab de Entradas -->
@@ -405,12 +576,10 @@
 let mapaModal = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar modal de Bootstrap
     const modalElement = document.getElementById('mapaModal');
     if (modalElement) {
         mapaModal = new bootstrap.Modal(modalElement);
         
-        // Limpiar iframe cuando se cierre el modal
         modalElement.addEventListener('hidden.bs.modal', function() {
             console.log('🧹 Limpiando mapa al cerrar modal');
             const iframe = document.getElementById('modalMapaIframe');
@@ -421,11 +590,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Función global para abrir el mapa
 window.verMapa = function(registroId, nombre, lat, lng, tipo, precision) {
     console.log('🗺️ Abriendo mapa para:', nombre, 'Coords:', lat, lng);
     
-    // Asegurarse de que el modal esté inicializado
     if (!mapaModal) {
         const modalElement = document.getElementById('mapaModal');
         if (modalElement) {
@@ -436,24 +603,19 @@ window.verMapa = function(registroId, nombre, lat, lng, tipo, precision) {
         }
     }
     
-    // Actualizar información del modal
     document.getElementById('modalEmpleadoNombre').textContent = nombre;
     document.getElementById('modalTipoRegistro').textContent = tipo;
     document.getElementById('modalCoordenadas').textContent = `${lat}, ${lng}`;
     document.getElementById('modalPrecision').textContent = precision ? `${precision}m` : 'N/A';
     document.getElementById('modalGoogleMapsLink').href = `https://www.google.com/maps?q=${lat},${lng}`;
     
-    // Actualizar iframe con OpenStreetMap
     const iframe = document.getElementById('modalMapaIframe');
-    // Usando OpenStreetMap con marcador
     const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.01},${lat-0.01},${lng+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lng}`;
     iframe.src = mapUrl;
     
-    // Mostrar el modal
     mapaModal.show();
 };
 
-// Función global para limpiar ubicaciones
 window.limpiarUbicaciones = function() {
     if (confirm('¿Estás seguro de que deseas eliminar TODAS las ubicaciones registradas?\n\nEsta acción no se puede deshacer.')) {
         fetch('{% url "ubicaciones:api_limpiar" %}', {
