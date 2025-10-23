@@ -6,7 +6,7 @@ from django.core.validators import RegexValidator
 class Empresa(models.Model):
     """Modelo para representar una empresa o corporativo"""
     
-    nombre = models.CharField(max_length=200, verbose_name="Nombre de la empresa")
+    nombre = models.CharField(max_length=200, verbose_name="Empresa")
     
     direccion = models.TextField(verbose_name="Dirección")
     logo = models.ImageField(upload_to='empresas/logos/', blank=True, null=True, verbose_name="Logo")

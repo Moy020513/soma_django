@@ -197,7 +197,7 @@ body {
 /* ===== BOTÓN AGREGAR REPOSICIONADO ===== */
 .object-tools {
     position: absolute !important;
-    top: 6rem !important; /* Posicionado debajo del header */
+    top: 6rem !important;
     right: 2rem !important;
     margin: 0 !important;
     z-index: 100 !important;
@@ -296,6 +296,7 @@ body {
     background: linear-gradient(45deg, var(--soma-orange-dark), var(--soma-orange)) !important;
     transform: translateX(2px) !important;
 }
+
 /* ===== TABLA ELEGANTE ===== */
 #result_list {
     width: 100% !important;
@@ -506,58 +507,248 @@ body {
     color: white !important;
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== RESPONSIVE MEJORADO ===== */
 @media (max-width: 768px) {
-    .change-list-header {
-        padding: 1rem !important;
-        margin: -1rem -1rem 1.5rem -1rem !important;
+    /* Eliminar márgenes laterales del body */
+    body {
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
+    /* Header ocupa todo el ancho */
+    .main-header {
+        margin: 0 0 1rem 0 !important;
+        padding: 1rem !important;
+        border-radius: 0 !important;
+    }
+    
+    .change-list-header {
+        padding: 1rem !important;
+        margin: 0 0 1rem 0 !important;
+        border-radius: 0 !important;
+    }
+    
+    .change-list-header h1 {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Botón agregar flotante en móvil */
     .object-tools {
-        position: static !important;
-        margin-bottom: 1rem !important;
+        position: fixed !important;
+        bottom: 1rem !important;
+        right: 1rem !important;
+        top: auto !important;
+        z-index: 1000 !important;
+        margin: 0 !important;
     }
     
     .object-tools li {
         display: block !important;
-        margin: 0.5rem 0 !important;
+        margin: 0 !important;
     }
     
+    .object-tools a {
+        padding: 0.75rem 1.25rem !important;
+        font-size: 0.85rem !important;
+        box-shadow: 0 4px 16px rgba(255, 107, 53, 0.5) !important;
+        border-radius: 50px !important;
+    }
+    
+    /* Contenedor principal sin padding */
+    #changelist {
+        padding: 0 0.5rem !important;
+    }
+    
+    /* Barra de herramientas compacta */
     #changelist .top-tools {
         flex-direction: column !important;
         align-items: stretch !important;
+        gap: 0.75rem !important;
+        padding: 0 0.5rem !important;
+        margin-bottom: 1rem !important;
     }
     
     .search-form {
         max-width: 100% !important;
+        width: 100% !important;
     }
     
-    #changelist-filter {
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) scale(0.9) !important;
-        width: 90% !important;
-        max-width: 400px !important;
-        z-index: 1000 !important;
+    .search-input-group {
+        border-radius: 8px !important;
     }
     
-    #changelist-filter.filter-visible {
-        transform: translate(-50%, -50%) scale(1) !important;
+    .search-input {
+        padding: 0.65rem 0.75rem !important;
+        font-size: 0.85rem !important;
     }
     
+    .search-btn {
+        padding: 0.65rem 1rem !important;
+        font-size: 0.85rem !important;
+    }
+    
+    /* Tabla compacta para móvil */
     #result_list {
+        font-size: 0.75rem !important;
+        border-radius: 8px !important;
+        margin: 0 !important;
+        display: block !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    
+    #result_list thead {
+        display: table-header-group !important;
+    }
+    
+    #result_list th {
+        padding: 0.6rem 0.4rem !important;
+        font-size: 0.7rem !important;
+        white-space: nowrap !important;
+        min-width: 80px !important;
+    }
+    
+    #result_list th:first-child {
+        border-radius: 8px 0 0 0 !important;
+    }
+    
+    #result_list th:last-child {
+        border-radius: 0 8px 0 0 !important;
+    }
+    
+    #result_list td {
+        padding: 0.6rem 0.4rem !important;
+        font-size: 0.75rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 150px !important;
+    }
+    
+    #result_list tbody tr:hover {
+        transform: none !important;
+    }
+    
+    /* Acciones compactas */
+    .actions {
+        padding: 0.75rem !important;
+        margin: 0.75rem 0.5rem !important;
+        border-radius: 8px !important;
+        gap: 0.5rem !important;
+    }
+    
+    .actions label {
+        font-size: 0.8rem !important;
+        width: 100% !important;
+    }
+    
+    .actions select {
+        width: 100% !important;
+        padding: 0.5rem !important;
         font-size: 0.8rem !important;
     }
     
-    #result_list th,
-    #result_list td {
-        padding: 0.75rem 0.5rem !important;
+    .actions button {
+        width: 100% !important;
+        padding: 0.6rem 1rem !important;
+        font-size: 0.8rem !important;
     }
     
-    .actions {
+    /* Paginación compacta */
+    .paginator {
+        margin-top: 1rem !important;
+        gap: 0.35rem !important;
+        padding: 0 0.5rem 4rem 0.5rem !important;
+    }
+    
+    .paginator a,
+    .paginator span {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.75rem !important;
+        min-width: 35px !important;
+        border-radius: 6px !important;
+    }
+    
+    .paginator-info {
+        font-size: 0.75rem !important;
+        text-align: center !important;
+        width: 100% !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Formularios ocupan todo el ancho */
+    .change-form-content {
+        padding: 0.5rem !important;
+        margin: 0 !important;
+    }
+    
+    .change-form-content .form-container {
+        padding: 0 !important;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+    
+    .field-input input,
+    .field-input select,
+    .field-input textarea {
+        font-size: 0.85rem !important;
+    }
+    
+    .field-input label {
+        font-size: 0.8rem !important;
+    }
+    
+    .fieldset {
+        margin-bottom: 0.5rem !important;
+        padding: 0.5rem !important;
+    }
+    
+    .fieldset h2 {
+        font-size: 0.95rem !important;
+    }
+    
+    .submit-row {
         flex-direction: column !important;
-        align-items: stretch !important;
+        gap: 0.5rem !important;
+        padding: 0.75rem 0 !important;
+        margin-top: 0.75rem !important;
+    }
+    
+    .submit-row input[type="submit"],
+    .submit-row a {
+        width: 100% !important;
+        text-align: center !important;
+        padding: 0.65rem 1rem !important;
+        font-size: 0.85rem !important;
+    }
+    
+    /* Badges más pequeños */
+    .badge {
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.7rem !important;
+    }
+    
+    /* Filtros para móvil */
+    #changelist-filter {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
+        width: 85% !important;
+        max-width: 320px !important;
+        height: 100vh !important;
+        background: white !important;
+        box-shadow: -4px 0 12px rgba(0,0,0,0.2) !important;
+        z-index: 1001 !important;
+        overflow-y: auto !important;
+        transition: right 0.3s ease !important;
+        padding: 1rem !important;
+    }
+    
+    #changelist-filter.filter-visible {
+        right: 0 !important;
     }
 }
 
@@ -580,6 +771,28 @@ body {
     visibility: visible !important;
 }
 
+/* Ajustes adicionales para tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .change-list-header {
+        padding: 1.25rem 1.5rem !important;
+        margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
+    }
+    
+    #changelist {
+        padding: 0 1rem !important;
+    }
+    
+    .object-tools {
+        top: 5.5rem !important;
+        right: 1.5rem !important;
+    }
+    
+    #result_list th,
+    #result_list td {
+        padding: 0.75rem 0.6rem !important;
+        font-size: 0.85rem !important;
+    }
+}
 
 /* ========================================
    NAVEGACIÓN MÓVIL - RESPONSIVE
