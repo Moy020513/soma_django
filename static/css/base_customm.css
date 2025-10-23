@@ -238,6 +238,26 @@ body {
     font-size: 1.1rem !important;
 }
 
+/* Ocultar columna de selección (checkboxes) en todos los changelists — GLOBAL */
+#changelist thead th.action-checkbox-column,
+#changelist tbody td.action-checkbox,
+#changelist tbody td input.action-select,
+#action-toggle,
+#changelist input.action-select {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+}
+
+/* Si queda una primera columna vacía, ajustarla */
+#result_list th:first-child,
+#result_list td:first-child {
+    min-width: 60px !important;
+}
+
 /* Mobile: colocar el botón 'Agregar' arriba del encabezado y desactivar positioning absoluto */
 @media (max-width: 768px) {
     .changelist-header {
@@ -684,6 +704,26 @@ body {
         overflow: hidden !important;
         text-overflow: ellipsis !important;
         max-width: 150px !important;
+    }
+
+    /* Ocultar columna de selección (checkboxes) en todos los changelists */
+    #changelist table thead th.action-checkbox-column,
+    #changelist table tbody td.action-checkbox,
+    #changelist table tbody td input.action-select,
+    #changelist thead th input#action-toggle,
+    #changelist .action-checkbox {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+
+    /* Ajustar ancho de la primera columna si existía espacio para checkbox */
+    #result_list th:first-child,
+    #result_list td:first-child {
+        min-width: 60px !important;
     }
     
     #result_list tbody tr:hover {

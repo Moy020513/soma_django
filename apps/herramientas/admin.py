@@ -7,7 +7,7 @@ class HerramientaAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'categoria', 'marca', 'codigo', 'estado']
     list_filter = ['categoria', 'estado']
     search_fields = ['nombre', 'marca', 'codigo']
-    list_editable = ['estado']
+    # list_editable removed: do not allow inline edits from changelist
 
     fieldsets = (
         ('Información Básica', {

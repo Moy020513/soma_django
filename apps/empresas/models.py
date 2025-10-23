@@ -10,7 +10,7 @@ class Empresa(models.Model):
     
     direccion = models.TextField(verbose_name="Dirección")
     logo = models.ImageField(upload_to='empresas/logos/', blank=True, null=True, verbose_name="Logo")
-    activa = models.BooleanField(default=True, verbose_name="Empresa activa")
+    activa = models.BooleanField(default=True, verbose_name="ACTIVA")
     
     class Meta:
         verbose_name = "Empresa"

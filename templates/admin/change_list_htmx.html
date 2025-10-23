@@ -347,6 +347,18 @@
     <!-- Formulario y resultados -->
     <form id="changelist-form" method="post" novalidate>
       {% csrf_token %}
+      <div class="changelist-summary mb-2 d-flex justify-content-between align-items-center">
+        <div class="result-count small text-muted">
+          {% if show_result_count %}
+            {% blocktranslate count counter=cl.result_count %}{{ counter }} result{% plural %}{{ counter }} results{% endblocktranslate %}
+          {% else %}
+            {{ cl.result_count }} resultados
+          {% endif %}
+        </div>
+        <div class="result-actions">
+          <!-- placeholder para acciones adicionales si se necesitan -->
+        </div>
+      </div>
       <div id="changelist-results">
         {% result_list cl %}
         {% pagination cl %}

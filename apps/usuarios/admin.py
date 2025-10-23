@@ -45,7 +45,7 @@ class UsuarioAdmin(UserAdmin):
     def staff_display(self, obj):
         if obj.is_staff:
             return format_html('<span class="badge badge-info">Sí</span>')
-        return format_html('<span class="badge badge-secondary">No</span>')
+        return format_html('<span class="badge badge-danger">No</span>')
     staff_display.short_description = 'Staff'
     staff_display.admin_order_field = 'is_staff'
 

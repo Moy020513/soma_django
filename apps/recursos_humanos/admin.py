@@ -81,7 +81,7 @@ class PuestoAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'salario_minimo', 'salario_maximo', 'activo', 'fecha_creacion']
     list_filter = ['activo', 'fecha_creacion']
     search_fields = ['nombre', 'descripcion']
-    list_editable = ['activo']
+    # list_editable removed: do not allow inline edits from changelist
     readonly_fields = ['fecha_creacion']
 
 
@@ -122,7 +122,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
     list_filter = ['puesto', 'activo', 'fecha_ingreso', 'fecha_nacimiento']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
-    list_editable = ['activo']
+    # list_editable removed: do not allow inline edits from changelist
     inlines = [UltimoPeriodoEstatusInline]
     fieldsets = (
         ('Información del Usuario', {

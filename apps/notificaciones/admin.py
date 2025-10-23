@@ -68,7 +68,7 @@ class NotificacionAdmin(admin.ModelAdmin):
     list_filter = ['tipo', 'leida', 'fecha_creacion']
     search_fields = ['titulo', 'mensaje', 'usuario__email', 'usuario__first_name', 'usuario__last_name']
     readonly_fields = ['fecha_creacion']
-    list_editable = ['leida']
+    # list_editable removed: do not allow inline edits from changelist
     date_hierarchy = 'fecha_creacion'
     
     # En el formulario no se muestran 'leida', 'url' ni 'fecha_creacion'

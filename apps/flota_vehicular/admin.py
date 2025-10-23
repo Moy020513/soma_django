@@ -10,7 +10,7 @@ class VehiculoAdmin(admin.ModelAdmin):
     list_display = ['placas', 'marca', 'modelo', 'año', 'tipo', 'estado', 'kilometraje_actual']
     list_filter = ['marca', 'tipo', 'estado', 'año']
     search_fields = ['placas', 'marca', 'modelo', 'numero_serie']
-    list_editable = ['estado']
+    # list_editable removed: do not allow inline edits from changelist
     
     fieldsets = (
         ('Información Básica', {
@@ -146,7 +146,7 @@ class TenenciaVehicularAdmin(admin.ModelAdmin):
     list_filter = ['estado', 'año_fiscal', 'fecha_vencimiento']
     search_fields = ['vehiculo__placas', 'vehiculo__marca']
     date_hierarchy = 'fecha_vencimiento'
-    list_editable = ['estado']
+    # list_editable removed: do not allow inline edits from changelist
     fieldsets = (
         ('Información Básica', {
             'fields': ('vehiculo', 'año_fiscal', 'estado')
@@ -180,7 +180,7 @@ class VerificacionVehicularAdmin(admin.ModelAdmin):
     list_filter = ['tipo_verificacion', 'estado', 'fecha_verificacion']
     search_fields = ['vehiculo__placas', 'vehiculo__marca']
     date_hierarchy = 'fecha_verificacion'
-    list_editable = ['estado']
+    # list_editable removed: do not allow inline edits from changelist
     fieldsets = (
         ('Información Básica', {
             'fields': ('vehiculo', 'tipo_verificacion', 'estado')

@@ -131,7 +131,7 @@ class Empleado(models.Model):
     
     # Información personal
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name='empleado')
-    numero_empleado = models.CharField(max_length=20, unique=True, verbose_name="Número de empleado")
+    numero_empleado = models.CharField(max_length=20, unique=True, verbose_name="NO. empleado")
     curp = models.CharField(
         max_length=18,
         unique=True,
@@ -168,7 +168,7 @@ class Empleado(models.Model):
     foto = models.ImageField(upload_to='empleados/fotos/', blank=True, null=True, verbose_name="Fotografía")
     
     # Estado
-    activo = models.BooleanField(default=True, verbose_name="Empleado activo")
+    activo = models.BooleanField(default=True, verbose_name="ACTIVO")
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
     fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
     

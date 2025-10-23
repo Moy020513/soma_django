@@ -32,7 +32,7 @@ class EmpresaAdmin(admin.ModelAdmin):
     # la tabla de Contactos y problemas con el ManagementForm.
     list_filter = ['activa']
     search_fields = ['nombre']
-    list_editable = ['activa']
+    # list_editable removed: do not allow inline edits from changelist
     
     fieldsets = (
         ('Información Básica', {
