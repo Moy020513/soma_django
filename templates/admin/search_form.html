@@ -1,6 +1,22 @@
 {% load i18n static %}
 {% if cl.search_fields %}
 <div id="toolbar">
+<style>
+/* Anula la lupa que algunos CSS del admin añaden como background-image al input de búsqueda. */
+#toolbar form #searchbar,
+#toolbar #searchbar,
+form#changelist-search #searchbar,
+.search-wrapper input[type="search"],
+.search-wrapper #searchbar {
+    background: none !important;
+    background-image: none !important;
+    /* Asegurar padding razonable si los estilos previos movían el input por la imagen */
+    padding-left: 0.75rem !important;
+}
+
+/* Regla defensiva: ocultar cualquier img residual dentro del label */
+label[for="searchbar"] img { display: none !important; }
+</style>
 <form id="changelist-search"
       method="get"
       hx-get=""
@@ -12,7 +28,10 @@
       hx-indicator="#search-indicator"
       hx-push-url="true">
 <div><!-- DIV needed for valid HTML -->
-<label for="searchbar"><img src="{% static "admin/img/search.svg" %}" alt="Search"></label>
+<!-- Removed the visual search SVG to avoid duplicate/overlapping magnifier icons across changelists.
+    Keep an accessible label for screen readers instead. Bootstrap's .visually-hidden class
+    will hide this visually while preserving accessibility. -->
+<label for="searchbar" class="visually-hidden">{% translate 'Search' %}</label>
 <input type="text" size="40" name="{{ search_var }}" value="{{ cl.query }}" id="searchbar"{% if cl.search_help_text %} aria-describedby="searchbar_helptext"{% endif %}>
 <input type="submit" value="{% translate 'Search' %}" style="display: none;">
 <span id="search-indicator" class="htmx-indicator" style="display: none;">
