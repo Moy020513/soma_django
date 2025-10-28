@@ -47,6 +47,11 @@ class RegistroUbicacion(models.Model):
         default=timezone.now,
         verbose_name="Fecha y hora"
     )
+    # Fecha (día) extraída de `timestamp` para permitir constraints por día
+    fecha = models.DateField(
+        editable=False,
+        verbose_name="Fecha"
+    )
     fecha_creacion = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Fecha de creación"
@@ -60,6 +65,11 @@ class RegistroUbicacion(models.Model):
         indexes = [
             models.Index(fields=['empleado', 'tipo', 'timestamp']),
             models.Index(fields=['timestamp']),
+            models.Index(fields=['fecha']),
+        ]
+        constraints = [
+            # A nivel de base de datos, asegurar único por (empleado, tipo, fecha)
+            models.UniqueConstraint(fields=['empleado', 'tipo', 'fecha'], name='unique_registro_per_day'),
         ]
     
     def __str__(self):
@@ -83,7 +93,7 @@ class RegistroUbicacion(models.Model):
         return cls.objects.filter(
             empleado=empleado,
             tipo=tipo,
-            timestamp__date=hoy
+            fecha=hoy
         ).exists()
     
     @classmethod
@@ -91,7 +101,7 @@ class RegistroUbicacion(models.Model):
         """Obtiene todos los registros de un día específico"""
         if fecha is None:
             fecha = timezone.now().date()
-        return cls.objects.filter(timestamp__date=fecha)
+        return cls.objects.filter(fecha=fecha)
     
     @classmethod
     def empleados_registrados_hoy(cls, tipo):
@@ -99,7 +109,7 @@ class RegistroUbicacion(models.Model):
         hoy = timezone.now().date()
         empleados_ids = cls.objects.filter(
             tipo=tipo,
-            timestamp__date=hoy
+            fecha=hoy
         ).values_list('empleado_id', flat=True)
         return Empleado.objects.filter(id__in=empleados_ids, activo=True)
     
@@ -110,3 +120,13 @@ class RegistroUbicacion(models.Model):
         return Empleado.objects.filter(activo=True).exclude(
             id__in=empleados_registrados.values_list('id', flat=True)
         )
+
+    def save(self, *args, **kwargs):
+        """Asegurarse de tener el campo `fecha` consistente con `timestamp` antes de guardar."""
+        # Extraer la fecha desde el timestamp (UTC-aware)
+        if self.timestamp:
+            # timestamp puede tener timezone; usar .date() es suficiente para el propósito
+            self.fecha = self.timestamp.date()
+        else:
+            self.fecha = timezone.now().date()
+        super().save(*args, **kwargs)

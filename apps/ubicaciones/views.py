@@ -45,10 +45,10 @@ class RegistrarUbicacionView(EmpleadoRequiredMixin, TemplateView):
         ya_registro_entrada = RegistroUbicacion.ya_registro_hoy(empleado, 'entrada')
         ya_registro_salida = RegistroUbicacion.ya_registro_hoy(empleado, 'salida')
         
-        # Obtener registros de hoy
+        # Obtener registros de hoy (usando el campo `fecha` para consistencia)
         registros_hoy = RegistroUbicacion.objects.filter(
             empleado=empleado,
-            timestamp__date=hoy
+            fecha=hoy
         ).order_by('timestamp')
         
         # Obtener registros recientes (últimos 5)

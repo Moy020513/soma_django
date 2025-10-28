@@ -11,7 +11,7 @@ from django.utils import timezone
 
 print(f'Total de registros: {RegistroUbicacion.objects.count()}')
 hoy = timezone.now().date()
-registros_hoy = RegistroUbicacion.objects.filter(timestamp__date=hoy)
+registros_hoy = RegistroUbicacion.objects.filter(fecha=hoy)
 print(f'Registros de hoy ({hoy}): {registros_hoy.count()}')
 
 if registros_hoy.exists():
