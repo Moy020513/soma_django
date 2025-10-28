@@ -15,6 +15,28 @@ def populate_fecha(apps, schema_editor):
             r.save(update_fields=['fecha'])
 
 
+def deduplicate_registros_por_dia(apps, schema_editor):
+    """Eliminar registros duplicados por (empleado, tipo, fecha).
+
+    Mantener el registro con el menor `timestamp` (primero del día) y eliminar los demás.
+    """
+    Registro = apps.get_model('ubicaciones', 'RegistroUbicacion')
+    # Recorremos ordenados para conservar el primero por grupo
+    seen = set()
+    ids_para_eliminar = []
+    qs = Registro.objects.all().order_by('empleado_id', 'tipo', 'fecha', 'timestamp')
+    for r in qs.iterator():
+        key = (r.empleado_id, r.tipo, r.fecha)
+        if key in seen:
+            ids_para_eliminar.append(r.id)
+        else:
+            seen.add(key)
+
+    if ids_para_eliminar:
+        # Eliminación en batch
+        Registro.objects.filter(id__in=ids_para_eliminar).delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -28,6 +50,8 @@ class Migration(migrations.Migration):
             field=models.DateField(editable=False, null=True, verbose_name='Fecha'),
         ),
         migrations.RunPython(populate_fecha, reverse_code=migrations.RunPython.noop),
+        # Limpiar duplicados antes de forzar null=False y crear la constraint única
+        migrations.RunPython(deduplicate_registros_por_dia, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
             model_name='registroubicacion',
             name='fecha',
