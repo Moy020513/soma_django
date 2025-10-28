@@ -123,10 +123,15 @@ class RegistroUbicacion(models.Model):
 
     def save(self, *args, **kwargs):
         """Asegurarse de tener el campo `fecha` consistente con `timestamp` antes de guardar."""
-        # Extraer la fecha desde el timestamp (UTC-aware)
+        # Extraer la fecha desde el timestamp usando la hora local configurada
+        # Esto evita que registros cerca de la medianoche queden asignados al día erróneo
         if self.timestamp:
-            # timestamp puede tener timezone; usar .date() es suficiente para el propósito
-            self.fecha = self.timestamp.date()
+            try:
+                # Usa timezone.localtime para convertir a la zona horaria activa en settings
+                self.fecha = timezone.localtime(self.timestamp).date()
+            except Exception:
+                # Fallback simple
+                self.fecha = self.timestamp.date()
         else:
-            self.fecha = timezone.now().date()
+            self.fecha = timezone.localtime(timezone.now()).date()
         super().save(*args, **kwargs)
