@@ -25,6 +25,7 @@ ENV/
 Thumbs.db
 
 # Static files
+/staticfiles/
 .gitignore
 
 Dockerfile
