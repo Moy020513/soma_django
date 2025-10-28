@@ -92,16 +92,23 @@ class RegistrarUbicacionAPIView(EmpleadoRequiredMixin, View):
             for field in required_fields:
                 if field not in data or not data[field]:
                     return JsonResponse({
-                        'success': False, 
-                        'error': f'Campo requerido: {field}'
+                        'success': False,
+                        'message': f'Campo requerido: {field}'
                     }, status=400)
             
             # Verificar que no exista registro del mismo tipo hoy
             if RegistroUbicacion.ya_registro_hoy(empleado, data['tipo']):
                 return JsonResponse({
                     'success': False,
-                    'error': f'Ya registraste {data["tipo"]} para hoy. Solo se permite un registro por día.'
+                    'message': f'Ya registraste {data["tipo"]} para hoy. Solo se permite un registro por día.'
                 })
+
+            # Si se intenta registrar una 'salida' sin haber registrado 'entrada' hoy, bloquear
+            if data['tipo'] == 'salida' and not RegistroUbicacion.ya_registro_hoy(empleado, 'entrada'):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'No puedes registrar salida antes de haber registrado la entrada hoy.'
+                }, status=400)
             
             # Crear el registro
             precision_value = data.get('precision')
@@ -129,17 +136,17 @@ class RegistrarUbicacionAPIView(EmpleadoRequiredMixin, View):
         except json.JSONDecodeError:
             return JsonResponse({
                 'success': False,
-                'error': 'Datos JSON inválidos'
+                'message': 'Datos JSON inválidos'
             }, status=400)
         except IntegrityError:
             return JsonResponse({
                 'success': False,
-                'error': 'Ya existe un registro del mismo tipo para hoy'
+                'message': 'Ya existe un registro del mismo tipo para hoy'
             }, status=400)
         except Exception as e:
             return JsonResponse({
                 'success': False,
-                'error': f'Error interno: {str(e)}'
+                'message': f'Error interno: {str(e)}'
             }, status=500)
 
 

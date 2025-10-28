@@ -54,6 +54,30 @@
     #mapContainer.show {
         opacity: 1;
     }
+    /* Modal de confirmación personalizado (diseño simple, sin dependencias) */
+    .custom-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+    }
+    .custom-modal.hidden { display: none; }
+    .custom-modal .modal-card {
+        background: #fff;
+        border-radius: 12px;
+        max-width: 520px;
+        width: 100%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        padding: 20px;
+        border: 1px solid #e9ecef;
+    }
+    .custom-modal .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .custom-modal .modal-body { color: #333; margin-bottom: 16px; }
+    .custom-modal .modal-actions { display:flex; gap: 8px; justify-content: flex-end; }
 </style>
 {% endblock %}
 
@@ -135,6 +159,12 @@
                                     <i class="fas fa-map-marker-alt"></i>
                                     Ver
                                 </button>
+                                        <a class="btn btn-outline-success btn-sm ml-2" 
+                                           href="https://www.google.com/maps?q={{ registro.latitud|unlocalize }},{{ registro.longitud|unlocalize }}" 
+                                           target="_blank" rel="noopener noreferrer">
+                                            <i class="fas fa-external-link-alt"></i>
+                                            Google Maps
+                                        </a>
                             </div>
                         </div>
                         {% endfor %}
@@ -151,6 +181,25 @@
 
     <!-- Contenedor para mostrar información del mapa -->
     <div id="mapContainer" style="display: block;"></div>
+
+    <!-- Modal de confirmación personalizado -->
+    <div id="confirmModal" class="custom-modal hidden" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+            <div class="d-flex align-items-start">
+                <div style="flex:1">
+                    <div id="confirmModalTitle" class="modal-title">¿Estás seguro?</div>
+                    <div id="confirmModalBody" class="modal-body">¿Deseas confirmar el registro?</div>
+                </div>
+                <div style="margin-left:12px">
+                    <button id="confirmCloseX" class="btn btn-light btn-sm" title="Cerrar">×</button>
+                </div>
+            </div>
+            <div class="modal-actions mt-2">
+                <button id="cancelRegisterBtn" class="btn btn-secondary">Cancelar</button>
+                <button id="confirmRegisterBtn" class="btn btn-primary">Sí, confirmar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -302,6 +351,43 @@ function createMap(lat, lng, accuracy, timestamp, tipo) {
                         </small>
                     </div>
                 `).openPopup();
+            
+            // Control personalizado para recentrar en la ubicación inicial (estilo bottomright circular)
+            (function() {
+                const initialZoom = map.getZoom() || 16;
+                const RecenterControl = L.Control.extend({
+                    options: { position: 'bottomright' },
+                    onAdd: function(map) {
+                        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                        // Estilos para botón circular moderno
+                        container.style.background = '#fff';
+                        container.style.width = '44px';
+                        container.style.height = '44px';
+                        container.style.display = 'flex';
+                        container.style.alignItems = 'center';
+                        container.style.justifyContent = 'center';
+                        container.style.cursor = 'pointer';
+                        container.style.borderRadius = '50%';
+                        container.style.boxShadow = '0 6px 18px rgba(0,0,0,0.18)';
+                        container.style.border = '1px solid rgba(0,0,0,0.08)';
+                        container.style.margin = '8px';
+                        container.title = 'Centrar en la ubicación';
+                        container.innerHTML = '<i class="fas fa-location-arrow" style="color:#1e7e34; transform: rotate(45deg);"></i>';
+                        L.DomEvent.disableClickPropagation(container);
+                        L.DomEvent.on(container, 'click', function(e) {
+                            // Volver a la vista inicial con animación
+                            map.flyTo([lat, lng], initialZoom);
+                        });
+
+                        // Efecto hover
+                        container.onmouseover = function() { container.style.boxShadow = '0 8px 22px rgba(0,0,0,0.22)'; };
+                        container.onmouseout = function() { container.style.boxShadow = '0 6px 18px rgba(0,0,0,0.18)'; };
+
+                        return container;
+                    }
+                });
+                map.addControl(new RecenterControl());
+            })();
                 
         } catch (error) {
             console.error('❌ Error al crear mapa:', error);
@@ -379,10 +465,47 @@ function mostrarInfoSinMapa(lat, lng, accuracy, timestamp, tipo) {
     }
 }
 
-// Función para confirmar y realizar el registro
+// Función para abrir el modal de confirmación y luego proceder
 function confirmarRegistro(tipo) {
-    console.log('🎯 Confirmando registro de', tipo);
-    
+    showConfirmModal(tipo);
+}
+
+function showConfirmModal(tipo) {
+    const modal = document.getElementById('confirmModal');
+    const modalBody = document.getElementById('confirmModalBody');
+    const confirmBtn = document.getElementById('confirmRegisterBtn');
+    const cancelBtn = document.getElementById('cancelRegisterBtn');
+    const closeX = document.getElementById('confirmCloseX');
+
+    modalBody.textContent = `¿Estás seguro que deseas registrar ${tipo.toUpperCase()}?`;
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    // Limpiar handlers anteriores por seguridad
+    confirmBtn.onclick = null;
+    cancelBtn.onclick = null;
+    closeX.onclick = null;
+
+    confirmBtn.onclick = function() {
+        hideConfirmModal();
+        // después de confirmar, iniciar la obtención de geolocalización y enviar
+        startGeolocationAndSend(tipo);
+    };
+
+    const cancelar = function() {
+        hideConfirmModal();
+    };
+    cancelBtn.onclick = cancelar;
+    closeX.onclick = cancelar;
+}
+
+function hideConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+function startGeolocationAndSend(tipo) {
     if (!navigator.geolocation) {
         alert('❌ Tu navegador no soporta geolocalización');
         return;
@@ -391,7 +514,7 @@ function confirmarRegistro(tipo) {
     const btnEntrada = document.getElementById('btnRegistrarEntrada');
     const btnSalida = document.getElementById('btnRegistrarSalida');
     const ubicacionInfo = document.getElementById('ubicacionInfo');
-    
+
     // Deshabilitar botones mientras se procesa
     btnEntrada.disabled = true;
     btnSalida.disabled = true;
@@ -573,6 +696,16 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSalida.disabled = true;
         btnSalida.innerHTML = '<i class="fas fa-check"></i><strong>SALIDA REGISTRADA</strong><small class="d-block">Ya registrado hoy</small>';
         btnSalida.className = 'btn btn-danger btn-lg btn-block mb-3 disabled';
+    }
+    {% endif %}
+
+    // Si aún no hay entrada registrada hoy, deshabilitar el botón de salida
+    {% if not ya_registro_entrada %}
+    if (btnSalida) {
+        btnSalida.disabled = true;
+        btnSalida.title = 'Debes registrar entrada antes de registrar salida';
+        // Mantener estilo de botón pero indicar que se requiere entrada
+        btnSalida.classList.add('disabled');
     }
     {% endif %}
 });
