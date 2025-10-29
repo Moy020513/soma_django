@@ -761,6 +761,29 @@ body {
         width: auto !important;
         overflow-y: auto;
     }
+
+    /* Hacer tablas (ej. notificaciones) adaptativas en móvil: ocupar 100% y permitir scroll horizontal */
+    .notifications-table,
+    .table-responsive,
+    #result_list,
+    #result_list table,
+    .change-list table {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important; /* suaviza el scroll en iOS */
+    }
+
+    /* Forzar un mínimo de ancho en la tabla interna para permitir scroll si es necesario */
+    #result_list table {
+        min-width: 640px !important;
+    }
+
+    /* Evitar que celdas muy anchas rompan el layout: permitir wrap controlado */
+    #result_list td,
+    #result_list th {
+        white-space: nowrap !important;
+    }
     
     /* Tooltips deshabilitados en móvil */
     .tooltip {

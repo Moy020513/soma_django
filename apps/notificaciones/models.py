@@ -29,6 +29,57 @@ class Notificacion(models.Model):
         self.leida = True
         self.save()
 
+    @property
+    def display_title(self):
+        """Return a cleaned title: if this notification was generated as a user response
+        like 'Nombre Apellido ha respondido a "Original title"', return 'Respuesta a "Original title"'.
+        Otherwise return the original title (possibly truncated by the template)."""
+        t = (self.titulo or '')
+        # look for quoted section
+        first_q = t.find('"')
+        if first_q != -1:
+            second_q = t.find('"', first_q + 1)
+            if second_q != -1:
+                inner = t[first_q+1:second_q]
+                return f'Respuesta a "{inner}"'
+        # fallback: look for pattern 'ha respondido a '
+        marker = 'ha respondido a '
+        if marker in t:
+            try:
+                idx = t.index(marker) + len(marker)
+                return f'Respuesta a "{t[idx:]}"'
+            except Exception:
+                pass
+        return t
+
+    @property
+    def display_user(self):
+        """Return a compact username display (username or first+last name fallback)."""
+        try:
+            # Usuario model may have 'username' or 'email'
+            if hasattr(self.usuario, 'username') and self.usuario.username:
+                return self.usuario.username
+            # Fallback to first + last name or str()
+            nombre = getattr(self.usuario, 'first_name', '') or ''
+            apellido = getattr(self.usuario, 'last_name', '') or ''
+            if nombre or apellido:
+                return f"{nombre} {apellido}".strip()
+        except Exception:
+            pass
+        return str(self.usuario)
+
+    @property
+    def display_fecha_creacion(self):
+        """Return formatted fecha_creacion like 'dd/mm/YYYY HH:MM hrs' using localtime."""
+        from django.utils import timezone
+        if not self.fecha_creacion:
+            return ''
+        try:
+            local = timezone.localtime(self.fecha_creacion)
+            return local.strftime('%d/%m/%Y %H:%M') + ' hrs'
+        except Exception:
+            return self.fecha_creacion.strftime('%d/%m/%Y %H:%M') + ' hrs'
+
 
 class RespuestaNotificacion(models.Model):
     notificacion = models.ForeignKey(Notificacion, on_delete=models.CASCADE, related_name='respuestas')
@@ -45,3 +96,5 @@ class RespuestaNotificacion(models.Model):
 
     def __str__(self):
         return f"Respuesta de {self.usuario} a {self.notificacion}" 
+
+    # Helpers / display properties

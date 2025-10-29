@@ -64,7 +64,7 @@ class NotificacionAdmin(admin.ModelAdmin):
 
     save_on_top = False
     form = NotificacionForm
-    list_display = ['titulo', 'usuario', 'tipo', 'leida', 'fecha_creacion']
+    list_display = ['titulo_corto', 'usuario_corto', 'tipo', 'leida', 'fecha_creacion_formatted']
     list_filter = ['tipo', 'leida', 'fecha_creacion']
     search_fields = ['titulo', 'mensaje', 'usuario__email', 'usuario__first_name', 'usuario__last_name']
     readonly_fields = ['fecha_creacion']
@@ -95,3 +95,41 @@ class NotificacionAdmin(admin.ModelAdmin):
 
     def delete_model(self, request, obj):
         obj.delete()
+
+    # Mostrar título corto: si es una respuesta del formato "X HA RESPONDIDO A \"TEXTO\""
+    # devolver "Respuesta a \"TEXTO\"", en caso contrario mostrar parte del título original
+    def titulo_corto(self, obj):
+        t = (obj.titulo or '').strip()
+        # Buscar patrón: '... HA RESPONDIDO A "..."' (mayúsculas o minúsculas)
+        import re
+        m = re.search(r'HA RESPONDIDO A\s+"([^"]+)"', t, flags=re.IGNORECASE)
+        if m:
+            return f'Respuesta a "{m.group(1)}"'
+        # Alternativa: si contiene 'RESPONDIDO A' en español
+        m2 = re.search(r'RESPONDIDO A\s+"([^"]+)"', t, flags=re.IGNORECASE)
+        if m2:
+            return f'Respuesta a "{m2.group(1)}"'
+        # Fallback: si contiene comillas, mostrar Respuesta a "..." con el contenido entre comillas
+        m3 = re.search(r'"([^"]+)"', t)
+        if m3:
+            return f'Respuesta a "{m3.group(1)}"'
+        # Si no coincide, truncar a 60 caracteres
+        return (t[:60] + '...') if len(t) > 60 else t
+    titulo_corto.short_description = 'Título'
+
+    def usuario_corto(self, obj):
+        # Mostrar sólo el username (o email) del usuario
+        if obj.usuario:
+            # Preferir username, sino email, sino str
+            return getattr(obj.usuario, 'username', None) or getattr(obj.usuario, 'email', str(obj.usuario))
+        return ''
+    usuario_corto.short_description = 'Usuario'
+    usuario_corto.admin_order_field = 'usuario'
+
+    def fecha_creacion_formatted(self, obj):
+        if obj.fecha_creacion:
+            # Formato: dd/mm/yyyy HH:MM hrs
+            return obj.fecha_creacion.strftime('%d/%m/%Y %H:%M') + ' hrs'
+        return '-'
+    fecha_creacion_formatted.short_description = 'Fecha creación'
+    fecha_creacion_formatted.admin_order_field = 'fecha_creacion'
