@@ -706,16 +706,21 @@ body {
         font-size: 1.4rem;
     }
     
-    /* Badges de notificaciones */
+    /* Badges de notificaciones - Centrado y visible completo */
     .btn .badge,
     .dropdown > button .badge {
         position: absolute;
-        top: -2px;
-        right: -2px;
-        min-width: 16px;
-        height: 16px;
-        padding: 0 4px;
-        font-size: 0.6rem;
+        top: -4px;
+        right: -4px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        font-size: 0.65rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        border-radius: 10px;
     }
     
     /* Dropdown de perfil - Igual que los demás iconos */
