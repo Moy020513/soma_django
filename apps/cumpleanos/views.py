@@ -9,7 +9,8 @@ def proximos_cumpleanos(request):
     empresas = Empresa.objects.all().order_by('nombre')
     hoy = date.today()
     dias_raw = request.GET.get('dias', '')
-    filtro = request.GET.get('tipo', 'todos')
+    # Por defecto mostrar empleados cuando se entra a la página
+    filtro = request.GET.get('tipo', 'empleados')
     try:
         dias_adelante = int(dias_raw) if dias_raw else 30
     except ValueError:
