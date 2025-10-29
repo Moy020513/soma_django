@@ -463,6 +463,43 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
     
+    {# Flatpickr core loader + init (site-wide) #}
+    <script src="{% static 'vendor/flatpickr/flatpickr.min.js' %}" onerror="this.remove()"></script>
+    <script>
+    (function(){
+        function loadScript(src, cb){
+            var s = document.createElement('script'); s.src = src; s.async = true; s.onload = cb; s.onerror = cb; document.head.appendChild(s);
+        }
+        function ensureLocale(done){
+            if(window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es) return done();
+            var staticLocale = '{% static "vendor/flatpickr/l10n/es.js" %}';
+            loadScript(staticLocale, function(){ if(window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es) return done(); loadScript('https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js', function(){ setTimeout(done,10); }); });
+        }
+        function ensureFlatpickr(done){
+            if(window.flatpickr) return ensureLocale(done);
+            loadScript('https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js', function(){ setTimeout(function(){ ensureLocale(done); }, 10); });
+        }
+        function initFlatpickr(){
+            if(!window.flatpickr) { return; }
+            var useEs = !!(window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es);
+            var selector = ['input.vDateField','input.vTimeField','input.vDateTimeField','input[type="date"]','input[type="datetime-local"]','input[type="time"]'].join(',');
+            var nodes = document.querySelectorAll(selector);
+            nodes.forEach(function(el){
+                if(el._flatpickr) return;
+                var t = (el.getAttribute('type')||'').toLowerCase();
+                var opts = {};
+                if(t==='time' || el.classList.contains('vTimeField')) opts={enableTime:true,noCalendar:true,dateFormat:'H:i'};
+                else if(t==='datetime-local' || el.classList.contains('vDateTimeField')) opts={enableTime:true,dateFormat:'Y-m-d H:i'};
+                else opts={dateFormat:'Y-m-d'};
+                opts.disableMobile = true;
+                if(useEs) opts.locale='es';
+                try{ window.flatpickr(el, opts); }catch(e){ /* no-op */ }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function(){ ensureFlatpickr(function(){ initFlatpickr(); try{ var mo = new MutationObserver(function(m){ m.forEach(function(rec){ if(rec.addedNodes && rec.addedNodes.length) initFlatpickr(); }); }); mo.observe(document.body, {childList:true, subtree:true}); }catch(e){} }); });
+    })();
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

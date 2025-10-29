@@ -3,7 +3,13 @@
 
 {% block extrastyle %}
     {{ block.super }}
-   
+    {# Flatpickr CSS: usa el archivo en static/vendor/flatpickr si existe; si no, el fallback se carga por JS desde CDN #}
+    <link rel="stylesheet" href="{% static 'vendor/flatpickr/flatpickr.min.css' %}" onerror="this.remove()">
+    <style>
+        /* Asegurar que los calendarios queden delante en el admin */
+        .flatpickr-calendar { z-index: 99999; }
+    </style>
+    {# flatpickr core JS se carga en extrahead (con fallback a CDN). El script de depuración fue removido. #}
 {% endblock %}
 
 {% block content %}
@@ -229,4 +235,100 @@
             </div>
         </form>
     </div>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {# Cargar el JS de flatpickr desde static/vendor; si no está disponible se cargará desde CDN automáticamente #}
+    <script src="{% static 'vendor/flatpickr/flatpickr.min.js' %}" defer onerror="this.remove()"></script>
+    <script defer>
+    (function(){
+        function loadScript(src, cb){
+            var s = document.createElement('script');
+            s.src = src; s.async = true; s.onload = cb; s.onerror = cb;
+            document.head.appendChild(s);
+        }
+
+    function ensureLocale(done){
+            // If locale already present, finish
+            if(window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es){ return done(); }
+
+            // Try to load local locale file first, then CDN fallback
+            var staticLocale = '{% static "vendor/flatpickr/l10n/es.js" %}';
+            loadScript(staticLocale, function(){
+                if(window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es){ return done(); }
+                loadScript('https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js', function(){ setTimeout(done, 10); });
+            });
+        }
+
+        function ensureFlatpickr(done){
+            if(window.flatpickr){
+                // flatpickr already present, ensure locale then done
+                return ensureLocale(done);
+            }
+            // fallback CDN for core flatpickr
+            loadScript('https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js', function(){
+                // give it a tick, then try to load locale and continue
+                setTimeout(function(){ ensureLocale(done); }, 10);
+            });
+        }
+
+        function initFlatpickr(){
+            if(!window.flatpickr) return;
+
+            var useEs = !!(window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.es);
+
+            var selector = [
+                'input.vDateField',
+                'input.vTimeField',
+                'input.vDateTimeField',
+                'input[type="date"]',
+                'input[type="datetime-local"]',
+                'input[type="time"]'
+            ].join(',');
+
+            var nodes = document.querySelectorAll(selector);
+            nodes.forEach(function(el){
+                try{
+                    if(el._flatpickr){ return; }
+                }catch(e){ }
+
+                var opts = {};
+                var t = (el.getAttribute('type') || '').toLowerCase();
+                if(t === 'time' || el.classList.contains('vTimeField')){
+                    opts = {enableTime: true, noCalendar: true, dateFormat: 'H:i'};
+                } else if(t === 'datetime-local' || el.classList.contains('vDateTimeField')){
+                    opts = {enableTime: true, dateFormat: 'Y-m-d H:i'};
+                } else {
+                    opts = {dateFormat: 'Y-m-d'};
+                }
+                // Force flatpickr to override native pickers on some browsers
+                opts.disableMobile = true;
+                if(useEs){ opts.locale = 'es'; }
+
+                try{
+                    window.flatpickr(el, opts);
+                }catch(e){
+                    // no-op: si falla la inicialización, no rompemos el admin
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            ensureFlatpickr(function(){
+                initFlatpickr();
+                try{
+                    var mo = new MutationObserver(function(mutations){
+                        mutations.forEach(function(m){
+                            if(m.addedNodes && m.addedNodes.length){
+                                initFlatpickr();
+                            }
+                        });
+                    });
+                    mo.observe(document.body, {childList:true, subtree:true});
+                }catch(e){ }
+            });
+        });
+    })();
+    </script>
 {% endblock %}
