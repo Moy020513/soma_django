@@ -563,338 +563,6 @@ body {
     color: white !important;
 }
 
-/* ===== RESPONSIVE MEJORADO ===== */
-@media (max-width: 768px) {
-    /* Eliminar márgenes laterales del body */
-    body {
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-    
-    /* Header ocupa todo el ancho */
-    .main-header {
-        margin: 0 0 1rem 0 !important;
-        padding: 1rem !important;
-        border-radius: 0 !important;
-    }
-    
-    .change-list-header {
-        padding: 1rem !important;
-        margin: 0 0 1rem 0 !important;
-        border-radius: 0 !important;
-    }
-    
-    .change-list-header h1 {
-        font-size: 1.25rem !important;
-    }
-    
-    /* Botón agregar: en móvil lo mostramos en el flujo (arriba), no flotante */
-    .object-tools {
-        position: static !important;
-        top: auto !important;
-        right: auto !important;
-        bottom: auto !important;
-        z-index: auto !important;
-        margin: 0 0 0.5rem 0 !important;
-    /* keep default order so tools appear after the title */
-        width: 100% !important;
-        display: flex !important;
-        justify-content: flex-end !important;
-    }
-
-    .object-tools li {
-        display: inline-block !important;
-        margin-left: 0.5rem !important;
-    }
-
-    .object-tools a {
-        padding: 0.6rem 1rem !important;
-        font-size: 0.9rem !important;
-        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4) !important;
-        border-radius: 8px !important;
-    }
-    
-    /* Contenedor principal sin padding */
-    #changelist {
-        padding: 0 0.5rem !important;
-    }
-    
-    /* Barra de herramientas compacta */
-    #changelist .top-tools {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
-        padding: 0 0.5rem !important;
-        margin-bottom: 1rem !important;
-    }
-    
-    .search-form {
-        max-width: 100% !important;
-        width: 100% !important;
-    }
-    
-    .search-input-group {
-        border-radius: 8px !important;
-    }
-    
-    .search-input {
-        padding: 0.65rem 0.75rem !important;
-        font-size: 0.85rem !important;
-    }
-    
-    .search-btn {
-        padding: 0.65rem 1rem !important;
-        font-size: 0.85rem !important;
-    }
-    
-    /* Tabla compacta para móvil */
-    #result_list {
-        font-size: 0.75rem !important;
-        border-radius: 8px !important;
-        margin: 0 !important;
-        display: block !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-
-    /* Full-bleed: tablas y contenedores ocuparán todo el ancho del viewport en móvil */
-    .changelist-container,
-    .changelist-content,
-    #changelist,
-    #changelist .changelist-content,
-    #result_list,
-    #result_list table {
-        width: 100vw !important;
-        max-width: 100vw !important;
-        margin-left: calc(50% - 50vw) !important; /* full-bleed trick */
-        margin-right: calc(50% - 50vw) !important;
-        border-radius: 0 !important;
-    }
-
-    /* Ajuste interno para que las celdas no toquen los bordes del viewport */
-    #result_list td,
-    #result_list th {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-    }
-    
-    #result_list thead {
-        display: table-header-group !important;
-    }
-    
-    #result_list th {
-        padding: 0.6rem 0.4rem !important;
-        font-size: 0.7rem !important;
-        white-space: nowrap !important;
-        min-width: 80px !important;
-    }
-    
-    #result_list th:first-child {
-        border-radius: 8px 0 0 0 !important;
-    }
-    
-    #result_list th:last-child {
-        border-radius: 0 8px 0 0 !important;
-    }
-    
-    #result_list td {
-        padding: 0.6rem 0.4rem !important;
-        font-size: 0.75rem !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        max-width: 150px !important;
-    }
-
-    /* Ocultar columna de selección (checkboxes) en todos los changelists */
-    #changelist table thead th.action-checkbox-column,
-    #changelist table tbody td.action-checkbox,
-    #changelist table tbody td input.action-select,
-    #changelist thead th input#action-toggle,
-    #changelist .action-checkbox {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border: none !important;
-    }
-
-    /* Ajustar ancho de la primera columna si existía espacio para checkbox */
-    #result_list th:first-child,
-    #result_list td:first-child {
-        min-width: 60px !important;
-    }
-    
-    #result_list tbody tr:hover {
-        transform: none !important;
-    }
-    
-    /* Acciones compactas */
-    .actions {
-        padding: 0.75rem !important;
-        margin: 0.75rem 0.5rem !important;
-        border-radius: 8px !important;
-        gap: 0.5rem !important;
-    }
-    
-    .actions label {
-        font-size: 0.8rem !important;
-        width: 100% !important;
-    }
-    
-    .actions select {
-        width: 100% !important;
-        padding: 0.5rem !important;
-        font-size: 0.8rem !important;
-    }
-    
-    .actions button {
-        width: 100% !important;
-        padding: 0.6rem 1rem !important;
-        font-size: 0.8rem !important;
-    }
-    
-    /* Paginación compacta */
-    .paginator {
-        margin-top: 1rem !important;
-        gap: 0.35rem !important;
-        padding: 0 0.5rem 4rem 0.5rem !important;
-    }
-    
-    .paginator a,
-    .paginator span {
-        padding: 0.5rem 0.75rem !important;
-        font-size: 0.75rem !important;
-        min-width: 35px !important;
-        border-radius: 6px !important;
-    }
-    
-    .paginator-info {
-        font-size: 0.75rem !important;
-        text-align: center !important;
-        width: 100% !important;
-        margin-bottom: 0.5rem !important;
-    }
-    
-    /* Formularios ocupan todo el ancho */
-    .change-form-content {
-        padding: 0.5rem !important;
-        margin: 0 !important;
-    }
-    
-    .change-form-content .form-container {
-        padding: 0 !important;
-    }
-    
-    .form-row {
-        grid-template-columns: 1fr !important;
-        gap: 0.5rem !important;
-    }
-    
-    .field-input input,
-    .field-input select,
-    .field-input textarea {
-        font-size: 0.85rem !important;
-    }
-    
-    .field-input label {
-        font-size: 0.8rem !important;
-    }
-    
-    .fieldset {
-        margin-bottom: 0.5rem !important;
-        padding: 0.5rem !important;
-    }
-    
-    .fieldset h2 {
-        font-size: 0.95rem !important;
-    }
-    
-    .submit-row {
-        flex-direction: column !important;
-        gap: 0.5rem !important;
-        padding: 0.75rem 0 !important;
-        margin-top: 0.75rem !important;
-    }
-    
-    .submit-row input[type="submit"],
-    .submit-row a {
-        width: 100% !important;
-        text-align: center !important;
-        padding: 0.65rem 1rem !important;
-        font-size: 0.85rem !important;
-    }
-    
-    /* Badges más pequeños */
-    .badge {
-        padding: 0.25rem 0.5rem !important;
-        font-size: 0.7rem !important;
-    }
-    
-    /* Filtros para móvil */
-    #changelist-filter {
-        position: fixed !important;
-        top: 0 !important;
-        right: -100% !important;
-        width: 85% !important;
-        max-width: 320px !important;
-        height: 100vh !important;
-        background: white !important;
-        box-shadow: -4px 0 12px rgba(0,0,0,0.2) !important;
-        z-index: 1001 !important;
-        overflow-y: auto !important;
-        transition: right 0.3s ease !important;
-        padding: 1rem !important;
-    }
-    
-    #changelist-filter.filter-visible {
-        right: 0 !important;
-    }
-}
-
-/* Overlay para filtros en móvil */
-.filter-overlay {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: rgba(0,0,0,0.5) !important;
-    z-index: 999 !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    transition: all 0.3s ease !important;
-}
-
-.filter-overlay.visible {
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-/* Ajustes adicionales para tablets */
-@media (min-width: 769px) and (max-width: 1024px) {
-    .change-list-header {
-        padding: 1.25rem 1.5rem !important;
-        margin: -1.5rem -1.5rem 1.5rem -1.5rem !important;
-    }
-    
-    #changelist {
-        padding: 0 1rem !important;
-    }
-    
-    .object-tools {
-        top: 5.5rem !important;
-        right: 1.5rem !important;
-    }
-    
-    #result_list th,
-    #result_list td {
-        padding: 0.75rem 0.6rem !important;
-        font-size: 0.85rem !important;
-    }
-}
-
 /* ========================================
    NAVEGACIÓN MÓVIL - RESPONSIVE
    ======================================== */
@@ -922,23 +590,40 @@ body {
         padding-right: 0;
         box-sizing: border-box;
     }
-    /* Container del header - Una sola fila */
-    .main-header > div {
-        padding: 0rem !important;
+    
+    /* Container del header - Una sola fila - SIN PADDING */
+    .main-header > div,
+    .main-header > .d-flex {
+        padding: 0 !important;
+        margin: 0 !important;
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        gap: 0.7rem;
-        
+        gap: 0.5rem;
     }
     
-    /* Logo y marca - Compacto y pegado al hamburguesa */
+    /* Logo y marca - ELIMINAR TODO EL PADDING de Bootstrap px-4 */
     .main-header .d-flex.align-items-center.px-4 {
         padding: 0 !important;
-        padding-top: 0.7rem !important;
+        padding-top: 0.1rem !important;
+        padding-left: 0.1rem !important;
+        padding-right: 0 !important;
+        padding-bottom: 0rem !important;
+        margin: 0 !important;
         flex-shrink: 1;
         min-width: 0;
+    }
+    
+    /* Cuando el botón hamburguesa está presente */
+    body:has(.hamburger-btn) .main-header .d-flex.align-items-center.px-4 {
+        padding-left: 16px !important;
+    }
+    
+    /* Asegurar que el navbar-brand-custom no tenga margin/padding extra */
+    .navbar-brand-custom {
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     .navbar-brand-custom {
@@ -978,18 +663,25 @@ body {
         text-overflow: ellipsis;
     }
     
-    /* Toolbar - Iconos en una sola fila horizontal */
+    /* Toolbar - Distribución equitativa con espacio entre iconos */
     .btn-toolbar {
         height: 50px !important;
         width: auto !important;
-        padding: 0 !important;
+        padding: 0 0.1rem !important;
         margin: 0 !important;
-        display: flex;
-        flex-direction: row;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 0.3rem;
-        flex-shrink: 0;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important; /* Forzar una sola fila */
+        justify-content: space-evenly !important; /* Distribución equitativa */
+        align-items: center !important;
+        flex-grow: 1; /* Ocupa todo el espacio disponible */
+        min-width: 0; /* Permite que se encoja si es necesario */
+        gap: 0 !important; /* Sin gap, usamos space-evenly */
+    }
+    
+    /* Asegurar que todos los elementos hijos tengan el mismo espacio */
+    .btn-toolbar > * {
+        flex: 0 0 auto !important; /* No crecen ni se encogen */
     }
     
     /* Botones de iconos - Todos iguales */
@@ -1028,19 +720,26 @@ body {
     
     /* Dropdown de perfil - Igual que los demás iconos */
     .btn-toolbar .dropdown:last-child .btn {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border-radius: 40%;
+        width: 36px !important;
+        height: 36px !important;
+        padding: 0 !important;
+        border-radius: 40% !important;
+        gap: 0 !important; /* Eliminar espacio entre icono y flecha */
     }
     
     /* Ocultar texto del usuario en móvil */
     .btn-toolbar .dropdown:last-child .btn span {
-        display: none;
+        display: none !important;
     }
     
+    /* Centrar icono de usuario */
     .btn-toolbar .dropdown:last-child .btn i {
-        margin: 0;
+        margin: 0 !important;
+    }
+    
+    /* Ocultar la flecha del dropdown en móvil */
+    .btn-toolbar .dropdown:last-child .btn::after {
+        display: none !important;
     }
     
     /* Dropdowns adaptados */
@@ -1099,26 +798,27 @@ body {
     }
     
     .btn-toolbar {
-        gap: 0.2rem;
+        padding: 0 0.25rem !important;
+        max-width: 65%; /* Un poco más de espacio en pantallas muy pequeñas */
     }
     
     .btn-toolbar .btn,
     .btn-toolbar .dropdown > button,
     .btn-toolbar .dropdown:last-child .btn {
-        width: 34px;
-        height: 34px;
-        min-width: 34px;
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
     }
     
     .btn-toolbar .btn i,
     .btn-toolbar .dropdown > button i {
-        font-size: 0.9rem;
+        font-size: 1.1rem;
     }
     
     .hamburger-btn {
-        width: 34px;
-        height: 34px;
-        left: 8px;
+        width: 32px;
+        height: 32px;
+        left: 6px;
     }
 }
 
@@ -1132,6 +832,7 @@ body {
     
     .btn-toolbar {
         gap: 0.4rem;
+        justify-content: flex-end; /* En tablet volvemos a flex-end */
     }
     
     .btn-toolbar .btn,
@@ -1152,6 +853,7 @@ body {
     .btn-toolbar {
         gap: 0.5rem;
         padding: 0 !important;
+        justify-content: flex-end; /* En desktop flex-end */
     }
     
     .btn-toolbar .btn,
