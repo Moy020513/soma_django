@@ -14,6 +14,10 @@
    <div class="text"><span>{{ header.text|capfirst }}</span></div>
    <div class="clear"></div>
 </th>{% endfor %}
+<th scope="col" class="column-actions">
+    <div class="text"><span>Acciones</span></div>
+    <div class="clear"></div>
+</th>
 </tr>
 </thead>
 <tbody>
@@ -21,9 +25,64 @@
 {% if result.form and result.form.non_field_errors %}
     <tr><td colspan="{{ result|length }}">{{ result.form.non_form_errors }}</td></tr>
 {% endif %}
-<tr>{% for item in result %}{{ item }}{% endfor %}</tr>
+<tr>{% for item in result %}{{ item }}{% endfor %}
+    <td class="column-actions actions-cell">{# will be populated by JS #}</td>
+</tr>
 {% endfor %}
 </tbody>
 </table>
 </div>
 {% endif %}
+
+<script>
+    (function(){
+        try {
+            var app = "{{ cl.opts.app_label }}";
+            var model = "{{ cl.opts.model_name }}";
+            var rows = document.querySelectorAll('#result_list tbody tr');
+            rows.forEach(function(row){
+                // Find checkbox with the pk value
+                var pk = null;
+                var checkbox = row.querySelector('input[name="_selected_action"]');
+                if (checkbox && checkbox.value) {
+                    pk = checkbox.value;
+                }
+                // If no checkbox, try to infer pk from first change link in the row
+                if (!pk) {
+                    var a = row.querySelector('a');
+                    if (a && a.href) {
+                        // try to extract the pk segment from a typical admin change url
+                        var m = a.href.match(new RegExp('/admin/' + app + '/' + model + '/([^/]+)/change/?'));
+                        if (m && m[1]) pk = m[1];
+                    }
+                }
+
+                var cell = row.querySelector('.actions-cell');
+                if (!cell) return;
+                if (!pk) {
+                    cell.innerHTML = '';
+                    return;
+                }
+
+                var changeUrl = '/admin/' + app + '/' + model + '/' + encodeURIComponent(pk) + '/change/';
+                var deleteUrl = '/admin/' + app + '/' + model + '/' + encodeURIComponent(pk) + '/delete/';
+
+                var btnEdit = document.createElement('a');
+                btnEdit.className = 'btn btn-sm btn-primary me-1';
+                btnEdit.href = changeUrl;
+                btnEdit.innerText = 'Actualizar';
+
+                var btnDel = document.createElement('a');
+                btnDel.className = 'btn btn-sm btn-danger';
+                btnDel.href = deleteUrl;
+                btnDel.innerText = 'Eliminar';
+
+                cell.appendChild(btnEdit);
+                cell.appendChild(btnDel);
+            });
+        } catch (e) {
+            // fail silently
+            console && console.error && console.error(e);
+        }
+    })();
+</script>

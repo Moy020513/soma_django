@@ -40,6 +40,11 @@
                             <i class="fas fa-list me-1"></i>{% trans 'View list' %}
                         </a>
                     {% endif %}
+                        {% if has_delete_permission and not add %}
+                            <a href="{% url opts|admin_urlname:'delete' original.pk %}" class="btn-delete text-danger ms-2">
+                                <i class="fas fa-trash me-1"></i>{% trans 'Eliminar' %}
+                            </a>
+                        {% endif %}
                 </div>
             </div>
         {% endif %}
