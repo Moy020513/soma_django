@@ -64,8 +64,10 @@ class RegistrarUbicacionView(EmpleadoRequiredMixin, TemplateView):
             'registros_recientes': registros_recientes,
             'form': RegistroUbicacionForm(empleado=empleado),
         })
-        # Calcular el momento en que vuelve a ser posible registrar (inicio del siguiente día en hora local)
-        local_now = timezone.localtime()
+        # Calcular el momento en que vuelve a ser posible registrar (inicio del siguiente día
+        # usando la zona horaria activa/configurada en settings)
+        # timezone.localtime(timezone.now()) respeta TIME_ZONE y el timezone activo.
+        local_now = timezone.localtime(timezone.now())
         next_day_start = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
         if ya_registro_entrada:

@@ -95,10 +95,16 @@
                         <i class="fas fa-clock"></i> Registro de Asistencia
                     </h6>
                     <div class="badge badge-success">{{ empleado.nombre_completo }}</div>
+                   
                 </div>
                 <div class="card-body">
                     <div class="row">
+                         <!-- Contador para próxima posibilidad de registrar entrada (se muestra por encima del botón) -->
+                            <div id="countdownEntrada" class="mb-2 text-muted small"
+                                 {% if next_allowed_entrada_ts %} data-next="{{ next_allowed_entrada_ts }}" {% endif %}>
+                            </div>
                         <div class="col-md-6">
+                            
                             <button id="btnRegistrarEntrada" 
                                     class="btn btn-success btn-lg btn-block mb-3"
                                     onclick="confirmarRegistro('entrada')">
@@ -106,10 +112,6 @@
                                 <strong>ENTRADA</strong>
                                 <small class="d-block">Registrar llegada</small>
                             </button>
-                            <!-- Contador para próxima posibilidad de registrar entrada -->
-                            <div id="countdownEntrada" class="mt-2 text-muted small"
-                                 {% if next_allowed_entrada_ts %} data-next="{{ next_allowed_entrada_ts }}" {% endif %}>
-                            </div>
                         </div>
                         <div class="col-md-6">
                             <button id="btnRegistrarSalida" 
@@ -119,10 +121,6 @@
                                 <strong>SALIDA</strong>
                                 <small class="d-block">Registrar salida</small>
                             </button>
-                            <!-- Contador para próxima posibilidad de registrar salida -->
-                            <div id="countdownSalida" class="mt-2 text-muted small"
-                                 {% if next_allowed_salida_ts %} data-next="{{ next_allowed_salida_ts }}" {% endif %}>
-                            </div>
                         </div>
                     </div>
                     
@@ -748,26 +746,18 @@ function createCountdown(elemId) {
         if (diff <= 0) {
             el.textContent = 'Puedes registrar ahora.';
             clearInterval(interval);
-            // Habilitar el botón correspondiente cuando el tiempo llegue a 0
+            // Habilitar el botón de ENTRADA cuando el tiempo llegue a 0
             try {
-                let btnId = null;
-                if (elemId === 'countdownEntrada') btnId = 'btnRegistrarEntrada';
-                else if (elemId === 'countdownSalida') btnId = 'btnRegistrarSalida';
-
-                if (btnId) {
-                    const btn = document.getElementById(btnId);
-                    if (btn) {
-                        // Restaurar HTML original si lo guardamos
-                        const orig = btn.getAttribute('data-orig-html');
-                        if (orig) btn.innerHTML = orig;
-                        btn.disabled = false;
-                        btn.classList.remove('disabled');
-                        // Quitar título que advertía bloqueo
-                        btn.removeAttribute('title');
-                    }
+                const btn = document.getElementById('btnRegistrarEntrada');
+                if (btn) {
+                    const orig = btn.getAttribute('data-orig-html');
+                    if (orig) btn.innerHTML = orig;
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                    btn.removeAttribute('title');
                 }
             } catch (e) {
-                console.warn('Error al habilitar botón tras countdown:', e);
+                console.warn('Error al habilitar botón de entrada tras countdown:', e);
             }
             return;
         }
@@ -780,16 +770,15 @@ function createCountdown(elemId) {
 
 // Inicializar contadores si aplica
 document.addEventListener('DOMContentLoaded', function() {
-    // Guardar HTML original de los botones para poder restaurarlo cuando se vuelvan a habilitar
+    // Guardar HTML original del botón de entrada para poder restaurarlo cuando se vuelva a habilitar
     try {
         if (btnEntrada) btnEntrada.setAttribute('data-orig-html', btnEntrada.innerHTML);
-        if (btnSalida) btnSalida.setAttribute('data-orig-html', btnSalida.innerHTML);
     } catch (e) {
-        console.warn('No se pudo guardar HTML original de botones:', e);
+        console.warn('No se pudo guardar HTML original del botón de entrada:', e);
     }
 
+    // Inicializar únicamente el contador de entrada (la salida depende de que exista la entrada)
     createCountdown('countdownEntrada');
-    createCountdown('countdownSalida');
 });
 </script>
 {% endblock %}
