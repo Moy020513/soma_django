@@ -8,22 +8,22 @@
     <table class="table table-striped">
       <thead>
         <tr>
-          <th>Fecha</th>
-          <th>Empleado</th>
-          <th>Empresa</th>
-          <th>Supervisor</th>
-          
+            <th>No. cotización</th>
+            <th>Fecha</th>
+            <th>Empleado</th>
+            <th>Empresa</th>
+            <th>Supervisor</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {% for a in asignaciones %}
         <tr>
-          <td>{{ a.fecha|date:'d/m/Y' }}</td>
-          <td>{{ a.empleado.nombre_completo }}</td>
-          <td>{{ a.empresa.nombre }}</td>
-          <td>{{ a.supervisor.nombre_completo|default:'-' }}</td>
-          
+            <td>{{ a.numero_cotizacion|default:'-' }}</td>
+            <td>{{ a.fecha|date:'d/m/Y' }}</td>
+            <td>{{ a.empleado.nombre_completo }}</td>
+            <td>{{ a.empresa.nombre }}</td>
+            <td>{{ a.supervisor.nombre_completo|default:'-' }}</td>
           <td>
             <a class="btn btn-sm btn-outline-secondary" href="{% url 'asignaciones:editar' a.pk %}">Editar</a>
           </td>

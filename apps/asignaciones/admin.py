@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 from django.template.response import TemplateResponse
 import json
 from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR
-from .models import Asignacion
+from .models import Asignacion, HistorialSupervisorAsignacion, HistorialEmpleadoAsignacion
 from apps.recursos_humanos.models import Empleado
 from apps.empresas.models import Empresa
 from .forms_custom import EmpleadoAsignacionFormSet, AsignacionCustomForm, ActividadAsignadaFormSet
@@ -21,7 +21,7 @@ class AsignacionAdmin(admin.ModelAdmin):
     form = AsignacionCustomForm
     change_form_template = 'admin/asignaciones/asignacion/change_form.html'
     change_list_template = 'admin/asignaciones/asignacion/change_list.html'
-    list_display = ('fecha', 'get_empleados', 'empresa', 'supervisor', 'detalles')
+    list_display = ('fecha', 'get_empleados', 'empresa', 'supervisor', 'numero_cotizacion', 'detalles')
     list_filter = ('fecha', 'empresa')
     search_fields = (
         'empleados__usuario__first_name',
@@ -31,6 +31,11 @@ class AsignacionAdmin(admin.ModelAdmin):
         'supervisor__usuario__first_name',
         'supervisor__usuario__last_name',
     )
+
+    # Renderizamos el historial de supervisores y empleados de forma personalizada
+    # en la plantilla `change_form.html` (evitamos que el admin genere los
+    # InlineAdminFormSet por defecto que luego estaban siendo renderizados
+    # además de nuestra tabla personalizada, generando duplicados).
 
     def get_empleados(self, obj):
         return ', '.join([str(e) for e in obj.empleados.all()])
@@ -77,26 +82,86 @@ class AsignacionAdmin(admin.ModelAdmin):
         context = dict(context)  # Copia el contexto para modificarlo
         context['empleados_formset'] = empleados_formset
         context['actividades_formset'] = actividades_formset
+        # Asegurar que el formulario ligado (bound form) esté siempre en el contexto
+        # para que la plantilla pueda renderizar campos personalizados como
+        # `numero_cotizacion` en el bloque `form_top`. Si no existe o no es una
+        # instancia de AsignacionCustomForm, lo instanciamos con POST/FILES o
+        # con el objeto (instance) según corresponda.
+        try:
+            from .forms_custom import AsignacionCustomForm
+        except Exception:
+            AsignacionCustomForm = None
+        form = context.get('form')
+        if AsignacionCustomForm and (form is None or not isinstance(form, AsignacionCustomForm)):
+            if request.method == 'POST':
+                form = AsignacionCustomForm(request.POST, request.FILES, instance=obj)
+            else:
+                form = AsignacionCustomForm(instance=obj)
+            context['form'] = form
+        # Añadir explícitamente los historiales al contexto para que la plantilla
+        # pueda iterar sobre todos los registros (supervisores anteriores y empleados)
+        if obj:
+            context['historial_supervisores_list'] = obj.historial_supervisores.all()
+            context['historial_empleados_list'] = obj.historial_empleados.all()
+        else:
+            context['historial_supervisores_list'] = []
+            context['historial_empleados_list'] = []
         # Asegura las claves requeridas por el template de admin
         context.setdefault('inline_admin_formsets', [])
-        # adminform nunca debe ser None
-        if not context.get('adminform'):
-            from django.contrib.admin.helpers import AdminForm
-            # Asegura que 'form' esté en el contexto
-            form = context.get('form')
-            if form is None and 'adminform' not in context:
-                initial = dict(context.get('initial', {}))
-                # Si estamos editando, usa la fecha del objeto
-                if obj and obj.fecha:
-                    initial['fecha'] = obj.fecha.strftime('%Y-%m-%d')
-                form = self.get_form(request)(initial=initial)
-                context['form'] = form
+        # Reconstruimos el AdminForm siempre con los fieldsets calculados
+        # (posiblemente prepended con `numero_cotizacion`) para forzar que
+        # el campo aparezca al inicio incluso si otro código ya había creado
+        # un adminform en el contexto.
+        from django.contrib.admin.helpers import AdminForm
+        # Asegura que 'form' esté en el contexto. Si no está, creamos uno
+        # base para permitir la construcción del AdminForm.
+        form = context.get('form')
+        if form is None:
+            initial = dict(context.get('initial', {}))
+            # Si estamos editando, usa la fecha del objeto
+            if obj and obj.fecha:
+                initial['fecha'] = obj.fecha.strftime('%Y-%m-%d')
+            form = self.get_form(request)(initial=initial)
+            context['form'] = form
+        # Obtener fieldsets y, si procede, poner numero_cotizacion al frente.
+        # Además removemos 'numero_cotizacion' de cualquier fieldset existente
+        # para evitar que el mismo campo se muestre dos veces.
+        fieldsets = list(self.get_fieldsets(request, context.get('original')))
+        try:
+            if form and 'numero_cotizacion' in getattr(form, 'fields', {}):
+                # Normalizar y limpiar los fieldsets para quitar el campo donde aparezca
+                cleaned_fieldsets = []
+                for fs in fieldsets:
+                    # fs puede ser una tupla (titulo, opciones)
+                    if isinstance(fs, (list, tuple)) and len(fs) == 2 and isinstance(fs[1], dict):
+                        title, opts = fs
+                        fields = opts.get('fields')
+                        if fields:
+                            # fields puede ser anidado (tuplas), normalizamos a lista
+                            if isinstance(fields, (list, tuple)):
+                                new_fields = tuple(f for f in fields if f != 'numero_cotizacion')
+                            else:
+                                new_fields = fields
+                            # Solo añadir si quedan campos
+                            if new_fields:
+                                new_opts = dict(opts)
+                                new_opts['fields'] = new_fields
+                                cleaned_fieldsets.append((title, new_opts))
+                        else:
+                            cleaned_fieldsets.append(fs)
+                    else:
+                        cleaned_fieldsets.append(fs)
+                fieldsets = tuple(cleaned_fieldsets)
+                top_fieldset = (('No. cotización', {'fields': ('numero_cotizacion',)}),)
+                fieldsets = tuple(top_fieldset) + tuple(fieldsets)
+        except Exception:
+            # En caso de error, recuperamos los fieldsets originales
             fieldsets = self.get_fieldsets(request, context.get('original'))
-            prepopulated_fields = self.get_prepopulated_fields(request, context.get('original'))
-            readonly_fields = self.get_readonly_fields(request, context.get('original'))
-            model_admin = self
-            adminform = AdminForm(form, fieldsets, prepopulated_fields, readonly_fields, model_admin)
-            context['adminform'] = adminform
+        prepopulated_fields = self.get_prepopulated_fields(request, context.get('original'))
+        readonly_fields = self.get_readonly_fields(request, context.get('original'))
+        model_admin = self
+        adminform = AdminForm(form, fieldsets, prepopulated_fields, readonly_fields, model_admin)
+        context['adminform'] = adminform
         context.setdefault('object_id', context.get('object_id'))
         context.setdefault('original', context.get('original'))
         context.setdefault('is_popup', False)
@@ -280,7 +345,20 @@ class AsignacionAdmin(admin.ModelAdmin):
             obj_anterior = Asignacion.objects.get(pk=obj.pk)
             supervisor_anterior = obj_anterior.supervisor
         
+        # Asegurarnos de persistir el número de cotización incluso si el
+        # flujo del formulario/ModelAdmin no lo ha mapeado correctamente.
+        # Tomamos prioridad de `form.cleaned_data` cuando exista.
         obj = form.save(commit=False)
+        try:
+            if hasattr(form, 'cleaned_data') and 'numero_cotizacion' in form.cleaned_data:
+                val = form.cleaned_data.get('numero_cotizacion')
+                try:
+                    obj.numero_cotizacion = int(val) if val not in (None, '') else None
+                except (TypeError, ValueError):
+                    obj.numero_cotizacion = None
+        except Exception:
+            # No bloquear el guardado por errores de inspección de cleaned_data
+            pass
         obj.save()
         
         if empleados_formset.is_valid():

@@ -59,6 +59,7 @@
 <table id="result_list" style="width:100%;">
 <thead>
 <tr>
+    <th scope="col"><div class="text"><span>No. cotización</span></div><div class="clear"></div></th>
     <th scope="col"><div class="text"><span>FECHA</span></div><div class="clear"></div></th>
     <th scope="col"><div class="text"><span>EMPLEADOS</span></div><div class="clear"></div></th>
     <th scope="col"><div class="text"><span>EMPRESA</span></div><div class="clear"></div></th>
@@ -72,6 +73,7 @@
 <tbody>
 {% for obj in cl.result_list %}
 <tr>
+    <td>{{ obj.numero_cotizacion|default:'-' }}</td>
     <td>{{ obj.fecha }}</td>
     <td>{{ obj.empleados_str }}</td>
     <td>{{ obj.empresa }}</td>

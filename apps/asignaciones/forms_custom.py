@@ -81,6 +81,13 @@ class AsignacionCustomForm(forms.ModelForm):
         exclude = ['empleados']
 
 
+    # Campo expuesto en el formulario para el número de cotización (numérico).
+    numero_cotizacion = forms.IntegerField(
+        required=False,
+        label='No. cotización',
+        widget=forms.NumberInput(attrs={'inputmode': 'numeric', 'pattern': '\\d*'})
+    )
+
     archivos = forms.FileField(required=False, label='Archivos adjuntos')
 
     def __init__(self, *args, **kwargs):
@@ -92,10 +99,42 @@ class AsignacionCustomForm(forms.ModelForm):
         # Inicializa la fecha en formato HTML5 si estamos editando y no hay datos POST
         if self.instance.pk and self.instance.fecha and not self.data:
             self.fields['fecha'].initial = self.instance.fecha.strftime('%Y-%m-%d')
+        # Inicializar el campo numero_cotizacion con el valor existente de la instancia
+        # para que al editar conserve y muestre el número (y al guardar no lo borre).
+        if self.instance and getattr(self.instance, 'pk', None):
+            if 'numero_cotizacion' in self.fields and not self.data:
+                num_val = getattr(self.instance, 'numero_cotizacion', None)
+                if num_val is not None:
+                    try:
+                        self.fields['numero_cotizacion'].initial = int(num_val)
+                    except Exception:
+                        pass
 
     def save(self, commit=True):
         instance = super().save(commit=False)
         # Asegura que la fecha de asignación se mantenga al editar
-        if self.instance.pk and 'fecha' in self.cleaned_data:
+        if self.instance.pk and 'fecha' in getattr(self, 'cleaned_data', {}):
             instance.fecha = self.cleaned_data['fecha']
+        # Guardar el número de cotización en el campo consolidado del modelo
+        if 'numero_cotizacion' in getattr(self, 'cleaned_data', {}):
+            val = self.cleaned_data.get('numero_cotizacion')
+            try:
+                instance.numero_cotizacion = int(val) if val not in (None, '') else None
+            except (TypeError, ValueError):
+                instance.numero_cotizacion = None
+        # Si se subió un archivo en el campo `archivos`, asignarlo al modelo
+        if 'archivos' in getattr(self, 'cleaned_data', {}):
+            archivos_val = self.cleaned_data.get('archivos')
+            if archivos_val:
+                instance.archivos = archivos_val
+
+        # Si se pidió commit=True, guardar la instancia y los m2m asociados
+        if commit:
+            instance.save()
+            try:
+                # save_m2m existe en ModelForm después de save(commit=False)
+                self.save_m2m()
+            except Exception:
+                pass
+
         return instance

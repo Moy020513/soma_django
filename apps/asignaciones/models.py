@@ -121,6 +121,10 @@ class Asignacion(models.Model):
     detalles = models.TextField(verbose_name='Detalles de la asignación')
     archivos = models.FileField(upload_to='asignaciones/archivos/', blank=True, null=True, verbose_name='Archivos adjuntos')
     completada = models.BooleanField(default=False, verbose_name='Completada')
+    # Campo único para el número de cotización (usar BigIntegerField para
+    # representar valores numéricos de cotización). Consolidamos a un solo
+    # campo llamado `numero_cotizacion` (numérico) para evitar duplicidad.
+    numero_cotizacion = models.BigIntegerField(blank=True, null=True, verbose_name='No. cotización')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -161,3 +165,51 @@ class Asignacion(models.Model):
                         if cand:
                             self.supervisor = cand
         super().save(*args, **kwargs)
+
+
+class HistorialSupervisorAsignacion(models.Model):
+    asignacion = models.ForeignKey('Asignacion', on_delete=models.CASCADE, related_name='historial_supervisores')
+    supervisor = models.ForeignKey(
+        Empleado,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Supervisor'
+    )
+    fecha_inicio = models.DateTimeField(auto_now_add=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Historial de Supervisor'
+        verbose_name_plural = 'Historial de Supervisores'
+        ordering = ['-fecha_inicio']
+
+    def __str__(self):
+        sup = self.supervisor.nombre_completo if self.supervisor else 'Sin supervisor'
+        return f"{sup} ({self.fecha_inicio.strftime('%d/%m/%Y %H:%M')})"
+
+
+class HistorialEmpleadoAsignacion(models.Model):
+    ACCION_CHOICES = (
+        ('agregado', 'Agregado'),
+        ('removido', 'Removido'),
+    )
+    asignacion = models.ForeignKey('Asignacion', on_delete=models.CASCADE, related_name='historial_empleados')
+    empleado = models.ForeignKey(
+        Empleado,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Empleado'
+    )
+    accion = models.CharField(max_length=10, choices=ACCION_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Historial de Empleado'
+        verbose_name_plural = 'Historial de Empleados'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        emp = self.empleado.nombre_completo if self.empleado else 'Empleado desconocido'
+        return f"{emp} - {self.get_accion_display()} @ {self.timestamp.strftime('%d/%m/%Y %H:%M')}"
