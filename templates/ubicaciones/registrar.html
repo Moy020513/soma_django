@@ -106,6 +106,10 @@
                                 <strong>ENTRADA</strong>
                                 <small class="d-block">Registrar llegada</small>
                             </button>
+                            <!-- Contador para próxima posibilidad de registrar entrada -->
+                            <div id="countdownEntrada" class="mt-2 text-muted small"
+                                 {% if next_allowed_entrada_ts %} data-next="{{ next_allowed_entrada_ts }}" {% endif %}>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <button id="btnRegistrarSalida" 
@@ -115,6 +119,10 @@
                                 <strong>SALIDA</strong>
                                 <small class="d-block">Registrar salida</small>
                             </button>
+                            <!-- Contador para próxima posibilidad de registrar salida -->
+                            <div id="countdownSalida" class="mt-2 text-muted small"
+                                 {% if next_allowed_salida_ts %} data-next="{{ next_allowed_salida_ts }}" {% endif %}>
+                            </div>
                         </div>
                     </div>
                     
@@ -708,6 +716,80 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSalida.classList.add('disabled');
     }
     {% endif %}
+});
+
+// Contadores dinámicos para mostrar cuánto falta para volver a registrar
+function formatDuration(ms) {
+    if (ms <= 0) return '0s';
+    const totalSeconds = Math.floor(ms / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    let parts = [];
+    if (days > 0) parts.push(days + (days === 1 ? ' día' : ' días'));
+    if (hours > 0) parts.push(hours + 'h');
+    if (minutes > 0) parts.push(minutes + 'm');
+    parts.push(seconds + 's');
+    return parts.join(' ');
+}
+
+function createCountdown(elemId) {
+    const el = document.getElementById(elemId);
+    if (!el) return;
+    const nextAttr = el.getAttribute('data-next');
+    if (!nextAttr) return;
+    const nextTs = parseInt(nextAttr, 10);
+    if (isNaN(nextTs)) return;
+
+    function update() {
+        const now = Date.now();
+        const diff = nextTs - now;
+        if (diff <= 0) {
+            el.textContent = 'Puedes registrar ahora.';
+            clearInterval(interval);
+            // Habilitar el botón correspondiente cuando el tiempo llegue a 0
+            try {
+                let btnId = null;
+                if (elemId === 'countdownEntrada') btnId = 'btnRegistrarEntrada';
+                else if (elemId === 'countdownSalida') btnId = 'btnRegistrarSalida';
+
+                if (btnId) {
+                    const btn = document.getElementById(btnId);
+                    if (btn) {
+                        // Restaurar HTML original si lo guardamos
+                        const orig = btn.getAttribute('data-orig-html');
+                        if (orig) btn.innerHTML = orig;
+                        btn.disabled = false;
+                        btn.classList.remove('disabled');
+                        // Quitar título que advertía bloqueo
+                        btn.removeAttribute('title');
+                    }
+                }
+            } catch (e) {
+                console.warn('Error al habilitar botón tras countdown:', e);
+            }
+            return;
+        }
+        el.textContent = 'Disponible en: ' + formatDuration(diff);
+    }
+
+    update();
+    const interval = setInterval(update, 1000);
+}
+
+// Inicializar contadores si aplica
+document.addEventListener('DOMContentLoaded', function() {
+    // Guardar HTML original de los botones para poder restaurarlo cuando se vuelvan a habilitar
+    try {
+        if (btnEntrada) btnEntrada.setAttribute('data-orig-html', btnEntrada.innerHTML);
+        if (btnSalida) btnSalida.setAttribute('data-orig-html', btnSalida.innerHTML);
+    } catch (e) {
+        console.warn('No se pudo guardar HTML original de botones:', e);
+    }
+
+    createCountdown('countdownEntrada');
+    createCountdown('countdownSalida');
 });
 </script>
 {% endblock %}

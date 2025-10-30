@@ -4,7 +4,7 @@ from django.views.generic import TemplateView, View
 from django.http import JsonResponse
 from django.contrib import messages
 from django.utils import timezone
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import json
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -64,6 +64,25 @@ class RegistrarUbicacionView(EmpleadoRequiredMixin, TemplateView):
             'registros_recientes': registros_recientes,
             'form': RegistroUbicacionForm(empleado=empleado),
         })
+        # Calcular el momento en que vuelve a ser posible registrar (inicio del siguiente día en hora local)
+        local_now = timezone.localtime()
+        next_day_start = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if ya_registro_entrada:
+            # timestamp en milisegundos para uso en JS
+            context['next_allowed_entrada_ts'] = int(next_day_start.timestamp() * 1000)
+            context['next_allowed_entrada_display'] = next_day_start.strftime('%Y-%m-%d %H:%M:%S %Z')
+        else:
+            context['next_allowed_entrada_ts'] = None
+            context['next_allowed_entrada_display'] = None
+
+        if ya_registro_salida:
+            context['next_allowed_salida_ts'] = int(next_day_start.timestamp() * 1000)
+            context['next_allowed_salida_display'] = next_day_start.strftime('%Y-%m-%d %H:%M:%S %Z')
+        else:
+            context['next_allowed_salida_ts'] = None
+            context['next_allowed_salida_display'] = None
+
         return context
 
 
