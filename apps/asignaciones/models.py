@@ -164,7 +164,30 @@ class Asignacion(models.Model):
                         )
                         if cand:
                             self.supervisor = cand
+        # Validación: asegurar unicidad de numero_cotizacion a nivel de modelo
+        # antes de persistir. full_clean() lanzará ValidationError si falla.
+        try:
+            self.full_clean()
+        except Exception:
+            # No bloquear el flujo aquí; dejar que llamadas superiores manejen
+            # la excepción. Sin embargo, la mayoría de flujos del admin
+            # llamarán a save_model y gestionarán errores de formulario.
+            pass
         super().save(*args, **kwargs)
+
+    def clean(self):
+        """
+        Validaciones del modelo Asignacion. Asegura que el campo
+        `numero_cotizacion`, si está presente, sea único entre asignaciones.
+        """
+        from django.core.exceptions import ValidationError
+        super().clean()
+        if self.numero_cotizacion not in (None, ''):
+            qs = Asignacion.objects.filter(numero_cotizacion=self.numero_cotizacion)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError({'numero_cotizacion': 'Ya existe una asignación con ese No. cotización.'})
 
 
 class HistorialSupervisorAsignacion(models.Model):

@@ -138,3 +138,16 @@ class AsignacionCustomForm(forms.ModelForm):
                 pass
 
         return instance
+
+    def clean_numero_cotizacion(self):
+        """Validación en el formulario para evitar números de cotización duplicados."""
+        val = self.cleaned_data.get('numero_cotizacion')
+        if val in (None, ''):
+            return None
+        # Verificar existencia de otra asignación con el mismo número
+        qs = Asignacion.objects.filter(numero_cotizacion=val)
+        if self.instance and getattr(self.instance, 'pk', None):
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('Ya existe una asignación con ese No. cotización.')
+        return val
