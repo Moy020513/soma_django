@@ -3,9 +3,23 @@ from django.forms import formset_factory
 from apps.recursos_humanos.models import Empleado
 from .models import Asignacion, ActividadAsignada
 class ActividadAsignadaForm(forms.Form):
-    nombre = forms.CharField(max_length=120, label='Actividad')
-    porcentaje = forms.IntegerField(min_value=1, max_value=100, label='Porcentaje')
-    tiempo_estimado_dias = forms.IntegerField(min_value=1, max_value=365, initial=1, label='Días estimados')
+    nombre = forms.CharField(
+        max_length=120,
+        label='Actividad',
+        widget=forms.TextInput(attrs={'placeholder': 'Nombre de actividad'})
+    )
+    porcentaje = forms.IntegerField(
+        min_value=1,
+        max_value=100,
+        label='Porcentaje',
+        widget=forms.NumberInput(attrs={'placeholder': 'Porcentaje', 'min': '1', 'max': '100'})
+    )
+    tiempo_estimado_dias = forms.IntegerField(
+        min_value=1,
+        max_value=365,
+        label='Días estimados',
+        widget=forms.NumberInput(attrs={'placeholder': 'Días', 'min': '1', 'max': '365'})
+    )
 
 from django.core.exceptions import ValidationError
 
