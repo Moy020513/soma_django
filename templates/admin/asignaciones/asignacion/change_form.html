@@ -4,24 +4,34 @@
 {% block extrahead %}
 {{ block.super }}
 <style>
-  .empleado-form-row { margin-bottom: 10px; }
+  .empleado-form-row { margin-bottom: 10px; position: relative; }
+  /* Asegurar que el dropdown de Select2 esté por encima y ocupe el ancho correcto */
+  .select2-container { width: 100% !important; }
+  .select2-container--open .select2-dropdown { z-index: 9999; }
 </style>
+<!-- Select2 CSS (CDN) -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock %}
 
 {% block after_field_sets %}
-  <h3>Empleados asignados</h3>
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+    <h4 style="margin:0;">Empleados asignados</h4>
+    <div id="empleados-count" style="font-weight:600; color:#155724; background:#e9f7ef; padding:4px 8px; border-radius:6px;">Seleccionados: <span id="empleados-count-num">0</span></div>
+  </div>
   <div id="empleados-formset">
     {% for form in empleados_formset.forms %}
       <div class="empleado-form-row">
-        {{ form.empleado }}
+  <input type="text" class="empleado-inline-search form-control" placeholder="Buscar empleado" style="margin-bottom:6px;" />
+  {{ form.empleado }}
         <button type="button" class="remove-empleado btn btn-danger btn-sm">Eliminar</button>
       </div>
     {% endfor %}
   </div>
   <div id="empleado-empty-form" style="display:none;">
     <div class="empleado-form-row">
-      <label for="id_empleados-__prefix__-empleado">Empleado:</label>
-      <select name="empleados-__prefix__-empleado" id="id_empleados-__prefix__-empleado">
+      <label for="id_empleados-__prefix__-empleado" style="display:none;">Empleado:</label>
+  <input type="text" class="empleado-inline-search form-control" placeholder="Buscar empleado" style="margin-bottom:6px;" />
+      <select name="empleados-__prefix__-empleado" id="id_empleados-__prefix__-empleado" class="empleado-select form-control">
         {% for emp in empleados_formset.forms.0.fields.empleado.queryset %}
           <option value="{{ emp.pk }}">{{ emp }}</option>
         {% endfor %}
@@ -110,6 +120,8 @@
   <input type="hidden" name="actividades-MAX_NUM_FORMS" value="100">
 {% block footer %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 JS (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
   $(function() {
     // Filtrar empleados cuando cambia el supervisor
@@ -134,6 +146,9 @@
     // Aplicar filtro al cargar la página
     filterEmpleados();
 
+  // Asegurar que los selects generados por el formset tengan la clase usada para inicializar Select2
+  $('#empleados-formset select[name*="empleados-"]').addClass('empleado-select form-control');
+
     // Empleados
     var formIdx = {{ empleados_formset.total_form_count }};
     $('#add-empleado').click(function() {
@@ -148,6 +163,8 @@
       });
       $template.find('button.remove-empleado').show();
       $('#empleados-formset').append($template);
+      // Inicializar Select2 y filtros del nuevo select
+      initEmpleadoRow($template);
       formIdx++;
       $('#id_empleados-TOTAL_FORMS').val(formIdx);
       // Aplicar filtro al nuevo formulario
@@ -161,6 +178,148 @@
       }
     });
     $('.remove-empleado').first().hide();
+
+    // Inicializa comportamiento de búsqueda y exclusión para cada fila
+    function initEmpleadoRow($row) {
+      var $select = $row.find('select.empleado-select');
+      if ($select.length) {
+        // Si Select2 está presente y causa posicionamiento fuera, destrúyelo para usar búsqueda inline
+        if ($select.hasClass('select2-hidden-accessible')) {
+          try { $select.select2('destroy'); } catch (e) { /* ignore */ }
+        }
+
+        // Asegurar que el select tenga la clase esperada
+        $select.addClass('form-control');
+
+        // Añadir/obtener el campo de búsqueda inline que está encima del select
+        var $search = $row.find('.empleado-inline-search');
+        if (!$search.length) {
+          $search = $('<input type="text" class="empleado-inline-search form-control" placeholder="Buscar empleado" style="margin-bottom:6px;" />');
+          $select.before($search);
+        }
+        // valor inicial: calcular cuántas opciones visibles hay y escribir ese texto en el placeholder del select
+  var initialVisible = $select.find('option').filter(function() { return !$(this).prop('hidden') && !$(this).prop('disabled') && $(this).val() !== ''; }).length;
+        var initialText;
+        if (initialVisible === 0) initialText = 'No hay coincidencias';
+        else if (initialVisible === 1) initialText = '1 resultado encontrado';
+        else initialText = initialVisible + ' resultados encontrados';
+        // Actualizar/crear opción placeholder dentro del select para mostrar el contador en el dropdown
+        var $placeholder = $select.find('option[value=""]').first();
+        if (!$placeholder.length) {
+          $placeholder = $('<option value="">' + initialText + '</option>');
+          $select.prepend($placeholder);
+        } else {
+          $placeholder.text(initialText);
+        }
+        // asegurar que no sea seleccionable
+        $placeholder.prop('disabled', true).prop('hidden', false);
+
+        // Filtrar opciones localmente
+        $search.off('input.empleadoFilter').on('input.empleadoFilter', function() {
+          var q = $(this).val().toLowerCase();
+          $select.find('option').each(function() {
+            var txt = $(this).text().toLowerCase();
+            var show = q === '' || txt.indexOf(q) !== -1;
+            // Usar la propiedad 'hidden' en option (más fiable que display:none en algunos navegadores)
+            $(this).prop('hidden', !show);
+          });
+          // Si la opción actualmente seleccionada quedó oculta, limpiarla
+          var cur = $select.val();
+          if (cur && $select.find('option[value="' + cur + '"]:visible').length === 0) {
+            $select.val('');
+            $select.trigger('change');
+          }
+          // Actualizar placeholder del select con el número de resultados visibles
+          var visibleCount = $select.find('option').filter(function() { return !$(this).prop('hidden') && !$(this).prop('disabled') && $(this).val() !== ''; }).length;
+          var phText;
+          if (visibleCount === 0) phText = 'No hay coincidencias';
+          else if (visibleCount === 1) phText = '1 resultado encontrado';
+          else phText = visibleCount + ' resultados encontrados';
+          var $ph = $select.find('option[value=""]').first();
+          if ($ph.length) { $ph.text(phText).prop('hidden', false).prop('disabled', true); }
+        });
+
+        // cuando cambia el select, actualizar exclusiones y contador
+        $select.off('change.empleadoChange').on('change.empleadoChange', function() {
+          updateSelectExclusions();
+          updateEmpleadosCount();
+        });
+      }
+    }
+
+  // Inicializa todas las filas actuales
+  $('#empleados-formset .empleado-form-row').each(function() { initEmpleadoRow($(this)); });
+  // Inicializar contadores de búsqueda
+  refreshAllSearchCounts();
+    
+    // Actualiza el contador de resultados de búsqueda para cada fila
+    function refreshAllSearchCounts() {
+      $('#empleados-formset .empleado-form-row').each(function() {
+        var $row = $(this);
+        var $select = $row.find('select.empleado-select');
+        if ($select.length) {
+          var visibleCount = $select.find('option').filter(function() { return !$(this).prop('hidden') && !$(this).prop('disabled') && $(this).val() !== ''; }).length;
+          var phText;
+          if (visibleCount === 0) phText = 'No hay coincidencias';
+          else if (visibleCount === 1) phText = '1 resultado encontrado';
+          else phText = visibleCount + ' resultados encontrados';
+          var $ph = $select.find('option[value=""]').first();
+          if ($ph.length) { $ph.text(phText).prop('hidden', false).prop('disabled', true); }
+        }
+      });
+    }
+
+    // Actualiza el contador (incluye supervisor si no está duplicado)
+    function updateEmpleadosCount() {
+      var selected = [];
+      $('#empleados-formset select[name*="empleados-"]').each(function() {
+        var v = $(this).val();
+        if (v) selected.push(v.toString());
+      });
+      var sup = $('#id_supervisor').val();
+      var unique = selected.slice();
+      if (sup && unique.indexOf(sup.toString()) === -1) unique.push(sup.toString());
+      $('#empleados-count-num').text(unique.length);
+    }
+
+    // Oculta en cada select las opciones ya seleccionadas en los otros selects y el supervisor
+    function updateSelectExclusions() {
+      var selected = {};
+      $('#empleados-formset select.empleado-select').each(function() {
+        var v = $(this).val();
+        if (v) selected[v] = (selected[v] || 0) + 1;
+      });
+      var sup = $('#id_supervisor').val();
+      $('#empleados-formset select.empleado-select').each(function() {
+        var $s = $(this);
+        var myVal = $s.val();
+        $s.find('option').each(function() {
+          var optVal = $(this).attr('value');
+          // mostrar mi propia selección y deshabilitar selecciones de otros y el supervisor
+          if (optVal && optVal.toString() !== myVal) {
+            if ((sup && optVal.toString() === sup.toString()) || (optVal in selected && selected[optVal] > 0)) {
+              // si está seleccionado en otro lado, deshabilitar
+              $(this).prop('disabled', true);
+            } else {
+              $(this).prop('disabled', false);
+            }
+          } else {
+            // siempre habilitar la opción correspondiente a mi selección
+            $(this).prop('disabled', false);
+          }
+        });
+        // Si está inicializado con Select2, refrescarlo para que muestre opciones deshabilitadas correctamente
+        if ($s.hasClass('select2-hidden-accessible')) {
+          $s.trigger('change.select2');
+        }
+      });
+      // actualizar contadores de búsqueda al final (puede cambiar visibilidad de options)
+      refreshAllSearchCounts();
+    }
+
+  // actualizar al cargar
+  updateSelectExclusions();
+  updateEmpleadosCount();
 
     // Actividades
     var actIdx = {{ actividades_formset.total_form_count }};
@@ -204,6 +363,40 @@
     });
     $('.remove-actividad').first().hide();
   });
+</script>
+<!-- Mutation observer fallback: detect dropdown nodes added by Select2 and force fixed positioning -->
+<script>
+  (function() {
+    try {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+          m.addedNodes && m.addedNodes.forEach(function(node) {
+            try {
+              if (!(node instanceof HTMLElement)) return;
+              if (node.classList && node.classList.contains('select2-dropdown')) {
+                // Encontramos el dropdown recién añadido
+                var $dd = $(node);
+                // Buscar el container abierto asociado
+                var $openContainer = $('.select2-container--open').first();
+                if ($openContainer && $openContainer.length) {
+                  var rect = $openContainer[0].getBoundingClientRect();
+                  $dd.css({
+                    position: 'fixed',
+                    left: Math.max(0, rect.left) + 'px',
+                    top: Math.max(0, rect.top + $openContainer.outerHeight()) + 'px',
+                    width: $openContainer.outerWidth() + 'px',
+                    'z-index': 200000
+                  });
+                }
+              }
+            } catch (inner) { console.error('observer inner', inner); }
+          });
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      console.log('Select2 dropdown MutationObserver instalado.');
+    } catch (e) { console.error('No se pudo instalar observer', e); }
+  })();
 </script>
 {% endblock %}
 {% endblock %}
