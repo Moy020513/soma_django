@@ -252,6 +252,53 @@
   // Inicializar contadores de búsqueda
   refreshAllSearchCounts();
     
+    // Inicializar buscador inline para selects únicos (supervisor, empresa)
+    function initInlineSearchForSingleSelect($select) {
+      if (!$select || !$select.length) return;
+      // si ya tiene un input de búsqueda previo, reutilizar
+      var $row = $select.parent();
+      var $search = $row.find('.inline-single-search');
+      if (!$search.length) {
+        $search = $('<input type="text" class="inline-single-search form-control" placeholder="Buscar..." style="margin-bottom:6px;" />');
+        $select.before($search);
+      }
+      // crear/actualizar placeholder option dentro del select
+      var updatePlaceholder = function() {
+        var visibleCount = $select.find('option').filter(function() { return !$(this).prop('hidden') && !$(this).prop('disabled') && $(this).val() !== ''; }).length;
+        var phText = visibleCount === 0 ? 'No hay coincidencias' : (visibleCount === 1 ? '1 resultado encontrado' : (visibleCount + ' resultados encontrados'));
+        var $ph = $select.find('option[value=""]').first();
+        if (!$ph.length) {
+          $ph = $('<option value="">' + phText + '</option>');
+          $select.prepend($ph);
+        } else {
+          $ph.text(phText);
+        }
+        $ph.prop('disabled', true).prop('hidden', false);
+      };
+      // inicializar placeholder
+      updatePlaceholder();
+      // filtrar opciones localmente al escribir
+      $search.off('input.singleFilter').on('input.singleFilter', function() {
+        var q = $(this).val().toLowerCase();
+        $select.find('option').each(function() {
+          var txt = $(this).text().toLowerCase();
+          var show = q === '' || txt.indexOf(q) !== -1;
+          $(this).prop('hidden', !show);
+        });
+        // si la opción seleccionada quedó oculta, limpiarla
+        var cur = $select.val();
+        if (cur && $select.find('option[value="' + cur + '"]:visible').length === 0) {
+          $select.val('');
+          $select.trigger('change');
+        }
+        updatePlaceholder();
+      });
+    }
+
+    // Llamadas para supervisor y empresa
+    initInlineSearchForSingleSelect($('#id_supervisor'));
+    initInlineSearchForSingleSelect($('#id_empresa'));
+    
     // Actualiza el contador de resultados de búsqueda para cada fila
     function refreshAllSearchCounts() {
       $('#empleados-formset .empleado-form-row').each(function() {
