@@ -84,6 +84,22 @@
 
             <div class="info-item">
                 <span class="info-label">
+                    <i class="fas fa-id-card" style="color: var(--soma-orange, #ff6b35);"></i>
+                    CURP:
+                </span>
+                <span class="info-value">{% if empleado %}{{ empleado.curp|default:"No especificado" }}{% else %}No especificado{% endif %}</span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-shield-alt" style="color: var(--soma-orange, #ff6b35);"></i>
+                    NSS:
+                </span>
+                <span class="info-value">{% if empleado %}{{ empleado.nss|default:"No especificado" }}{% else %}No especificado{% endif %}</span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">
                     <i class="fas fa-calendar-plus" style="color: var(--soma-orange, #ff6b35);"></i>
                     Registro:
                 </span>
