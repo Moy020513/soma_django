@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
-from .models import Usuario, Rol
+from .models import Usuario
 from .forms import UsuarioCreationForm, UsuarioChangeForm
 
 @admin.register(Usuario)
@@ -72,7 +72,4 @@ class UsuarioAdmin(UserAdmin):
                 pass
         return field
 
-@admin.register(Rol)
-class RolAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'descripcion')
-    search_fields = ('nombre',)
+# El modelo Rol ya no se registra en el admin para ocultarlo del módulo "Usuarios".
