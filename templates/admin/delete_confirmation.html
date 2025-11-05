@@ -33,7 +33,7 @@
         {% else %}
             <div class="alert alert-danger">
                 <h4>{% trans "¿Está seguro?" %}</h4>
-                <p>{% blocktrans with name=object %}¿Está seguro que desea eliminar la notificación "{{ object }}" y todos sus elementos asociados?{% endblocktrans %}</p>
+                <p>{% blocktrans with name=object model=opts.verbose_name %}¿Está seguro que desea eliminar la {{ model }} "{{ name }}" y todos sus elementos asociados?{% endblocktrans %}</p>
 
                 <p class="text-danger font-weight-bold">
                     {% trans "Esta acción no se puede deshacer." %}

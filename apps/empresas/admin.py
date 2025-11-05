@@ -8,6 +8,7 @@ from django.template.response import TemplateResponse
 import json
 from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR
 from .models import Empresa, Contacto
+from django.db.models.deletion import ProtectedError
 class ContactoInline(admin.TabularInline):
     model = Contacto
     extra = 1
@@ -18,6 +19,104 @@ class ContactoInline(admin.TabularInline):
 
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
+    def delete_model(self, request, obj):
+        """Intentar borrar la empresa; si hay ProtectedError, mostrar mensaje claro al usuario indicando qué relaciones la están usando."""
+        try:
+            return super().delete_model(request, obj)
+        except ProtectedError as e:
+            # Construir lista de relaciones con conteo
+            parts = []
+            for f in obj._meta.get_fields():
+                # buscamos relaciones reversas auto creadas
+                if not getattr(f, 'auto_created', False):
+                    continue
+                if not getattr(f, 'is_relation', False):
+                    continue
+                accessor = f.get_accessor_name()
+                if not hasattr(obj, accessor):
+                    continue
+                rel = getattr(obj, accessor)
+                try:
+                    cnt = rel.count()
+                except Exception:
+                    cnt = 0
+                if cnt:
+                    # nombre legible
+                    try:
+                        label = f.related_model._meta.verbose_name_plural
+                    except Exception:
+                        label = accessor
+                    parts.append(f"{cnt} {label}")
+            if not parts:
+                # Fallback al mensaje genérico provisto por ProtectedError
+                msg = _('La %(name)s "%(obj)s" no se puede eliminar porque hay objetos relacionados que la protegen.') % {
+                    'name': self.opts.verbose_name,
+                    'obj': str(obj),
+                }
+            else:
+                msg = _('La %(name)s "%(obj)s" no se puede eliminar porque actualmente está siendo usada por: %(rels)s.') % {
+                    'name': self.opts.verbose_name,
+                    'obj': str(obj),
+                    'rels': ', '.join(parts),
+                }
+            self.message_user(request, msg, level=messages.ERROR)
+            return None
+
+    def delete_queryset(self, request, queryset):
+        """Override para manejar borrados en lote y reportar cuáles no pudieron borrarse por ProtectedError."""
+        failed = []
+        for obj in list(queryset):
+            try:
+                obj.delete()
+            except ProtectedError:
+                failed.append(str(obj))
+        if failed:
+            msg = _('No se pudieron eliminar las siguientes %(name)s porque están siendo usadas: %(objs)s') % {
+                'name': self.opts.verbose_name_plural,
+                'objs': '; '.join(failed),
+            }
+            self.message_user(request, msg, level=messages.ERROR)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """Override delete view to show a friendly message on the confirmation
+        page explaining which related objects would prevent deletion.
+        """
+        obj = self.get_object(request, object_id)
+        if obj is None:
+            return super().delete_view(request, object_id, extra_context=extra_context)
+
+        # Only annotate the GET confirmation page (before deletion) with info
+        if request.method == 'GET':
+            parts = []
+            for f in obj._meta.get_fields():
+                if not getattr(f, 'auto_created', False):
+                    continue
+                if not getattr(f, 'is_relation', False):
+                    continue
+                accessor = f.get_accessor_name()
+                if not hasattr(obj, accessor):
+                    continue
+                rel = getattr(obj, accessor)
+                try:
+                    cnt = rel.count()
+                except Exception:
+                    cnt = 0
+                if cnt:
+                    try:
+                        label = f.related_model._meta.verbose_name_plural
+                    except Exception:
+                        label = accessor
+                    parts.append(f"{cnt} {label}")
+            if parts:
+                msg = _('La %(name)s "%(obj)s" no se puede eliminar porque actualmente está siendo usada por: %(rels)s.') % {
+                    'name': self.opts.verbose_name,
+                    'obj': str(obj),
+                    'rels': ', '.join(parts),
+                }
+                # Use warning so it appears on the confirmation page
+                self.message_user(request, msg, level=messages.WARNING)
+
+        return super().delete_view(request, object_id, extra_context=extra_context)
     def logo_preview(self, obj: Empresa):
         if obj.logo:
             return format_html('<img src="{}" alt="Logo" style="height:32px; width:auto; object-fit:contain; background:#fafafa; padding:2px; border:1px solid #eee; border-radius:4px;"/>', obj.logo.url)
