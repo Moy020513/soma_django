@@ -12,6 +12,8 @@ from .models import Asignacion, HistorialSupervisorAsignacion, HistorialEmpleado
 from apps.recursos_humanos.models import Empleado
 from apps.empresas.models import Empresa
 from .forms_custom import EmpleadoAsignacionFormSet, AsignacionCustomForm, ActividadAsignadaFormSet
+from django.urls import path
+from django.shortcuts import get_object_or_404
 
 
 @admin.register(Asignacion)
@@ -40,6 +42,13 @@ class AsignacionAdmin(admin.ModelAdmin):
     def get_empleados(self, obj):
         return ', '.join([str(e) for e in obj.empleados.all()])
     get_empleados.short_description = 'Empleados'
+
+    # Añadir botón/columna historial en la lista
+    def historial_action(self, obj):
+        url = reverse('admin:asignaciones_asignacion_historial', args=(obj.pk,))
+        return format_html('<a class="button" href="{}">Historial</a>', url)
+    historial_action.short_description = 'Historial'
+    historial_action.allow_tags = True
 
     def render_change_form(self, request, context, *args, **kwargs):
         obj = context.get('original')
@@ -170,6 +179,40 @@ class AsignacionAdmin(admin.ModelAdmin):
         context.setdefault('errors', context.get('errors'))
         context.setdefault('app_label', self.model._meta.app_label)
         return super().render_change_form(request, context, *args, **kwargs)
+
+    # Registrar URL personalizada para ver historial de una asignación
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('<path:object_id>/historial/', self.admin_site.admin_view(self.historial_view), name='asignaciones_asignacion_historial'),
+        ]
+        return custom_urls + urls
+
+    def historial_view(self, request, object_id, extra_context=None):
+        """Vista admin que muestra el historial de supervisor, historial de empleados y actividades completadas para una Asignacion."""
+        asignacion = get_object_or_404(Asignacion, pk=object_id)
+        # ordenar por los campos existentes en los modelos
+        historial_supervisores = asignacion.historial_supervisores.order_by('-fecha_inicio')
+        historial_empleados = asignacion.historial_empleados.order_by('-timestamp')
+        actividades_completadas = [a for a in asignacion.actividades.all() if a.completada]
+        total_actividades = asignacion.actividades.count()
+        completadas_count = len(actividades_completadas)
+
+        context = dict(self.admin_site.each_context(request))
+        context.update({
+            'title': f'Historial - {asignacion}',
+            'asignacion': asignacion,
+            'historial_supervisores': historial_supervisores,
+            'historial_empleados': historial_empleados,
+            'actividades_completadas': actividades_completadas,
+            'total_actividades': total_actividades,
+            'completadas_count': completadas_count,
+            # si no existen historiales, pasar los valores actuales para mostrarlos
+            'current_supervisor': asignacion.supervisor,
+            'current_empleados': list(asignacion.empleados.all()),
+            'opts': self.model._meta,
+        })
+        return TemplateResponse(request, 'admin/asignaciones/asignacion/historial.html', context)
 
 
     def response_add(self, request, obj, post_url_continue=None):

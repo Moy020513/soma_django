@@ -1,0 +1,123 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <style>
+    .hist-card { background:#fff; border:1px solid #e6e9ee; padding:18px; border-radius:8px; box-shadow:0 1px 2px rgba(16,24,40,0.04); }
+    .hist-row { display:flex; gap:18px; margin-bottom:18px; }
+    .hist-col { flex:1; }
+    .hist-title { font-size:18px; font-weight:700; margin-bottom:6px; }
+    .muted { color:#6b7280; font-size:0.95rem }
+    .badge { display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:600; font-size:0.85rem }
+    .table-clean { width:100%; border-collapse:collapse; }
+    .table-clean th, .table-clean td { padding:8px 10px; border-bottom:1px solid #eef2f6; text-align:left }
+    .progress { background:#f3f4f6; height:12px; border-radius:8px; overflow:hidden }
+    .progress-bar { height:100%; background:linear-gradient(90deg,#16a34a,#059669); }
+    .actions-row { text-align:right; margin-top:12px }
+  </style>
+
+  <div class="hist-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <h1 style="margin:0; font-size:22px">Historial — {{ asignacion }}</h1>
+        <div class="muted">Fecha: {{ asignacion.fecha }} · Empresa: {{ asignacion.empresa }}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="badge">Supervisor: {% if asignacion.supervisor %}{{ asignacion.supervisor }}{% else %}—{% endif %}</div>
+      </div>
+    </div>
+
+    <div class="hist-row">
+      <div class="hist-col">
+        <div class="hist-title">Historial de supervisores</div>
+        {% if historial_supervisores %}
+          <table class="table-clean">
+            <thead><tr><th>Fecha</th><th>Supervisor</th></tr></thead>
+            <tbody>
+              {% for h in historial_supervisores %}
+                <tr>
+                  <td class="muted">{{ h.fecha_inicio|date:"d/m/Y H:i" }}</td>
+                  <td>{{ h.supervisor }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          {% if current_supervisor %}
+            <p class="muted">Supervisor actual:</p>
+            <p>{{ current_supervisor }}</p>
+          {% else %}
+            <p class="muted">No hay cambios de supervisor registrados.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="hist-col">
+        <div class="hist-title">Historial de empleados</div>
+        {% if historial_empleados %}
+          <table class="table-clean">
+            <thead><tr><th>Fecha</th><th>Empleado</th><th>Acción</th></tr></thead>
+            <tbody>
+              {% for h in historial_empleados %}
+                <tr>
+                  <td class="muted">{{ h.timestamp|date:"d/m/Y H:i" }}</td>
+                  <td>{{ h.empleado }}</td>
+                  <td>{{ h.get_accion_display }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          {% if current_empleados and current_empleados|length > 0 %}
+            <p class="muted">Empleados actuales:</p>
+            <ul>
+              {% for e in current_empleados %}
+                <li>{{ e }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="muted">No hay historial de empleados registrado.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="margin-top:8px">
+      <div class="hist-title">Actividades completadas {% if total_actividades is not None %}<span class="muted" style="font-weight:600">({{ completadas_count }}/{{ total_actividades }})</span>{% endif %}</div>
+      {% if total_actividades == 0 %}
+        <p class="muted">No hay actividades asignadas.</p>
+      {% else %}
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="flex:1">
+            <div class="progress" aria-hidden="true">
+              {% with percent=0 %}{% if total_actividades > 0 %}{% widthratio completadas_count total_actividades 100 as percent %}{% endif %}{% endwith %}
+              <div class="progress-bar" style="width:{{ percent }}%"></div>
+            </div>
+          </div>
+          <div style="width:80px;text-align:right; font-weight:600">{{ percent }}%</div>
+        </div>
+
+        {% if actividades_completadas and actividades_completadas|length > 0 %}
+          <ul>
+            {% for a in actividades_completadas %}
+              <li style="margin-bottom:6px">
+                <strong>{{ a.nombre }}</strong>
+                <span class="muted"> — {{ a.porcentaje }}% </span>
+                <div class="muted">Completada por: {% if a.completada_por %}{{ a.completada_por }}{% else %}N/A{% endif %} {% if a.fecha_completada %}· {{ a.fecha_completada|date:"d/m/Y H:i" }}{% endif %}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">0/{{ total_actividades }} actividades completadas.</p>
+        {% endif %}
+
+        {# Mostrar actividades pendientes si existen (pendientes se pueden calcular en la vista si se necesita) #}
+      {% endif %}
+    </div>
+
+    <div class="actions-row">
+      <a class="button" href="{% url 'admin:asignaciones_asignacion_changelist' %}">Volver a lista</a>
+    </div>
+  </div>
+
+{% endblock %}

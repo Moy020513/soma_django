@@ -32,6 +32,10 @@
                     background: #1976d2;
                     color: #fff !important;
                 }
+                .btn-action.history {
+                    background: #388e3c;
+                    color: #fff !important;
+                }
                 .btn-action.delete {
                     background: #d32f2f;
                     color: #fff !important;
@@ -82,6 +86,7 @@
     <td>{% if obj.archivo_nombre %}<a href="{{ obj.archivos.url }}" target="_blank">{{ obj.archivo_nombre }}</a>{% else %}-{% endif %}</td>
     <td style="text-align:center;">{{ obj.actividades_total }}</td>
         <td style="text-align:right;">
+            <a href="{% url 'admin:asignaciones_asignacion_historial' obj.pk %}" class="btn-action history">Historial</a>
             <a href="{{ obj.get_admin_url }}" class="btn-action update">Actualizar</a>
             <a href="{% url 'admin:asignaciones_asignacion_delete' obj.pk %}" class="btn-action delete">Eliminar</a>
         </td>
