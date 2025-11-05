@@ -157,6 +157,10 @@ class VerificacionVehicular(models.Model):
     fecha_vencimiento = models.DateField()
     estado = models.CharField(max_length=20, choices=ESTADOS_VERIFICACION, default='pendiente')
         # número_certificado, centro_verificacion, costo y certificado eliminados
+    # Número o folio de verificación (opcional)
+    numero_verificacion = models.CharField(max_length=50, null=True, blank=True)
+    # Documento adjunto de la verificación (PDF, imagen, etc.)
+    documento_verificacion = models.FileField(upload_to='vehiculos/verificaciones/', null=True, blank=True)
     observaciones = models.TextField(blank=True)
     
     class Meta:

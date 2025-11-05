@@ -3,6 +3,7 @@ from .models import (
     Vehiculo, AsignacionVehiculo, TransferenciaVehicular, 
     RegistroUso, TenenciaVehicular, VerificacionVehicular
 )
+from django.utils.html import format_html
 
 
 @admin.register(Vehiculo)
@@ -176,14 +177,14 @@ class TenenciaVehicularAdmin(admin.ModelAdmin):
 
 @admin.register(VerificacionVehicular)
 class VerificacionVehicularAdmin(admin.ModelAdmin):
-    list_display = ['vehiculo', 'tipo_verificacion', 'fecha_verificacion', 'fecha_vencimiento', 'estado']
+    list_display = ['vehiculo', 'tipo_verificacion', 'fecha_verificacion', 'fecha_vencimiento', 'estado', 'documento_link']
     list_filter = ['tipo_verificacion', 'estado', 'fecha_verificacion']
     search_fields = ['vehiculo__placas', 'vehiculo__marca']
     date_hierarchy = 'fecha_verificacion'
     # list_editable removed: do not allow inline edits from changelist
     fieldsets = (
         ('Información Básica', {
-            'fields': ('vehiculo', 'tipo_verificacion', 'estado')
+            'fields': ('vehiculo', 'tipo_verificacion', 'numero_verificacion', 'estado', 'documento_verificacion')
         }),
         ('Fechas', {
             'fields': ('fecha_verificacion', 'fecha_vencimiento')
@@ -202,3 +203,14 @@ class VerificacionVehicularAdmin(admin.ModelAdmin):
         updated = queryset.exclude(estado='aprobada').update(estado='vencida')
         self.message_user(request, f'{updated} verificaciones marcadas como vencidas.')
     marcar_como_vencida.short_description = "Marcar como vencidas"
+
+    def documento_link(self, obj):
+        if obj.documento_verificacion:
+            return format_html(
+                '<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>',
+                obj.documento_verificacion.url,
+                obj.documento_verificacion.name.split('/')[-1]
+            )
+        return ''
+    documento_link.short_description = 'Documento'
+    documento_link.allow_tags = True
