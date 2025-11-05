@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_urls admin_modify static %}
+{% load i18n admin_urls admin_modify static es_messages %}
 
 {% block extrastyle %}
     {{ block.super }}
@@ -18,7 +18,7 @@
         <div class="container-fluid mt-2">
             {% for message in messages %}
                 <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
+                    {{ message|es_alert }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
@@ -79,7 +79,7 @@
                     {% comment %} Si estamos en POST, mostrar los errores que existan. {% endcomment %}
                     <div class="form-errors">
                         <div class="alert alert-danger">
-                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrige los errores a continuación.</h5>
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>{% trans 'Please correct the errors below.' %}</h5>
                             <ul class="mb-0">
                                 {# Errores no asociados a campos del formulario principal #}
                                 {% for error in adminform.form.non_field_errors %}

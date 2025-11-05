@@ -1,6 +1,65 @@
 
 {% extends 'base.html' %}
+
+{# Mover la lógica de scripts al bloque que se renderiza al final del body (extra_js)
+   y usar los bloques correctos que define base.html: extra_css (head) y extra_js (end body).
+   Incluir {{ media }} en head para que los widgets del admin carguen su JS/CSS (filter_horizontal, etc.). #}
+
+{% load static %}
+{% load i18n %}
+{% load es_messages %}
+
+{% block extra_css %}
+     <!-- Fallback ligero: definir getters de i18n e interpolate si aún no estén disponibles.
+            Esto evita errores en widgets que se inicializan antes de que admin:jsi18n o core.js
+            terminen de cargarse. Preferimos la carga real de jsi18n/core.js, pero este shim
+            evita errores de referencia mientras se resuelven órdenes de carga. -->
+     <script>
+        (function(){
+            if(typeof window.gettext === 'undefined'){
+                window.gettext = function(s){ return s; };
+            }
+            if(typeof window.gettext_noop === 'undefined'){
+                window.gettext_noop = function(s){ return s; };
+            }
+            if(typeof window.pgettext === 'undefined'){
+                window.pgettext = function(ctx, s){ return s; };
+            }
+            if(typeof window.interpolate === 'undefined'){
+                window.interpolate = function(fmt, obj, named){
+                    if(named){
+                        return fmt.replace(/%\(([^)]+)\)s/g, function(_, name){ return String(obj[name]===undefined? '': obj[name]); });
+                    }
+                    var i = 0;
+                    return fmt.replace(/%s/g, function(){ return String((obj && obj.length && obj[i]!==undefined)? obj[i++] : ''); });
+                };
+            }
+        })();
+    </script>
+    {# Asegurar que los recursos JS esenciales del admin estén disponibles antes de que otros scripts los usen #}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    <script src="{% static 'admin/js/core.js' %}"></script>
+    {{ media }}
+    <link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
+    {# scripts y depuraciones temporales eliminados; la carga de flatpickr se realiza de forma centralizada en base.html #}
+{% endblock %}
+
+{# Compatibilidad: algunas plantillas del admin usan los nombres de bloque "extrastyle" y "extrahead".
+   Exponerlos aquí y delegar a los bloques actuales para no romper overrides existentes. #}
+{% block extrastyle %}
+    {{ block.super }}
+    {{ media }}
+{% endblock %}
+
 {% block extrahead %}
+    {{ block.super }}
+    {# Permitir que child templates inyecten scripts en head; incluir media por seguridad #}
+    {{ media }}
+{% endblock %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extra_js %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
@@ -12,16 +71,6 @@
             }, 300);
         });
     </script>
-{% endblock %}
-
-{% load static %}
-{% load i18n %}
-
-{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
-
-{% block extrastyle %}
-    <link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
-    {# scripts y depuraciones temporales eliminados; la carga de flatpickr se realiza de forma centralizada en base.html #}
 {% endblock %}
 
 {% block branding %}
@@ -56,7 +105,7 @@
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
+                {{ message|es_alert }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         {% endfor %}
