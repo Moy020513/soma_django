@@ -16,6 +16,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.utils import ImageReader
+from django.contrib.staticfiles import finders
 
 from .models import Asignacion, ActividadAsignada
 
@@ -323,47 +324,75 @@ def exportar_asignaciones_hoy_pdf(request):
             fontName='Helvetica-Bold'
         )
         
-        # Header con logo de SOMA
-        # Buscar el logo en diferentes ubicaciones posibles
-        logo_soma = None
-        posibles_rutas = [
-            os.path.join(settings.STATIC_ROOT, 'images', 'logo.png') if settings.STATIC_ROOT else None,
-            os.path.join(settings.STATICFILES_DIRS[0], 'images', 'logo.png') if settings.STATICFILES_DIRS else None,
-            os.path.join(settings.BASE_DIR, 'static', 'images', 'logo.png'),
-            os.path.join(settings.BASE_DIR, 'staticfiles', 'images', 'logo.png')
+        # Header con logo de SOMA y posible membrete
+        # Mostrar el título con la segunda línea en color naranja
+        titulo_principal = Paragraph("Servicios Industriales SOMA<br/><font color='#F97316'>Asignaciones de Hoy</font>", title_style)
+
+        # Preparar metadata del PDF (título que aparece en la pestaña)
+        pdf_title = f"Asignaciones {hoy.strftime('%d/%m/%Y')}"
+
+        def _on_first_page(canvas, doc_obj):
+            try:
+                canvas.setTitle(pdf_title)
+                canvas.setAuthor('Servicios Industriales SOMA')
+            except Exception:
+                pass
+
+        # Intentar localizar un banner/membrete completo primero (imagen a lo ancho)
+        banner_path = None
+        banner_candidates = [
+            'images/membrete_header.png',
+            'images/membrete.png',
+            'img/membrete.png',
+            'images/header.png'
         ]
-        
-        for ruta in posibles_rutas:
+        for cand in banner_candidates:
+            p = finders.find(cand)
+            if p:
+                banner_path = p
+                break
+
+        if banner_path and os.path.exists(banner_path):
+            try:
+                banner = Image(banner_path, width=7.6*inch, height=1*inch)
+                story.append(banner)
+                story.append(Spacer(1, 6))
+            except Exception as e:
+                print(f"No se pudo cargar banner desde {banner_path}: {e}")
+
+        # Buscar el logo en ubicaciones estáticas conocidas (más robusto usando finders)
+        logo_soma = None
+        logo_candidates = [
+            'images/logo.png', 'images/logo_soma.png', 'img/logo.png', 'img/logo_soma.png'
+        ]
+        for cand in logo_candidates:
+            ruta = finders.find(cand)
             if ruta and os.path.exists(ruta):
                 try:
-                    # Usar Image en lugar de ImageReader
-                    logo_soma = Image(ruta, width=1*inch, height=0.8*inch)
+                    logo_soma = Image(ruta, width=1.2*inch, height=0.9*inch)
                     break
                 except Exception as e:
                     print(f"Error cargando logo desde {ruta}: {e}")
                     continue
-        
-        # Crear header con o sin logo
-        titulo_principal = Paragraph("SISTEMA SOMA<br/>Asignaciones de Hoy", title_style)
-        
+
+        # Header: logo (izquierda) + título (centrado) + celda vacía simétrica para centrar perfectamente
         if logo_soma:
-            # Header con logo y título centrados en toda la hoja
-            header_table = Table([[logo_soma, titulo_principal]], colWidths=[1.2*inch, 5.3*inch])
+            header_table = Table([[logo_soma, titulo_principal, '']], colWidths=[1.2*inch, 5.2*inch, 1.2*inch])
             header_table.setStyle(TableStyle([
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Todo centrado
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('ALIGN', (1, 0), (1, 0), 'CENTER'),
                 ('LEFTPADDING', (0, 0), (-1, -1), 0),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 0),
             ]))
+            story.append(header_table)
         else:
-            # Fallback sin logo - título centrado
-            header_table = Table([[titulo_principal]], colWidths=[7.5*inch])
+            header_table = Table([[titulo_principal]], colWidths=[7.6*inch])
             header_table.setStyle(TableStyle([
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ]))
-        
-        story.append(header_table)
+            story.append(header_table)
+
         story.append(Paragraph(f"Fecha: {hoy.strftime('%d/%m/%Y')}", styles['Normal']))
         story.append(Spacer(1, 20))
         
@@ -403,24 +432,24 @@ def exportar_asignaciones_hoy_pdf(request):
             main_table = Table(table_data, colWidths=[1.8*inch, 1.5*inch, 1.8*inch, 2.4*inch])
             main_table.setStyle(TableStyle([
                 # Header
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a8a')),  # Azul marino
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#001a63")),  # Azul marino
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                
-                # Contenido
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+
+                # Contenido (más compacto)
                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 8),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-                ('TOPPADDING', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-                
-                # Bordes y colores alternos
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+
+                # Bordes y colores alternos (ligeramente más finos)
+                ('GRID', (0, 0), (-1, -1), 0.4, colors.grey),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
             ]))
             
@@ -431,12 +460,12 @@ def exportar_asignaciones_hoy_pdf(request):
         
         # Footer simple
         story.append(Spacer(1, 30))
-        footer_text = f"Reporte generado el {timezone.now().strftime('%d/%m/%Y %H:%M')} por {request.user.get_full_name() or request.user.username}"
+        footer_text = f"Reporte generado el {timezone.now().strftime('%d/%m/%Y %H:%M')} por Servicios Industriales SOMA"
         story.append(Paragraph(footer_text, styles['Normal']))
-        
-        # Generar el PDF
-        doc.build(story)
-        
+
+        # Generar el PDF (aplicar metadata en la primera página)
+        doc.build(story, onFirstPage=_on_first_page)
+
         return response
         
     except Exception as e:
