@@ -1,10 +1,16 @@
 {% load i18n %}
 
 <style>
+    .results{
+        margin-left: 0;
+    }
+    .text {
+        width: auto; 
+    }
  
     #result_list th, #result_list td {
-        border: 1px solid #e0e0e0;
-        padding: 10px 14px;
+        border: 1px solid #b6b6b6ff;
+        padding: 10px;
         text-align: left;
     }
                 #result_list th {
@@ -12,9 +18,10 @@
                     color: #fff;
                     font-weight: 600;
                     letter-spacing: 0.5px;
-                    font-size: 14px;
-                    text-align: center;
-                    height: 45px;
+                    font-size: 12px !important;
+                    text-align: center !important;
+                    height: 25px !important;
+                    width: auto !important;
                 }
                 .btn-action {
                     border: none;
@@ -71,6 +78,7 @@
     <th scope="col"><div class="text"><span>DETALLES</span></div><div class="clear"></div></th>
     <th scope="col"><div class="text"><span>DOCUMENTO</span></div><div class="clear"></div></th>
     <th scope="col"><div class="text"><span># ACTIVIDADES</span></div><div class="clear"></div></th>
+    <th scope="col"><div class="text"><span>HISTORIAL</span></div><div class="clear"></div></th>
     <th scope="col"><div class="text"><span>ACCIONES</span></div><div class="clear"></div></th>
 </tr>
 </thead>
@@ -78,15 +86,17 @@
 {% for obj in cl.result_list %}
 <tr>
     <td>{{ obj.numero_cotizacion|default:'-' }}</td>
-    <td>{{ obj.fecha }}</td>
-    <td>{{ obj.empleados_str }}</td>
+    <td>{{ obj.fecha|date:"d/m/Y" }}</td>
+    <td style="text-align:center">{{ obj.empleados.count }}</td>
     <td>{{ obj.empresa }}</td>
-    <td>{{ obj.supervisor }}</td>
+    <td style="white-space:nowrap">{{ obj.supervisor.nombre_primer_apellido|default:'-' }}</td>
     <td>{{ obj.detalles }}</td>
     <td>{% if obj.archivo_nombre %}<a href="{{ obj.archivos.url }}" target="_blank">{{ obj.archivo_nombre }}</a>{% else %}-{% endif %}</td>
     <td style="text-align:center;">{{ obj.actividades_total }}</td>
+    <td style="text-align:center;">
+        <a href="{% url 'admin:asignaciones_asignacion_historial' obj.pk %}" class="btn-action history">Historial</a>
+    </td>
         <td style="text-align:right;">
-            <a href="{% url 'admin:asignaciones_asignacion_historial' obj.pk %}" class="btn-action history">Historial</a>
             <a href="{{ obj.get_admin_url }}" class="btn-action update">Actualizar</a>
             <a href="{% url 'admin:asignaciones_asignacion_delete' obj.pk %}" class="btn-action delete">Eliminar</a>
         </td>

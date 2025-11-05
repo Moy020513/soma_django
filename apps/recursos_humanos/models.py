@@ -186,6 +186,21 @@ class Empleado(models.Model):
     @property
     def nombre_completo(self):
         return self.usuario.get_full_name()
+
+    @property
+    def nombre_primer_apellido(self):
+        """Devuelve el primer nombre y el primer apellido (ej: "Juan Pérez").
+        Evita operaciones costosas y maneja valores nulos.
+        """
+        if not hasattr(self, 'usuario') or not self.usuario:
+            return ''
+        first = (self.usuario.first_name or '').strip()
+        last = (self.usuario.last_name or '').strip()
+        # Tomar sólo la primera palabra del apellido si viene con espacios
+        first_last = last.split()[0] if last else ''
+        if first and first_last:
+            return f"{first} {first_last}"
+        return first or first_last or ''
     
     #
     
