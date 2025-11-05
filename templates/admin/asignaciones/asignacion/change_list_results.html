@@ -1,107 +1,205 @@
 {% load i18n %}
 
 <style>
-    .results{
-        margin-left: 0;
+    /* Contenedor principal: controlar el ancho y scroll */
+    .results {
+        width: 100%;
+        max-width: 100vw; /* No exceder el viewport */
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
-    .text {
-        width: auto; 
+
+    /* Tabla: permitir que crezca según contenido pero con scroll */
+    #result_list {
+        width: max-content; /* Se ajusta al contenido */
+        min-width: 100%; /* Al menos ocupa todo el ancho disponible */
+        border-collapse: collapse;
+        table-layout: auto;
     }
- 
-    #result_list th, #result_list td {
-        border: 1px solid #b6b6b6ff;
-        padding: 10px;
+
+    /* Celdas compactas */
+    #result_list th, 
+    #result_list td {
+        border: 1px solid #b6b6b6;
+        padding: 6px 8px;
         text-align: left;
+        font-size: 13px;
+        line-height: 1.25;
+        white-space: nowrap; /* Evita que el texto se parta en múltiples líneas */
     }
-                #result_list th {
-                    background: #000a46ff;
-                    color: #fff;
-                    font-weight: 600;
-                    letter-spacing: 0.5px;
-                    font-size: 12px !important;
-                    text-align: center !important;
-                    height: 25px !important;
-                    width: auto !important;
-                }
-                .btn-action {
-                    border: none;
-                    border-radius: 4px;
-                    padding: 4px 14px;
-                    font-size: 13px;
-                    font-weight: 500;
-                    margin-left: 6px;
-                    cursor: pointer;
-                    text-decoration: none;
-                    display: inline-block;
-                    transition: background 0.2s;
-                }
-                .btn-action.update {
-                    background: #1976d2;
-                    color: #fff !important;
-                }
-                .btn-action.history {
-                    background: #388e3c;
-                    color: #fff !important;
-                }
-                .btn-action.delete {
-                    background: #d32f2f;
-                    color: #fff !important;
-                }
-                .btn-action:hover {
-                    opacity: 0.85;
-                    text-decoration: underline;
-                }
+
+    /* Headers */
+    #result_list th {
+        background: #000a46;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        font-size: 12px !important;
+        text-align: center !important;
+        height: 36px;
+        vertical-align: middle;
+        padding: 8px 10px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    #result_list th .text,
+    #result_list th .text span {
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    /* Botones de acción */
+    .btn-action {
+        border: none;
+        border-radius: 4px;
+        padding: 4px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        margin-left: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background 0.2s;
+        white-space: nowrap;
+    }
+
+    .btn-action.update {
+        background: #1976d2;
+        color: #fff !important;
+    }
+
+    .btn-action.history {
+        background: #388e3c;
+        color: #fff !important;
+    }
+
+    .btn-action.delete {
+        background: #d32f2f;
+        color: #fff !important;
+    }
+
+    .btn-action:hover {
+        opacity: 0.85;
+        text-decoration: underline;
+    }
+
+    /* Filas */
     #result_list tbody tr {
         transition: background 0.2s;
+        height: 40px;
     }
+
     #result_list tbody tr:hover {
         background: #eaf6ff;
     }
+
+    /* Links */
     #result_list a {
         color: #1976d2;
         text-decoration: none;
         font-weight: 500;
     }
+
     #result_list a:hover {
         text-decoration: underline;
     }
+
+    /* Ajustes específicos para móvil */
+    @media (max-width: 768px) {
+        .results {
+            margin: 0 -15px; /* Compensar padding del contenedor padre si existe */
+            width: calc(100% + 30px);
+            padding: 0 15px;
+        }
+
+        #result_list th,
+        #result_list td {
+            font-size: 11px;
+            padding: 5px 6px;
+        }
+
+        #result_list th {
+            font-size: 10px !important;
+            padding: 6px 8px;
+        }
+
+        .btn-action {
+            padding: 3px 10px;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+
+        /* Permitir altura automática en filas si es necesario */
+        #result_list tbody tr {
+            height: auto;
+            min-height: 36px;
+        }
+    }
+
+    /* Para pantallas muy pequeñas */
+    @media (max-width: 480px) {
+        #result_list th,
+        #result_list td {
+            font-size: 10px;
+            padding: 4px 5px;
+        }
+
+        .btn-action {
+            padding: 2px 8px;
+            font-size: 10px;
+        }
+    }
 </style>
-<div class="results" style="width:100%;">
-<table id="result_list" style="width:100%;">
-<thead>
-<tr>
-    <th scope="col"><div class="text"><span>No. cotización</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>FECHA</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>EMPLEADOS</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>EMPRESA</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>SUPERVISOR</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>DETALLES</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>DOCUMENTO</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span># ACTIVIDADES</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>HISTORIAL</span></div><div class="clear"></div></th>
-    <th scope="col"><div class="text"><span>ACCIONES</span></div><div class="clear"></div></th>
-</tr>
-</thead>
-<tbody>
-{% for obj in cl.result_list %}
-<tr>
-    <td>{{ obj.numero_cotizacion|default:'-' }}</td>
-    <td>{{ obj.fecha|date:"d/m/Y" }}</td>
-    <td style="text-align:center">{{ obj.empleados.count }}</td>
-    <td>{{ obj.empresa }}</td>
-    <td style="white-space:nowrap">{{ obj.supervisor.nombre_primer_apellido|default:'-' }}</td>
-    <td>{{ obj.detalles }}</td>
-    <td>{% if obj.archivo_nombre %}<a href="{{ obj.archivos.url }}" target="_blank">{{ obj.archivo_nombre }}</a>{% else %}-{% endif %}</td>
-    <td style="text-align:center;">{{ obj.actividades_total }}</td>
-    <td style="text-align:center;">
-        <a href="{% url 'admin:asignaciones_asignacion_historial' obj.pk %}" class="btn-action history">Historial</a>
-    </td>
-        <td style="text-align:right;">
-            <a href="{{ obj.get_admin_url }}" class="btn-action update">Actualizar</a>
-            <a href="{% url 'admin:asignaciones_asignacion_delete' obj.pk %}" class="btn-action delete">Eliminar</a>
-        </td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
+
+<div class="results">
+    <table id="result_list">
+        <thead>
+            <tr>
+                <th scope="col"><div class="text"><span>No. cotización</span></div></th>
+                <th scope="col"><div class="text"><span>FECHA</span></div></th>
+                <th scope="col"><div class="text"><span>EMPLEADOS</span></div></th>
+                <th scope="col"><div class="text"><span>EMPRESA</span></div></th>
+                <th scope="col"><div class="text"><span>SUPERVISOR</span></div></th>
+                <th scope="col"><div class="text"><span>DETALLES</span></div></th>
+                <th scope="col"><div class="text"><span>DOCUMENTO</span></div></th>
+                <th scope="col"><div class="text"><span># ACT</span></div></th>
+                <th scope="col"><div class="text"><span>HISTORIAL</span></div></th>
+                <th scope="col"><div class="text"><span>ACCIONES</span></div></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for obj in cl.result_list %}
+            <tr>
+                <td>{{ obj.numero_cotizacion|default:'-' }}</td>
+                <td>{{ obj.fecha|date:"d/m/Y" }}</td>
+                <td style="text-align:center">{{ obj.empleados.count }}</td>
+                <td>{{ obj.empresa }}</td>
+                <td>{{ obj.supervisor.nombre_primer_apellido|default:'-' }}</td>
+                <td>{{ obj.detalles }}</td>
+                <td>
+                    {% if obj.archivos and obj.numero_cotizacion %}
+                        <a href="{{ obj.archivos.url }}" target="_blank">Doc-{{ obj.numero_cotizacion }}{% if obj.archivo_extension %}.{{ obj.archivo_extension }}{% endif %}</a>
+                    {% elif obj.archivos %}
+                        <a href="{{ obj.archivos.url }}" target="_blank">Doc-{{ obj.numero_cotizacion|default:'-' }}{% if obj.archivo_extension %}.{{ obj.archivo_extension }}{% endif %}</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">{{ obj.actividades_total }}</td>
+                <td style="text-align:center;">
+                    <a href="{% url 'admin:asignaciones_asignacion_historial' obj.pk %}" class="btn-action history">Historial</a>
+                </td>
+                <td style="text-align:right;">
+                    <a href="{{ obj.get_admin_url }}" class="btn-action update">Actualizar</a>
+                    <a href="{% url 'admin:asignaciones_asignacion_delete' obj.pk %}" class="btn-action delete">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>

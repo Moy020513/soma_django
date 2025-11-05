@@ -97,6 +97,16 @@ class Asignacion(models.Model):
         return self.archivos.name.split('/')[-1] if self.archivos else ''
 
     @property
+    def archivo_extension(self):
+        """Devuelve la extensión del archivo (sin el punto), o cadena vacía si no existe."""
+        if not self.archivos or not getattr(self.archivos, 'name', None):
+            return ''
+        name = self.archivos.name
+        if '.' in name:
+            return name.split('.')[-1]
+        return ''
+
+    @property
     def actividades_total(self):
         return self.actividades.count()
     @property
