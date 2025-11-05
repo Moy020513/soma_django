@@ -9,6 +9,8 @@ from .models import TransferenciaVehicular, AsignacionVehiculo, Vehiculo
 from .forms import SolicitudTransferenciaForm, InspeccionTransferenciaForm, RespuestaTransferenciaForm
 from apps.recursos_humanos.models import Empleado
 from apps.notificaciones.models import Notificacion
+from apps.usuarios.models import Usuario
+from django.urls import reverse
 
 
 @login_required
@@ -85,6 +87,26 @@ def solicitar_transferencia(request):
                     tipo='info',
                     url=f'/flota/transferencias/{transferencia.pk}/responder-solicitud/'
                 )
+                # Notificar a administradores que se creó una nueva solicitud de transferencia
+                try:
+                    admins = Usuario.objects.filter(is_staff=True)
+                    for admin in admins:
+                        noti = Notificacion.objects.create(
+                            usuario=admin,
+                            titulo='📣 Nueva solicitud de transferencia',
+                            mensaje=f'El usuario {empleado.usuario.get_full_name()} ha solicitado transferir el vehículo {asignacion.vehiculo} a {transferencia.empleado_destino.usuario.get_full_name()}.',
+                            tipo='info',
+                        )
+                        # Poner la URL al detalle de la notificación para que el dropdown apunte al recurso concreto
+                        try:
+                            noti.url = reverse('notificaciones:detalle_usuario', args=[noti.id])
+                            noti.save()
+                        except Exception:
+                            # Si falla construir la URL no bloqueamos la operación
+                            pass
+                except Exception:
+                    # No bloquear la operación de transferencia ante fallo en notificaciones a admins
+                    pass
                 
                 messages.success(request, f'Solicitud de transferencia enviada a {transferencia.empleado_destino.usuario.get_full_name()}')
                 return redirect('flota:transferencia_detalle', pk=transferencia.pk)
@@ -223,6 +245,23 @@ def responder_solicitud(request, pk):
                     tipo='success',
                     url=f'/flota/transferencias/{transferencia.pk}/'
                 )
+                # Notificar a administradores sobre la transferencia aprobada
+                try:
+                    admins = Usuario.objects.filter(is_staff=True)
+                    for admin in admins:
+                        noti = Notificacion.objects.create(
+                            usuario=admin,
+                            titulo='🚚 Transferencia aprobada',
+                            mensaje=f'La transferencia del vehículo {transferencia.vehiculo} de {transferencia.empleado_origen.usuario.get_full_name()} a {transferencia.empleado_destino.usuario.get_full_name()} ha sido aprobada.',
+                            tipo='info',
+                        )
+                        try:
+                            noti.url = reverse('notificaciones:detalle_usuario', args=[noti.id])
+                            noti.save()
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
                 
                 messages.success(request, 'Transferencia aceptada. El vehículo ha sido asignado a ti.')
                 return redirect('mi_vehiculo')
@@ -257,12 +296,12 @@ def responder_solicitud(request, pk):
 @login_required
 def inspeccionar_vehiculo(request, pk):
     """Vista para que el empleado destino inspeccione el vehículo"""
-    
+
     empleado = Empleado.objects.filter(usuario=request.user).first()
     if not empleado:
         messages.error(request, 'Tu usuario no está asociado a un empleado.')
         return redirect('home')
-    
+
     # Comprobar si viene de notificación y bloquear admins inmediatamente
     from_notification = request.GET.get('from_notification')
     if from_notification and request.user.is_superuser:
@@ -275,7 +314,7 @@ def inspeccionar_vehiculo(request, pk):
         empleado_destino=empleado,
         estado='solicitada'
     )
-    
+
     if request.method == 'POST':
         form = InspeccionTransferenciaForm(request.POST, instance=transferencia)
         if form.is_valid():
@@ -285,21 +324,44 @@ def inspeccionar_vehiculo(request, pk):
                 transferencia.estado = 'inspeccion'
                 transferencia.fecha_inspeccion = timezone.now()
                 transferencia.save()
-                
+
                 # Crear notificación para el empleado origen
                 Notificacion.objects.create(
                     usuario=transferencia.empleado_origen.usuario,
-                    titulo=f'🔍 Inspección de Transferencia Completada',
+                    titulo='🔍 Inspección de Transferencia Completada',
                     mensaje=f'{empleado.usuario.get_full_name()} ha completado la inspección del vehículo {transferencia.vehiculo}.\n\n✅ Revisa las observaciones y decide si aprobar o rechazar la transferencia.',
                     tipo='warning',
                     url=f'/flota/transferencias/{transferencia.pk}/responder/'
                 )
-                
+
+                # Notificar a administradores sobre la inspección realizada
+                try:
+                    admins = Usuario.objects.filter(is_staff=True)
+                    for admin in admins:
+                        # Incluir las observaciones de inspección en el mensaje para que se muestren
+                        inspeccion_msg = f'El empleado {empleado.usuario.get_full_name()} ha completado la inspección del vehículo {transferencia.vehiculo} para la transferencia hacia {transferencia.empleado_origen.usuario.get_full_name()}.'
+                        if transferencia.observaciones_inspeccion:
+                            inspeccion_msg += "\n\nObservaciones de la inspección:\n" + transferencia.observaciones_inspeccion
+                        noti = Notificacion.objects.create(
+                            usuario=admin,
+                            titulo='🔔 Inspección de transferencia completada',
+                            mensaje=inspeccion_msg,
+                            tipo='info',
+                        )
+                        try:
+                            noti.url = reverse('notificaciones:detalle_usuario', args=[noti.id])
+                            noti.save()
+                        except Exception:
+                            pass
+                except Exception:
+                    # No bloquear la operación si falla el envío de notificaciones a admins
+                    pass
+
                 messages.success(request, 'Inspección registrada. El propietario actual revisará tus observaciones.')
                 return redirect('flota:transferencia_detalle', pk=transferencia.pk)
     else:
         form = InspeccionTransferenciaForm(instance=transferencia)
-    
+
     context = {
         'form': form,
         'transferencia': transferencia,
@@ -324,12 +386,44 @@ def responder_inspeccion(request, pk):
         from django.http import HttpResponseForbidden
         return HttpResponseForbidden('Los administradores no pueden responder notificaciones.')
 
-    transferencia = get_object_or_404(
-        TransferenciaVehicular.objects.select_related('vehiculo', 'empleado_destino__usuario'),
-        pk=pk,
-        empleado_origen=empleado,
-        estado='inspeccion'
-    )
+    # Si viene de notificación, marcarla como leída (si es del usuario)
+    if from_notification:
+        try:
+            notificacion = Notificacion.objects.get(id=from_notification, usuario=request.user, leida=False)
+            notificacion.leida = True
+            notificacion.save()
+        except Notificacion.DoesNotExist:
+            pass
+
+    # Buscar la transferencia y manejar casos donde ya cambió de estado para evitar 404
+    try:
+        transferencia = TransferenciaVehicular.objects.select_related('vehiculo', 'empleado_destino__usuario').get(pk=pk)
+    except TransferenciaVehicular.DoesNotExist:
+        messages.error(request, 'La transferencia no existe o ya no está disponible.')
+        return redirect('flota:mis_transferencias')
+
+    # Verificar que quien responde es el empleado origen
+    if transferencia.empleado_origen != empleado:
+        messages.error(request, 'No tienes permisos para responder la inspección de esta transferencia.')
+        return redirect('flota:mis_transferencias')
+
+    # Si la transferencia ya no está en inspección, redirigir con mensaje explicativo
+    if transferencia.estado != 'inspeccion':
+        if transferencia.estado == 'aprobada':
+            messages.info(request, 'Esta transferencia ya fue aprobada.')
+            return redirect('flota:transferencia_detalle', pk=transferencia.pk)
+        if transferencia.estado == 'rechazada':
+            messages.info(request, 'La inspección ya fue respondida y la transferencia fue rechazada.')
+            return redirect('flota:transferencia_detalle', pk=transferencia.pk)
+        if transferencia.estado == 'solicitada':
+            messages.info(request, 'La transferencia aún está en estado de solicitud.')
+            return redirect('flota:transferencia_detalle', pk=transferencia.pk)
+        if transferencia.estado == 'cancelada':
+            messages.info(request, 'La transferencia fue cancelada.')
+            return redirect('flota:mis_transferencias')
+        # Caso por defecto
+        messages.info(request, 'El estado de la transferencia no permite responder la inspección en este momento.')
+        return redirect('flota:transferencia_detalle', pk=transferencia.pk)
     
     if request.method == 'POST':
         form = RespuestaTransferenciaForm(request.POST)
@@ -374,6 +468,23 @@ def responder_inspeccion(request, pk):
                         mensaje=f'¡Felicidades! {empleado.usuario.get_full_name()} ha aprobado la transferencia. El vehículo {transferencia.vehiculo} ahora es tuyo.',
                         tipo='success'
                     )
+                    # Notificar a administradores sobre la transferencia aprobada (desde inspección)
+                    try:
+                        admins = Usuario.objects.filter(is_staff=True)
+                        for admin in admins:
+                            noti = Notificacion.objects.create(
+                                usuario=admin,
+                                titulo='🚚 Transferencia aprobada',
+                                mensaje=f'La transferencia del vehículo {transferencia.vehiculo} de {empleado.usuario.get_full_name()} a {transferencia.empleado_destino.usuario.get_full_name()} ha sido aprobada tras inspección.',
+                                tipo='info',
+                            )
+                            try:
+                                noti.url = reverse('notificaciones:detalle_usuario', args=[noti.id])
+                                noti.save()
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
                     
                     messages.success(request, f'Transferencia aprobada. El vehículo ahora pertenece a {transferencia.empleado_destino.usuario.get_full_name()}.')
                     
@@ -388,6 +499,26 @@ def responder_inspeccion(request, pk):
                         mensaje=f'{empleado.usuario.get_full_name()} ha rechazado la transferencia del vehículo {transferencia.vehiculo}.',
                         tipo='danger'
                     )
+                    # Notificar a administradores sobre el rechazo de la inspección
+                    try:
+                        admins = Usuario.objects.filter(is_staff=True)
+                        for admin in admins:
+                            admin_msg = f'El empleado {empleado.usuario.get_full_name()} ha rechazado la inspección del vehículo {transferencia.vehiculo}.'
+                            if observaciones:
+                                admin_msg += "\n\nObservaciones de la respuesta:\n" + observaciones
+                            noti = Notificacion.objects.create(
+                                usuario=admin,
+                                titulo='🔔 Inspección Rechazada',
+                                mensaje=admin_msg,
+                                tipo='warning',
+                            )
+                            try:
+                                noti.url = reverse('notificaciones:detalle_usuario', args=[noti.id])
+                                noti.save()
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
                     
                     messages.info(request, 'Transferencia rechazada.')
                 
