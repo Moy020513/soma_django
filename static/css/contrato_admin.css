@@ -1,0 +1,14 @@
+/* Aumentar la altura de los select del FilteredSelectMultiple para asignaciones_vinculadas */
+select[name^="asignaciones_vinculadas"],
+select[name^="asignaciones_vinculadas_from"],
+select[name^="asignaciones_vinculadas_to"],
+select[id^="id_asignaciones_vinculadas"],
+select[id^="id_asignaciones_vinculadas_from"],
+select[id^="id_asignaciones_vinculadas_to"] {
+    min-height: 220px !important;
+    height: 220px !important;
+}
+/* También ajustar el contenedor de los filters para mantener proporción */
+.filtered {
+    min-height: 240px;
+}

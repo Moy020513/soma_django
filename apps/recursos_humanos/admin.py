@@ -6,15 +6,154 @@ from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
 from django.contrib.admin.utils import unquote
 from django.urls import reverse
+from django.db import models as dj_models
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador
 from .models import Inasistencia
+from apps.asignaciones.models import Asignacion
+from django.http import JsonResponse
 # Admin Contrato
 @admin.register(Contrato)
 class ContratoAdmin(admin.ModelAdmin):
+    # Asignacion importado a nivel de módulo
+
+    # Formulario admin personalizado
+    class ContratoForm(forms.ModelForm):
+        class AsignacionNumeroMultipleField(forms.ModelMultipleChoiceField):
+            def label_from_instance(self, obj):
+                return str(obj.numero_cotizacion) if getattr(obj, 'numero_cotizacion', None) else '(sin cot)'
+
+        asignaciones_vinculadas = AsignacionNumeroMultipleField(
+            queryset=Asignacion.objects.all().order_by('-fecha'),
+            required=False,
+            widget=admin.widgets.FilteredSelectMultiple('Asignaciones', is_stacked=False),
+            label='No. cotización'
+        )
+
+        class Meta:
+            model = Contrato
+            fields = '__all__'
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # Inicializar asignaciones con las ya vinculadas
+            if self.instance and self.instance.pk:
+                self.fields['asignaciones_vinculadas'].initial = self.instance.asignaciones_vinculadas.all()
+            # Exponer la URL de información al widget para que el JS pueda consultarla
+            try:
+                info_url = reverse('admin:recursos_humanos_contrato_assignments_info')
+                self.fields['asignaciones_vinculadas'].widget.attrs['data-assignments-info-url'] = info_url
+            except Exception:
+                pass
+
+        def save(self, commit=True):
+            # Guardado en dos pasos: primero el Contrato, luego relacionar asignaciones y computar campos
+            contrato = super().save(commit=False)
+            asigns = self.cleaned_data.get('asignaciones_vinculadas') or []
+            # Si hay asignaciones, tomar la empresa de la primera (asumiendo mismo cliente)
+            if asigns:
+                contrato.empresa = asigns[0].empresa
+                # Calcular periodo de ejecución: rango entre la fecha mínima y máxima de las asignaciones
+                fechas = [a.fecha for a in asigns if a.fecha]
+                if fechas:
+                    fecha_min = min(fechas).strftime('%Y-%m-%d')
+                    fecha_max = max(fechas).strftime('%Y-%m-%d')
+                    contrato.periodo_ejecucion = f"{fecha_min} - {fecha_max}"
+                # Calcular cantidad_empleados como suma de empleados por asignación
+                total_emps = 0
+                for a in asigns:
+                    try:
+                        total_emps += a.empleados.count()
+                    except Exception:
+                        pass
+                contrato.cantidad_empleados = total_emps
+
+            if commit:
+                contrato.save()
+                # Asignar ManyToMany
+                if asigns:
+                        contrato.asignaciones_vinculadas.set(asigns)
+                else:
+                        contrato.asignaciones_vinculadas.clear()
+                self.save_m2m()
+            return contrato
+
+    form = ContratoForm
+    class Media:
+        js = ('/static/js/contrato_autofill.js',)
+        css = {
+            'all': ('/static/css/contrato_admin.css',)
+        }
     list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "periodo_ejecucion", "cantidad_empleados")
     list_filter = ("empresa", "fecha_inicio", "fecha_termino")
     search_fields = ("numero_contrato", "empresa__nombre")
     # autocomplete_fields = ["empresa"]
+
+    readonly_fields = ('resumen_asignaciones',)
+
+    fieldsets = (
+        (None, {
+            'fields': (('numero_contrato',), ('empresa', 'cantidad_empleados'), 'asignaciones_vinculadas')
+        }),
+        ('Periodo y fechas', {
+            'fields': (('fecha_inicio', 'fecha_termino'), ('periodo_ejecucion', 'resumen_asignaciones'))
+        }),
+    )
+
+    def resumen_asignaciones(self, obj):
+        """Muestra un resumen (días estimados y total empleados) por asignación vinculada."""
+        from django.utils.safestring import mark_safe
+        if not obj or not obj.pk:
+            return "Sin asignaciones vinculadas."
+        parts = []
+        for a in obj.asignaciones_vinculadas.all():
+            dias = getattr(a, 'tiempo_estimado_total', None)
+            if dias is None:
+                try:
+                    dias = a.actividades.aggregate(total=dj_models.Sum('tiempo_estimado_dias'))['total'] or 0
+                except Exception:
+                    dias = 'N/A'
+            emp_count = a.empleados.count()
+            num = a.numero_cotizacion or '(sin cot)'
+            parts.append(f"<li><strong>{num}</strong>: {dias} días — {emp_count} empleados</li>")
+        html = '<ul>' + ''.join(parts) + '</ul>'
+        return mark_safe(html)
+
+    resumen_asignaciones.short_description = 'Resumen de asignaciones'
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path('assignments-info/', self.admin_site.admin_view(self.assignments_info_view), name='recursos_humanos_contrato_assignments_info'),
+        ]
+        return custom + urls
+
+    def assignments_info_view(self, request):
+        """Devuelve JSON con empresa_id/nombre, total_emps y periodo (fecha_min - fecha_max) para los IDs enviados."""
+        ids = request.GET.get('ids', '')
+        if not ids:
+            return JsonResponse({'ok': False, 'error': 'no ids'})
+        try:
+            pks = [int(x) for x in ids.split(',') if x.strip()]
+        except Exception:
+            return JsonResponse({'ok': False, 'error': 'invalid ids'})
+        asigns = Asignacion.objects.filter(pk__in=pks).select_related('empresa')
+        if not asigns.exists():
+            return JsonResponse({'ok': True, 'empresa_id': None, 'empresa': '', 'total_emps': 0, 'periodo': ''})
+        # Empresa: si todas comparten la misma empresa devolvemos el id, si no None
+        empresa_ids = set(a.empresa_id for a in asigns)
+        empresa_id = asigns[0].empresa_id if len(empresa_ids) == 1 else None
+        empresa_name = asigns[0].empresa.nombre if empresa_id else ''
+        # Total empleados
+        total_emps = sum(a.empleados.count() for a in asigns)
+        # Periodo
+        fechas = [a.fecha for a in asigns if a.fecha]
+        periodo = ''
+        if fechas:
+            fecha_min = min(fechas).strftime('%Y-%m-%d')
+            fecha_max = max(fechas).strftime('%Y-%m-%d')
+            periodo = f"{fecha_min} - {fecha_max}"
+        return JsonResponse({'ok': True, 'empresa_id': empresa_id, 'empresa': empresa_name, 'total_emps': total_emps, 'periodo': periodo})
 
 # Admin AsignacionPorTrabajador
 @admin.register(AsignacionPorTrabajador)
@@ -73,8 +212,6 @@ class UltimoPeriodoEstatusInline(admin.TabularInline):
 
     def has_add_permission(self, request, obj=None):
         return False  # No permitir añadir desde el inline
-from apps.asignaciones.models import Asignacion
-
 
 @admin.register(Puesto)
 class PuestoAdmin(admin.ModelAdmin):

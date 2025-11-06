@@ -8,14 +8,23 @@ import re
 class Contrato(models.Model):
     numero_contrato = models.CharField(max_length=30, unique=True, verbose_name="No. contrato")
     empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name="contratos", verbose_name="Empresa")
+    # Asociar Contrato con una o varias Asignaciones (para obtener No. cotización y otros datos)
+    # Relación ManyToMany con Asignacion para vincular números de cotización al contrato.
+    # Usamos el nombre 'asignaciones_vinculadas' para evitar colisiones con otros related_name existentes.
+    asignaciones_vinculadas = models.ManyToManyField(
+        'asignaciones.Asignacion',
+        blank=True,
+        related_name='contratos',
+        verbose_name='No. cotización (Asignaciones)'
+    )
     fecha_inicio = models.DateField(verbose_name="Fecha de inicio")
     fecha_termino = models.DateField(verbose_name="Fecha de término")
     periodo_ejecucion = models.CharField(max_length=100, blank=True, verbose_name="Periodo de ejecución")
     cantidad_empleados = models.PositiveIntegerField(verbose_name="Cantidad de empleados")
 
     class Meta:
-        verbose_name = "Contrato"
-        verbose_name_plural = "Contratos"
+        verbose_name = "Contratos REPSE"
+        verbose_name_plural = "Contratos REPSE"
         ordering = ["-fecha_inicio"]
 
     def __str__(self):
