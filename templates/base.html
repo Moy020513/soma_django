@@ -279,8 +279,9 @@
                 <!-- Contenido principal -->
                 <div class="container-fluid mt-4">
 
-                    <!-- Flash messages -->
-                    {% if messages %}
+                    <!-- Flash messages (omit on admin pages because admin/base_site already renders them) -->
+                    {# Django templates no permiten llamar métodos con paréntesis; usamos slice para comparar el prefijo de la ruta #}
+                    {% if messages and request.path|slice:":7" != '/admin/' %}
                     <div class="row">
                         <div class="col-12">
                             {% for message in messages %}

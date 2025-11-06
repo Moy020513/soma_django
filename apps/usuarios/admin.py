@@ -14,7 +14,25 @@ class UsuarioAdmin(UserAdmin):
     list_filter = ('tipo_usuario', 'is_active', 'is_staff')
     search_fields = ('username', 'email', 'first_name', 'last_name')
     # Remove 'rol' from the admin form fields so it's not editable from the admin user form
-    fieldsets = UserAdmin.fieldsets + (
+    # Also remove 'last_login' from the default 'Important dates' fieldset so it doesn't appear
+    # (Django's template showed it and lo permitía editar — queremos ocultarlo)
+    _original_fieldsets = list(UserAdmin.fieldsets)
+    _new_fieldsets = []
+    for name, opts in _original_fieldsets:
+        _fields_local = opts.get('fields', ())
+        # Ensure _fields_local is iterable and then drop 'last_login' if present
+        try:
+            iterable = tuple(_fields_local)
+        except Exception:
+            _new_fieldsets.append((name, opts))
+            continue
+        if 'last_login' in iterable:
+            new_fields = tuple(f for f in iterable if f != 'last_login')
+            _new_fieldsets.append((name, {'fields': new_fields}))
+        else:
+            _new_fieldsets.append((name, opts))
+
+    fieldsets = tuple(_new_fieldsets) + (
         ('Información SOMA', {'fields': ('tipo_usuario', 'telefono')}),
     )
 
