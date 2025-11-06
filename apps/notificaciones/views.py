@@ -14,20 +14,28 @@ class ModificarRespuestaUsuarioView(LoginRequiredMixin, UserPassesTestMixin, Upd
         # Notificar al admin sobre la modificación
         from apps.usuarios.models import Usuario
         from .models import Notificacion
-        superuser = Usuario.objects.filter(is_superuser=True, is_active=True).first()
-        if superuser:
+        # Notificar a todos los superusuarios activos (no sólo al primero)
+        superusers = Usuario.objects.filter(is_superuser=True, is_active=True)
+        if superusers.exists():
             nombre = self.request.user.first_name
             apellido = self.request.user.last_name.split()[0] if self.request.user.last_name else ''
-            admin_notif = Notificacion.objects.create(
-                usuario=superuser,
-                titulo=f'{nombre} {apellido} ha modificado su respuesta a "{self.object.notificacion.titulo}"',
-                mensaje=form.instance.mensaje,
-                tipo='info',
-                leida=False
-            )
             from django.urls import reverse
-            admin_notif.url = reverse('notificaciones:admin_detalle', args=[admin_notif.pk]) + f'?respuesta_id={self.object.pk}'
-            admin_notif.save()
+            objetos = []
+            for su in superusers:
+                admin_notif = Notificacion(
+                    usuario=su,
+                    titulo=f'{nombre} {apellido} ha modificado su respuesta a "{self.object.notificacion.titulo}"',
+                    mensaje=form.instance.mensaje,
+                    tipo='info',
+                    leida=False
+                )
+                # guardamos el objeto después de bulk_create; establecemos url en lista
+                objetos.append((admin_notif, su))
+            # Crear individualmente para que podamos asignar la URL con el PK
+            for admin_notif, su in objetos:
+                admin_notif.save()
+                admin_notif.url = reverse('notificaciones:admin_detalle', args=[admin_notif.pk]) + f'?respuesta_id={self.object.pk}'
+                admin_notif.save()
         return response
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -227,22 +235,25 @@ class ResponderNotificacionView(LoginRequiredMixin, CreateView):
         from apps.usuarios.models import Usuario
         from .models import Notificacion
         messages.success(self.request, '¡Respuesta enviada correctamente!')
-        superuser = Usuario.objects.filter(is_superuser=True, is_active=True).first()
-        if superuser:
-            # Creamos la notificación para el admin, guardando el ID de la respuesta en la url
+        superusers = Usuario.objects.filter(is_superuser=True, is_active=True)
+        if superusers.exists():
             nombre = self.request.user.first_name
             apellido = self.request.user.last_name.split()[0] if self.request.user.last_name else ''
-            admin_notif = Notificacion.objects.create(
-                usuario=superuser,
-                titulo=f'{nombre} {apellido} ha respondido a "{self.notificacion.titulo}"',
-                mensaje=form.instance.mensaje,
-                tipo='info',
-                leida=False
-            )
-            # La url apunta al detalle y pasa el id de la respuesta
             from django.urls import reverse
-            admin_notif.url = reverse('notificaciones:admin_detalle', args=[admin_notif.pk]) + f'?respuesta_id={form.instance.pk}'
-            admin_notif.save()
+            objetos = []
+            for su in superusers:
+                admin_notif = Notificacion(
+                    usuario=su,
+                    titulo=f'{nombre} {apellido} ha respondido a "{self.notificacion.titulo}"',
+                    mensaje=form.instance.mensaje,
+                    tipo='info',
+                    leida=False
+                )
+                objetos.append((admin_notif, su))
+            for admin_notif, su in objetos:
+                admin_notif.save()
+                admin_notif.url = reverse('notificaciones:admin_detalle', args=[admin_notif.pk]) + f'?respuesta_id={form.instance.pk}'
+                admin_notif.save()
         return response
 
     def get_success_url(self):
