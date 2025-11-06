@@ -84,6 +84,16 @@ class PuestoAdmin(admin.ModelAdmin):
     # list_editable removed: do not allow inline edits from changelist
     readonly_fields = ['fecha_creacion']
 
+    def get_fields(self, request, obj=None):
+        """Ocultar el campo 'superior' (Puesto supervisor) en los formularios de add y change.
+        Si en el futuro se desea mostrar solo en edición, ajustar la condición sobre `obj`.
+        """
+        fields = list(super().get_fields(request, obj))
+        # Eliminar 'superior' siempre (tanto en add como en change)
+        if 'superior' in fields:
+            fields.remove('superior')
+        return fields
+
 
 class EmpleadoForm(forms.ModelForm):
     class Meta:
