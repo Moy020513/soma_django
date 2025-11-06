@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Historial de Kilometraje - {{ vehiculo.marca }} {{ vehiculo.modelo }}</h5>
+                <a href="{% url 'registrar_km' %}" class="btn btn-sm btn-primary">Registrar km</a>
+            </div>
+            <div class="card-body">
+                {% if registros and registros|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Km inicio</th>
+                                <th>Km fin</th>
+                                <th>Propósito</th>
+                                <th>Observaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in registros %}
+                            <tr>
+                                <td>{{ r.fecha|date:"d/m/Y" }}</td>
+                                <td>{{ r.kilometraje_inicio|default:"-" }}</td>
+                                <td>{{ r.kilometraje_fin|default:"-" }}</td>
+                                <td>{{ r.proposito|default:"-" }}</td>
+                                <td>{{ r.observaciones|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <div class="text-muted">Aún no hay registros de uso para este vehículo.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

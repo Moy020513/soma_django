@@ -9,6 +9,7 @@ from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular, AsignacionVehiculo
 from apps.herramientas.models import Herramienta, AsignacionHerramienta
 from apps.notificaciones.models import Notificacion
+from apps.flota_vehicular.forms import RegistroUsoForm
 from django.contrib.admin.models import LogEntry
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.template.loader import render_to_string
@@ -340,6 +341,99 @@ def mi_vehiculo(request):
         'empleado': empleado,
     }
     return render(request, 'mi_vehiculo.html', context)
+
+
+@login_required
+def registrar_km(request):
+    """Página separada para mostrar y procesar el formulario de registro de kilometraje."""
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está asociado a un empleado.')
+        return redirect('perfil_usuario')
+
+    asignacion_vehiculo = AsignacionVehiculo.objects.filter(
+        empleado=empleado,
+        estado='activa'
+    ).select_related('vehiculo').first()
+    if not asignacion_vehiculo:
+        messages.info(request, 'No tienes vehículo asignado actualmente.')
+        return redirect('perfil_usuario')
+
+    vehiculo_asignado = asignacion_vehiculo.vehiculo
+
+    from django.utils import timezone as _tz
+    initial = {'fecha': _tz.localdate()}
+    if getattr(vehiculo_asignado, 'kilometraje_actual', None) is not None:
+        initial['kilometraje_fin'] = vehiculo_asignado.kilometraje_actual
+    registro_form = RegistroUsoForm(initial=initial)
+
+    if request.method == 'POST':
+        registro_form = RegistroUsoForm(request.POST)
+        if registro_form.is_valid():
+            registro = registro_form.save(commit=False)
+            registro.vehiculo = vehiculo_asignado
+            registro.empleado = empleado
+            # Rellenar kilometraje_inicio con el kilometraje actual del vehículo
+            ultimo_km = getattr(vehiculo_asignado, 'kilometraje_actual', None)
+            registro.kilometraje_inicio = ultimo_km if ultimo_km is not None else 0
+
+            # Validar que el kilometraje informado no sea menor que el último registrado
+            if registro.kilometraje_fin is not None and ultimo_km is not None and registro.kilometraje_fin < ultimo_km:
+                # Mostrar sólo un flash en rojo y no añadir error dentro del formulario
+                messages.error(request, f'El kilometraje no puede ser menor que el último registrado ({ultimo_km}).', extra_tags='danger')
+            else:
+                # Evitar registros duplicados para la misma fecha y vehículo
+                Registro = RegistroUsoForm().Meta.model
+                if Registro.objects.filter(vehiculo=vehiculo_asignado, fecha=registro.fecha).exists():
+                    # Mostrar flash en rojo y no guardar
+                    messages.error(request, 'Ya existe un registro para esta fecha.', extra_tags='danger')
+                else:
+                    registro.save()
+                    # Actualizar kilometraje actual del vehículo si se reportó kilometraje_fin
+                    try:
+                        if registro.kilometraje_fin and (vehiculo_asignado.kilometraje_actual is None or registro.kilometraje_fin > vehiculo_asignado.kilometraje_actual):
+                            vehiculo_asignado.kilometraje_actual = registro.kilometraje_fin
+                            vehiculo_asignado.save()
+                    except Exception:
+                        pass
+                    messages.success(request, 'Registro de uso guardado correctamente.')
+                    return redirect('mi_vehiculo')
+
+    context = {
+        'titulo': 'Registrar Kilometraje',
+        'vehiculo': vehiculo_asignado,
+        'empleado': empleado,
+        'registro_form': registro_form,
+    }
+    return render(request, 'registrar_km.html', context)
+
+
+@login_required
+def historial_km(request):
+    """Página que muestra el historial de registros del vehículo asignado."""
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está asociado a un empleado.')
+        return redirect('perfil_usuario')
+
+    asignacion_vehiculo = AsignacionVehiculo.objects.filter(
+        empleado=empleado,
+        estado='activa'
+    ).select_related('vehiculo').first()
+    if not asignacion_vehiculo:
+        messages.info(request, 'No tienes vehículo asignado actualmente.')
+        return redirect('perfil_usuario')
+
+    vehiculo_asignado = asignacion_vehiculo.vehiculo
+    Registro = RegistroUsoForm().Meta.model
+    registros = Registro.objects.filter(vehiculo=vehiculo_asignado).order_by('-fecha')
+    context = {
+        'titulo': 'Historial de Kilometraje',
+        'vehiculo': vehiculo_asignado,
+        'registros': registros,
+        'empleado': empleado,
+    }
+    return render(request, 'historial_km.html', context)
 
 
 @login_required

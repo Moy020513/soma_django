@@ -122,9 +122,9 @@ class TransferenciaVehicularAdmin(admin.ModelAdmin):
 
 @admin.register(RegistroUso)
 class RegistroUsoAdmin(admin.ModelAdmin):
-    list_display = ['vehiculo', 'empleado', 'fecha', 'destino', 'kilometraje_inicio', 'kilometraje_fin']
+    list_display = ['vehiculo', 'empleado', 'fecha', 'kilometraje_inicio', 'kilometraje_fin']
     list_filter = ['fecha', 'vehiculo__marca']
-    search_fields = ['vehiculo__placas', 'empleado__nombre', 'destino', 'proposito']
+    search_fields = ['vehiculo__placas', 'empleado__nombre', 'proposito']
     date_hierarchy = 'fecha'
     
     fieldsets = (
@@ -132,7 +132,7 @@ class RegistroUsoAdmin(admin.ModelAdmin):
             'fields': ('vehiculo', 'empleado', 'fecha')
         }),
         ('Viaje', {
-            'fields': ('destino', 'proposito', 'kilometraje_inicio', 'kilometraje_fin')
+            'fields': ('proposito', 'kilometraje_inicio', 'kilometraje_fin')
         }),
         ('Observaciones', {
             'fields': ('observaciones',),

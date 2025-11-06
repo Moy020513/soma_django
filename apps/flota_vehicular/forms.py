@@ -111,3 +111,35 @@ class RespuestaTransferenciaForm(forms.Form):
         required=False,
         help_text='Puedes agregar comentarios sobre tu decisión'
     )
+
+
+class RegistroUsoForm(forms.ModelForm):
+    """Formulario para registrar el uso diario del vehículo (kilometraje diario y observaciones).
+
+    Nota: para registros diarios sólo necesitamos un único valor de kilometraje (el odómetro al final del día).
+    Guardamos este valor en el campo `kilometraje_fin` del modelo existente para evitar alterar la estructura.
+    """
+    class Meta:
+        from .models import RegistroUso
+        model = RegistroUso
+        # Eliminamos el campo 'destino' del formulario de registro diario
+        fields = ['fecha', 'kilometraje_fin', 'proposito', 'observaciones']
+        widgets = {
+            'fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'kilometraje_fin': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'proposito': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'required': False}),
+        }
+        labels = {
+            'fecha': 'Fecha',
+            'kilometraje_fin': 'Kilometraje (registro diario)',
+            'proposito': 'Propósito',
+            'observaciones': 'Observaciones (opcional)'
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        kf = cleaned.get('kilometraje_fin')
+        if kf is not None and kf < 0:
+            raise forms.ValidationError('El kilometraje no puede ser negativo.')
+        return cleaned

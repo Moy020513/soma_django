@@ -98,7 +98,6 @@ class RegistroUso(models.Model):
     fecha = models.DateField()
     kilometraje_inicio = models.DecimalField(max_digits=10, decimal_places=2)
     kilometraje_fin = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    destino = models.CharField(max_length=200)
     proposito = models.TextField()
     observaciones = models.TextField(blank=True)
     

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Registrar Kilometraje</h5>
+            </div>
+            <div class="card-body">
+                {% if registro_form.errors %}
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        {% for field in registro_form %}
+                            {% for err in field.errors %}
+                                <li>{{ err }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for err in registro_form.non_field_errors %}
+                            <li>{{ err }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <p class="small text-muted">Vehículo: <strong>{{ vehiculo.marca }} {{ vehiculo.modelo }} ({{ vehiculo.placas }})</strong></p>
+                <p class="small text-muted">Último kilometraje registrado: <strong>{{ vehiculo.kilometraje_actual|default:'Sin registro' }}</strong> km</p>
+
+                <form method="post" action="" class="mb-3">
+                    {% csrf_token %}
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            {{ registro_form.fecha.label_tag }}
+                            {{ registro_form.fecha }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ registro_form.kilometraje_fin.label_tag }}
+                            {{ registro_form.kilometraje_fin }}
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        {{ registro_form.proposito.label_tag }}
+                        {{ registro_form.proposito }}
+                    </div>
+                    <div class="mt-2">
+                        {{ registro_form.observaciones.label_tag }}
+                        {{ registro_form.observaciones }}
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button class="btn btn-primary">Guardar registro</button>
+                        <a href="{% url 'historial_km' %}" class="btn btn-outline-secondary">Ver historial</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Acciones</h6>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'mi_vehiculo' %}" class="btn btn-outline-secondary mb-2">Volver a Mi Vehículo</a>
+                <a href="{% url 'historial_km' %}" class="btn btn-outline-info">Ir al Historial</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
