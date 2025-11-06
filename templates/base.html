@@ -56,7 +56,7 @@
         <div class="offcanvas-body p-0">
             {% if app_list %}
             <div class="accordion accordion-flush admin-modules-accordion" id="adminModulesAccordion">
-                {% for app in app_list %}
+                {% for app in ordered_app_list|default:app_list %}
                 {% if app.app_label != 'auth' %}
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="heading-{{ app.app_label }}">

@@ -75,6 +75,31 @@ def admin_app_list(request):
     try:
         from django.contrib import admin as djadmin
         app_list = djadmin.site.get_app_list(request)
-        return {'app_list': app_list}
+        # Also provide an ordered_app_list where recursos_humanos is forced to position 2
+        try:
+            # app_list elements are dictionaries (not objects) -- use dict access
+            apps = list(app_list)
+            target = None
+            for a in apps:
+                if a.get('app_label') == 'recursos_humanos':
+                    target = a
+                    break
+            if target:
+                apps.remove(target)
+                # Prefer inserting recursos_humanos right after 'asignaciones' if present
+                assign_idx = None
+                for idx, a in enumerate(apps):
+                    if a.get('app_label') == 'asignaciones':
+                        assign_idx = idx
+                        break
+                if assign_idx is not None:
+                    insert_at = assign_idx + 1
+                else:
+                    insert_at = 1 if len(apps) >= 1 else len(apps)
+                apps.insert(insert_at, target)
+            ordered = apps
+        except Exception:
+            ordered = app_list
+        return {'app_list': app_list, 'ordered_app_list': ordered}
     except Exception:
         return {'app_list': []}
