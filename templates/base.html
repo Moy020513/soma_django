@@ -87,11 +87,59 @@
                         <div class="accordion-body p-0">
                             {% if app.models %}
                             <div class="list-group list-group-flush admin-module-links">
-                                {% for model in app.models %}
-                                <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
-                                    <i class="fas fa-angle-right me-2"></i>{{ model.name }}
-                                </a>
-                                {% endfor %}
+                                {# Prioritise certain models per app: recursos_humanos -> 'Empleados', empresas -> 'Empresas', flota_vehicular -> 'Vehículos' #}
+                                {% if app.app_label == 'recursos_humanos' %}
+                                    {% for model in app.models %}
+                                        {% if model.name == 'Empleados' %}
+                                            <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                                <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for model in app.models %}
+                                        {% if model.name != 'Empleados' %}
+                                            <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                                <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% elif app.app_label == 'empresas' %}
+                                    {% for model in app.models %}
+                                        {% if model.name == 'Empresas' %}
+                                            <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                                <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for model in app.models %}
+                                        {% if model.name != 'Empresas' %}
+                                            <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                                <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% elif app.app_label == 'flota_vehicular' %}
+                                    {% for model in app.models %}
+                                        {% if model.name == 'Vehículos' %}
+                                            <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                                <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for model in app.models %}
+                                        {% if model.name != 'Vehículos' %}
+                                            <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                                <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    {% for model in app.models %}
+                                    <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                        <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                    </a>
+                                    {% endfor %}
+                                {% endif %}
                             </div>
                             {% else %}
                             <div class="text-muted small px-3 py-2">Sin modelos disponibles.</div>
