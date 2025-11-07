@@ -19,7 +19,6 @@ class Contrato(models.Model):
     )
     fecha_inicio = models.DateField(verbose_name="Fecha de inicio")
     fecha_termino = models.DateField(verbose_name="Fecha de término")
-    periodo_ejecucion = models.CharField(max_length=100, blank=True, verbose_name="Periodo de ejecución")
     cantidad_empleados = models.PositiveIntegerField(verbose_name="Cantidad de empleados")
 
     class Meta:

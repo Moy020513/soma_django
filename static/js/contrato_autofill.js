@@ -1,109 +1,155 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Buscar el select original que contiene las opciones (FilteredSelectMultiple usa select[name="asignaciones_vinculadas"])
     var select = document.querySelector('select[name="asignaciones_vinculadas"]');
     if (!select) return;
 
     var infoUrl = select.dataset.assignmentsInfoUrl;
-    if (!infoUrl) return;
+    if (!infoUrl) {
+        try {
+            var loc = window.location.pathname;
+            loc = loc.replace(/\/(add|change\/\d+)\/?$/, '/');
+            if (!loc.endsWith('/')) loc += '/';
+            infoUrl = loc + 'assignments-info/';
+        } catch (e) {
+            infoUrl = null;
+        }
+    }
 
-    // Campos a rellenar
     var empresaField = document.querySelector('#id_empresa');
     var cantidadField = document.querySelector('#id_cantidad_empleados');
-    var periodoField = document.querySelector('#id_periodo_ejecucion');
+    var fechaInicioField = document.querySelector('#id_fecha_inicio');
+    var fechaTerminoField = document.querySelector('#id_fecha_termino');
 
     function clearFields() {
-        if (empresaField) {
-            // Si es select, dejamos sin selección
-            if (empresaField.tagName.toLowerCase() === 'select') {
-                empresaField.value = '';
-            } else {
-                empresaField.value = '';
-            }
-        }
         if (cantidadField) cantidadField.value = '';
-        if (periodoField) periodoField.value = '';
+        if (fechaInicioField) fechaInicioField.value = '';
+        if (fechaTerminoField) fechaTerminoField.value = '';
+    }
+
+    function setEmpresaValue(id, label) {
+        if (!empresaField) return;
+        try {
+            if (empresaField.tagName.toLowerCase() === 'select') {
+                var opt = empresaField.querySelector('option[value="' + String(id) + '"]');
+                if (!opt) {
+                    opt = document.createElement('option');
+                    opt.value = String(id);
+                    opt.text = label || String(id);
+                    empresaField.appendChild(opt);
+                }
+                empresaField.value = String(id);
+            } else {
+                empresaField.value = label || String(id);
+            }
+            empresaField.dispatchEvent(new Event('change'));
+        } catch (e) {
+            // ignore
+        }
     }
 
     function updateFromSelection() {
-        var selected = Array.from(select.selectedOptions).map(function(opt){ return opt.value; }).filter(Boolean);
-        if (selected.length === 0) {
+        var container = select.closest && select.closest('.selector') ? select.closest('.selector') : select.parentNode;
+        var selectsInWidget = container.querySelectorAll('select');
+        var chosenSelect = container.querySelector('select.selector-chosen') || container.querySelector('select.chosen') || (selectsInWidget.length > 1 ? selectsInWidget[1] : selectsInWidget[0]);
+        if (!chosenSelect) {
             clearFields();
             return;
         }
-        var q = infoUrl + '?ids=' + selected.join(',');
+        var selectedOpts = Array.from(chosenSelect.options).filter(function(o){ return o && o.value; });
+        if (selectedOpts.length === 0) {
+            clearFields();
+            return;
+        }
+
+        var haveMeta = selectedOpts.every(function(o){ return o.dataset && ('fecha' in o.dataset); });
+        if (haveMeta) {
+            var fechas = selectedOpts.map(function(o){ return o.dataset.fecha; }).filter(Boolean).map(function(s){ return new Date(s); });
+            var minFecha = null;
+            if (fechas.length) minFecha = new Date(Math.min.apply(null, fechas));
+            var fechasCompletadas = selectedOpts.filter(function(o){ return o.dataset && (o.dataset.completada === 'true' || o.dataset.completada === '1'); }).map(function(o){ return o.dataset.fecha; }).filter(Boolean).map(function(s){ return new Date(s); });
+            var maxFechaCompletada = null;
+            if (fechasCompletadas.length) maxFechaCompletada = new Date(Math.max.apply(null, fechasCompletadas));
+            var empresaId = selectedOpts.map(function(o){ return o.dataset.empresaId; }).filter(Boolean)[0];
+            var empresaLabel = selectedOpts.map(function(o){ return o.dataset.empresaNombre; }).filter(Boolean)[0];
+            if (empresaField && empresaId) setEmpresaValue(empresaId, empresaLabel || empresaId);
+            if (cantidadField) cantidadField.value = selectedOpts.reduce(function(sum, o){ var v = parseInt(o.dataset.empleados || '0', 10); return sum + (isNaN(v)?0:v); }, 0);
+            if (fechaInicioField) fechaInicioField.value = minFecha ? minFecha.toISOString().slice(0,10) : '';
+            if (fechaTerminoField) fechaTerminoField.value = maxFechaCompletada ? maxFechaCompletada.toISOString().slice(0,10) : '';
+            return;
+        }
+
+        if (!infoUrl) return;
+        var q = infoUrl + '?ids=' + selectedOpts.map(function(o){ return o.value; }).join(',');
         fetch(q, { credentials: 'same-origin' })
             .then(function(resp){ return resp.json(); })
             .then(function(data){
-                if (!data || !data.ok) {
-                    return;
-                }
-                // Empresa: si viene empresa_id, asignar (es un select en admin)
+                if (!data || !data.ok) return;
                 if (empresaField) {
-                    if (data.empresa_id) {
-                        empresaField.value = String(data.empresa_id);
-                    } else if (empresaField.tagName.toLowerCase() === 'input') {
-                        empresaField.value = data.empresa || '';
-                    } else {
-                        empresaField.value = '';
-                    }
-                    // Trigger change so admin widgets update
-                    empresaField.dispatchEvent(new Event('change'));
+                    if (data.empresa_id) setEmpresaValue(data.empresa_id, data.empresa || String(data.empresa_id));
+                    else if (empresaField.tagName.toLowerCase() === 'input') { empresaField.value = data.empresa || ''; empresaField.dispatchEvent(new Event('change')); }
                 }
                 if (cantidadField) cantidadField.value = data.total_emps || '';
-                if (periodoField) periodoField.value = data.periodo || '';
-            }).catch(function(err){
-                console.error('Error fetching assignments info', err);
-            });
+                if (fechaInicioField) fechaInicioField.value = data.fecha_inicio || '';
+                if (fechaTerminoField) fechaTerminoField.value = data.fecha_termino || '';
+            }).catch(function(){ /* ignore */ });
     }
 
-    // Nueva función: cargar asignaciones para la empresa seleccionada y actualizar el select
     function loadAssignmentsForEmpresa(empresaId) {
         if (!empresaId) {
-            // si no hay empresa, limpiamos opciones
             select.innerHTML = '';
             select.dispatchEvent(new Event('change'));
             return;
         }
+        if (!infoUrl) return;
         var q = infoUrl + '?empresa_id=' + encodeURIComponent(empresaId);
         fetch(q, { credentials: 'same-origin' })
             .then(function(resp){ return resp.json(); })
             .then(function(data){
                 if (!data || !data.ok) return;
                 var assignments = data.assignments || [];
-                // Guardar valores seleccionados actuales
                 var selected = new Set(Array.from(select.selectedOptions).map(function(o){ return o.value; }));
-                // Limpiar opciones actuales
                 select.innerHTML = '';
                 assignments.forEach(function(a){
                     var opt = document.createElement('option');
                     opt.value = String(a.pk);
                     var text = a.numero_cotizacion !== null && a.numero_cotizacion !== undefined ? String(a.numero_cotizacion) : '(sin cot)';
                     opt.text = text;
+                    if (a.fecha) opt.dataset.fecha = a.fecha;
+                    if (typeof a.completada !== 'undefined') opt.dataset.completada = a.completada ? 'true' : 'false';
+                    if (a.empresa_id) opt.dataset.empresaId = a.empresa_id;
+                    if (a.empresa_nombre) opt.dataset.empresaNombre = a.empresa_nombre;
+                    if (typeof a.empleados !== 'undefined') opt.dataset.empleados = String(a.empleados);
                     if (selected.has(String(a.pk))) opt.selected = true;
                     select.appendChild(opt);
                 });
-                // Notificar al widget que cambió
                 select.dispatchEvent(new Event('change'));
-            }).catch(function(err){
-                console.error('Error fetching assignments by empresa', err);
-            });
+            }).catch(function(){ /* ignore */ });
     }
 
-    // FilteredSelectMultiple creates two select boxes; but the original select still dispatches change events.
-    select.addEventListener('change', updateFromSelection);
-    // Initialize on load
+    var container = select.closest && select.closest('.selector') ? select.closest('.selector') : select.parentNode;
+    var selectsInWidget = container.querySelectorAll('select');
+    selectsInWidget.forEach(function(s){ s.addEventListener('change', updateFromSelection); });
+
+    function debounce(fn, wait) { var t; return function() { var args = arguments; clearTimeout(t); t = setTimeout(function(){ fn.apply(null, args); }, wait); }; }
+    var debouncedUpdate = debounce(updateFromSelection, 120);
+    try {
+        var mo = new MutationObserver(function(mutations){
+            for (var i=0;i<mutations.length;i++){ var m = mutations[i]; if (m.type === 'childList'){ debouncedUpdate(); break; } }
+        });
+        mo.observe(container, { childList: true, subtree: true });
+    } catch (e) { /* ignore */ }
+
     updateFromSelection();
 
-    // Cuando cambie la empresa, recargar las asignaciones disponibles
     if (empresaField) {
-        empresaField.addEventListener('change', function(ev){
+        empresaField.addEventListener('change', function(){
             var val = empresaField.value;
-            // Si es un select con opción vacía, val puede ser ''
+            if (!val || val === '') {
+                var hidden = document.querySelector('input[name="empresa"]') || document.querySelector('input[id^="id_empresa_"]');
+                if (hidden && hidden.value) val = hidden.value;
+            }
             loadAssignmentsForEmpresa(val);
         });
-        // Si ya hay empresa seleccionada al cargar, forzar carga.
-        if (empresaField.value) {
-            loadAssignmentsForEmpresa(empresaField.value);
-        }
+        var initialVal = empresaField.value || (document.querySelector('input[name="empresa"]') && document.querySelector('input[name="empresa"]').value) || '';
+        if (initialVal) loadAssignmentsForEmpresa(initialVal);
     }
 });

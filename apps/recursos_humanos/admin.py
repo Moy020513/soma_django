@@ -55,9 +55,9 @@ class ContratoAdmin(admin.ModelAdmin):
                 # Calcular periodo de ejecución: rango entre la fecha mínima y máxima de las asignaciones
                 fechas = [a.fecha for a in asigns if a.fecha]
                 if fechas:
-                    fecha_min = min(fechas).strftime('%Y-%m-%d')
-                    fecha_max = max(fechas).strftime('%Y-%m-%d')
-                    contrato.periodo_ejecucion = f"{fecha_min} - {fecha_max}"
+                    # Asignar directamente los campos fecha_inicio/fecha_termino del contrato
+                    contrato.fecha_inicio = min(fechas)
+                    contrato.fecha_termino = max(fechas)
                 # Calcular cantidad_empleados como suma de empleados por asignación
                 total_emps = 0
                 for a in asigns:
@@ -79,11 +79,11 @@ class ContratoAdmin(admin.ModelAdmin):
 
     form = ContratoForm
     class Media:
-        js = ('/static/js/contrato_autofill.js',)
+        js = ('js/contrato_autofill.js',)
         css = {
             'all': ('/static/css/contrato_admin.css',)
         }
-    list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "periodo_ejecucion", "cantidad_empleados")
+    list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "cantidad_empleados")
     list_filter = ("empresa", "fecha_inicio", "fecha_termino")
     search_fields = ("numero_contrato", "empresa__nombre")
     # autocomplete_fields = ["empresa"]
@@ -95,7 +95,7 @@ class ContratoAdmin(admin.ModelAdmin):
             'fields': (('numero_contrato',), ('empresa', 'cantidad_empleados'), 'asignaciones_vinculadas')
         }),
         ('Periodo y fechas', {
-            'fields': (('fecha_inicio', 'fecha_termino'), ('periodo_ejecucion', 'resumen_asignaciones'))
+            'fields': (('fecha_inicio', 'fecha_termino'), ('resumen_asignaciones',))
         }),
     )
 
@@ -140,7 +140,17 @@ class ContratoAdmin(admin.ModelAdmin):
             except Exception:
                 return JsonResponse({'ok': False, 'error': 'invalid empresa_id'})
             asigns_qs = Asignacion.objects.filter(empresa_id=eid).order_by('-fecha')
-            data = [ {'pk': a.pk, 'numero_cotizacion': a.numero_cotizacion} for a in asigns_qs ]
+            data = []
+            for a in asigns_qs:
+                data.append({
+                    'pk': a.pk,
+                    'numero_cotizacion': a.numero_cotizacion,
+                    'fecha': a.fecha.strftime('%Y-%m-%d') if getattr(a, 'fecha', None) else None,
+                    'completada': bool(getattr(a, 'completada', False)),
+                    'empresa_id': getattr(a, 'empresa_id', None),
+                    'empresa_nombre': getattr(a.empresa, 'nombre', '') if getattr(a, 'empresa', None) else '',
+                    'empleados': a.empleados.count() if hasattr(a, 'empleados') else 0,
+                })
             return JsonResponse({'ok': True, 'assignments': data})
 
         if not ids:
@@ -160,12 +170,15 @@ class ContratoAdmin(admin.ModelAdmin):
         total_emps = sum(a.empleados.count() for a in asigns)
         # Periodo
         fechas = [a.fecha for a in asigns if a.fecha]
-        periodo = ''
+        fecha_min = None
+        fecha_max_completed = None
         if fechas:
             fecha_min = min(fechas).strftime('%Y-%m-%d')
-            fecha_max = max(fechas).strftime('%Y-%m-%d')
-            periodo = f"{fecha_min} - {fecha_max}"
-        return JsonResponse({'ok': True, 'empresa_id': empresa_id, 'empresa': empresa_name, 'total_emps': total_emps, 'periodo': periodo})
+        # fecha_termino solo considera asignaciones que ya están marcadas como completadas
+        fechas_completadas = [a.fecha for a in asigns if getattr(a, 'completada', False) and a.fecha]
+        if fechas_completadas:
+            fecha_max_completed = max(fechas_completadas).strftime('%Y-%m-%d')
+        return JsonResponse({'ok': True, 'empresa_id': empresa_id, 'empresa': empresa_name, 'total_emps': total_emps, 'fecha_inicio': fecha_min, 'fecha_termino': fecha_max_completed})
 
 # Admin AsignacionPorTrabajador
 @admin.register(AsignacionPorTrabajador)
