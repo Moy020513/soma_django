@@ -131,6 +131,18 @@ class ContratoAdmin(admin.ModelAdmin):
     def assignments_info_view(self, request):
         """Devuelve JSON con empresa_id/nombre, total_emps y periodo (fecha_min - fecha_max) para los IDs enviados."""
         ids = request.GET.get('ids', '')
+        empresa_id = request.GET.get('empresa_id')
+
+        # Si se solicita por empresa_id, devolver lista de asignaciones (pk y numero_cotizacion)
+        if empresa_id:
+            try:
+                eid = int(empresa_id)
+            except Exception:
+                return JsonResponse({'ok': False, 'error': 'invalid empresa_id'})
+            asigns_qs = Asignacion.objects.filter(empresa_id=eid).order_by('-fecha')
+            data = [ {'pk': a.pk, 'numero_cotizacion': a.numero_cotizacion} for a in asigns_qs ]
+            return JsonResponse({'ok': True, 'assignments': data})
+
         if not ids:
             return JsonResponse({'ok': False, 'error': 'no ids'})
         try:
