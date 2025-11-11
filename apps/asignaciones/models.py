@@ -196,9 +196,15 @@ class Asignacion(models.Model):
         """
         fechas = []
         # Actividades completadas con fecha
-        for a in self.actividades.filter(completada=True).exclude(fecha_completada__isnull=True):
+        for a in self.actividades.filter(completada=True):
             try:
-                fechas.append(a.fecha_completada.date())
+                if a.fecha_completada:
+                    fechas.append(a.fecha_completada.date())
+                else:
+                    # Si la actividad está marcada como completada pero no tiene
+                    # fecha_completada, usar la fecha de hoy como indicativo.
+                    from datetime import date
+                    fechas.append(date.today())
             except Exception:
                 continue
         # Días trabajados explícitos (si existen)

@@ -16,11 +16,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var empresaField = document.querySelector('#id_empresa');
     var cantidadField = document.querySelector('#id_cantidad_empleados');
+    var diasActivosField = document.querySelector('#id_dias_activos');
     var fechaInicioField = document.querySelector('#id_fecha_inicio');
     var fechaTerminoField = document.querySelector('#id_fecha_termino');
 
     function clearFields() {
         if (cantidadField) cantidadField.value = '';
+        if (diasActivosField) diasActivosField.value = '';
         if (fechaInicioField) fechaInicioField.value = '';
         if (fechaTerminoField) fechaTerminoField.value = '';
     }
@@ -72,8 +74,14 @@ document.addEventListener('DOMContentLoaded', function() {
             var empresaLabel = selectedOpts.map(function(o){ return o.dataset.empresaNombre; }).filter(Boolean)[0];
             if (empresaField && empresaId) setEmpresaValue(empresaId, empresaLabel || empresaId);
             if (cantidadField) cantidadField.value = selectedOpts.reduce(function(sum, o){ var v = parseInt(o.dataset.empleados || '0', 10); return sum + (isNaN(v)?0:v); }, 0);
+            // dias activos: sumar metadata de cada opción
+            if (diasActivosField) diasActivosField.value = selectedOpts.reduce(function(sum, o){ var v = parseInt(o.dataset.diasActivos || o.dataset.dias_activos || '0', 10); return sum + (isNaN(v)?0:v); }, 0);
             if (fechaInicioField) fechaInicioField.value = minFecha ? minFecha.toISOString().slice(0,10) : '';
-            if (fechaTerminoField) fechaTerminoField.value = maxFechaCompletada ? maxFechaCompletada.toISOString().slice(0,10) : '';
+            // fecha_termino: preferir fechaTermino si existe en las asignaciones
+            var fechaTerminos = selectedOpts.map(function(o){ return o.dataset && (o.dataset.fechaTermino || o.dataset.fecha_termino); }).filter(Boolean).map(function(s){ return new Date(s); });
+            var maxFechaTermino = null;
+            if (fechaTerminos.length) maxFechaTermino = new Date(Math.max.apply(null, fechaTerminos));
+            if (fechaTerminoField) fechaTerminoField.value = maxFechaTermino ? maxFechaTermino.toISOString().slice(0,10) : (maxFechaCompletada ? maxFechaCompletada.toISOString().slice(0,10) : '');
             return;
         }
 
@@ -90,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (cantidadField) cantidadField.value = data.total_emps || '';
                 if (fechaInicioField) fechaInicioField.value = data.fecha_inicio || '';
                 if (fechaTerminoField) fechaTerminoField.value = data.fecha_termino || '';
+                if (diasActivosField) diasActivosField.value = data.total_dias || '';
             }).catch(function(){ /* ignore */ });
     }
 
@@ -115,9 +124,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     opt.text = text;
                     if (a.fecha) opt.dataset.fecha = a.fecha;
                     if (typeof a.completada !== 'undefined') opt.dataset.completada = a.completada ? 'true' : 'false';
+                    if (a.fecha_termino) opt.dataset.fechaTermino = a.fecha_termino;
                     if (a.empresa_id) opt.dataset.empresaId = a.empresa_id;
                     if (a.empresa_nombre) opt.dataset.empresaNombre = a.empresa_nombre;
                     if (typeof a.empleados !== 'undefined') opt.dataset.empleados = String(a.empleados);
+                    if (typeof a.dias_activos !== 'undefined') opt.dataset.diasActivos = String(a.dias_activos);
                     if (selected.has(String(a.pk))) opt.selected = true;
                     select.appendChild(opt);
                 });

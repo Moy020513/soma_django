@@ -52,12 +52,18 @@ class ContratoAdmin(admin.ModelAdmin):
             # Si hay asignaciones, tomar la empresa de la primera (asumiendo mismo cliente)
             if asigns:
                 contrato.empresa = asigns[0].empresa
-                # Calcular periodo de ejecución: rango entre la fecha mínima y máxima de las asignaciones
+                # Fecha de inicio = mínima fecha de asignación
                 fechas = [a.fecha for a in asigns if a.fecha]
                 if fechas:
-                    # Asignar directamente los campos fecha_inicio/fecha_termino del contrato
                     contrato.fecha_inicio = min(fechas)
-                    contrato.fecha_termino = max(fechas)
+                # Fecha término = máxima fecha_termino de las asignaciones (si existe),
+                # si no, fallback a la máxima fecha de asignación
+                terminos = [a.fecha_termino for a in asigns if getattr(a, 'fecha_termino', None)]
+                if terminos:
+                    contrato.fecha_termino = max(terminos)
+                else:
+                    if fechas:
+                        contrato.fecha_termino = max(fechas)
                 # Calcular cantidad_empleados como suma de empleados por asignación
                 total_emps = 0
                 for a in asigns:
@@ -66,6 +72,14 @@ class ContratoAdmin(admin.ModelAdmin):
                     except Exception:
                         pass
                 contrato.cantidad_empleados = total_emps
+                # Calcular días activos como la suma de días_trabajados por asignación
+                total_dias = 0
+                for a in asigns:
+                    try:
+                        total_dias += a.dias_trabajados.count()
+                    except Exception:
+                        pass
+                contrato.dias_activos = total_dias
 
             if commit:
                 contrato.save()
@@ -83,7 +97,7 @@ class ContratoAdmin(admin.ModelAdmin):
         css = {
             'all': ('/static/css/contrato_admin.css',)
         }
-    list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "cantidad_empleados")
+    list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "cantidad_empleados", 'dias_activos')
     list_filter = ("empresa", "fecha_inicio", "fecha_termino")
     search_fields = ("numero_contrato", "empresa__nombre")
     # autocomplete_fields = ["empresa"]
@@ -92,7 +106,7 @@ class ContratoAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': (('numero_contrato',), ('empresa', 'cantidad_empleados'), 'asignaciones_vinculadas')
+            'fields': (('numero_contrato',), ('empresa', 'cantidad_empleados', 'dias_activos'), 'asignaciones_vinculadas')
         }),
         ('Periodo y fechas', {
             'fields': (('fecha_inicio', 'fecha_termino'), ('resumen_asignaciones',))
@@ -147,9 +161,11 @@ class ContratoAdmin(admin.ModelAdmin):
                     'numero_cotizacion': a.numero_cotizacion,
                     'fecha': a.fecha.strftime('%Y-%m-%d') if getattr(a, 'fecha', None) else None,
                     'completada': bool(getattr(a, 'completada', False)),
+                    'fecha_termino': a.fecha_termino.strftime('%Y-%m-%d') if getattr(a, 'fecha_termino', None) else None,
                     'empresa_id': getattr(a, 'empresa_id', None),
                     'empresa_nombre': getattr(a.empresa, 'nombre', '') if getattr(a, 'empresa', None) else '',
                     'empleados': a.empleados.count() if hasattr(a, 'empleados') else 0,
+                    'dias_activos': a.dias_trabajados.count() if hasattr(a, 'dias_trabajados') else 0,
                 })
             return JsonResponse({'ok': True, 'assignments': data})
 
@@ -168,17 +184,24 @@ class ContratoAdmin(admin.ModelAdmin):
         empresa_name = asigns[0].empresa.nombre if empresa_id else ''
         # Total empleados
         total_emps = sum(a.empleados.count() for a in asigns)
+        # Total dias activos
+        total_dias = sum(a.dias_trabajados.count() for a in asigns)
         # Periodo
         fechas = [a.fecha for a in asigns if a.fecha]
         fecha_min = None
-        fecha_max_completed = None
+        fecha_termino_max = None
         if fechas:
             fecha_min = min(fechas).strftime('%Y-%m-%d')
-        # fecha_termino solo considera asignaciones que ya están marcadas como completadas
-        fechas_completadas = [a.fecha for a in asigns if getattr(a, 'completada', False) and a.fecha]
-        if fechas_completadas:
-            fecha_max_completed = max(fechas_completadas).strftime('%Y-%m-%d')
-        return JsonResponse({'ok': True, 'empresa_id': empresa_id, 'empresa': empresa_name, 'total_emps': total_emps, 'fecha_inicio': fecha_min, 'fecha_termino': fecha_max_completed})
+        # Fecha término: máximo entre las fechas_termino de las asignaciones si existen
+        terminos = [a.fecha_termino for a in asigns if getattr(a, 'fecha_termino', None)]
+        if terminos:
+            fecha_termino_max = max(terminos).strftime('%Y-%m-%d')
+        else:
+            # fallback: si no hay fecha_termino, considerar asignaciones completadas por fecha
+            fechas_completadas = [a.fecha for a in asigns if getattr(a, 'completada', False) and a.fecha]
+            if fechas_completadas:
+                fecha_termino_max = max(fechas_completadas).strftime('%Y-%m-%d')
+        return JsonResponse({'ok': True, 'empresa_id': empresa_id, 'empresa': empresa_name, 'total_emps': total_emps, 'total_dias': total_dias, 'fecha_inicio': fecha_min, 'fecha_termino': fecha_termino_max})
 
 # Admin AsignacionPorTrabajador
 @admin.register(AsignacionPorTrabajador)

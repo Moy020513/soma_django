@@ -20,6 +20,7 @@ class Contrato(models.Model):
     fecha_inicio = models.DateField(verbose_name="Fecha de inicio")
     fecha_termino = models.DateField(verbose_name="Fecha de término")
     cantidad_empleados = models.PositiveIntegerField(verbose_name="Cantidad de empleados")
+    dias_activos = models.PositiveIntegerField(verbose_name='Días activos', default=0)
 
     class Meta:
         verbose_name = "Contratos REPSE"
