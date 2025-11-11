@@ -155,6 +155,8 @@
 {# ========== CONTENIDO PRINCIPAL ========== #}
 {% block content %}
   <div class="changelist-container">
+    {# Mostrar mensajes flash también en la vista de listado (changelist) para cada módulo #}
+    {% include 'partials/messages.html' %}
     
     {# Encabezado con título #}
     <div class="changelist-header">

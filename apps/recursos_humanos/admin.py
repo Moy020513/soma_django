@@ -3,10 +3,12 @@ from django import forms
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied
+from django.db.models import ProtectedError
 from django.utils.translation import gettext as _
 from django.contrib.admin.utils import unquote
 from django.urls import reverse
 from django.db import models as dj_models
+from django.db import transaction
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador
 from django.utils.html import format_html
 from .models import Inasistencia
@@ -479,12 +481,43 @@ class EmpleadoAdmin(admin.ModelAdmin):
             return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
 
         if request.method == "POST":
-            # Eliminar y redirigir al changelist
-            self.log_deletion(request, obj, str(obj))
-            obj_display = str(obj)
-            obj.delete()
-            messages.success(request, _(f'Se eliminó "{obj_display}" correctamente.'))
-            return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+            # Si el POST contiene 'force', primero eliminar relaciones protegidas y luego el objeto
+            if request.POST.get('force') == '1':
+                # eliminar AsignacionPorTrabajador relacionados (si existen)
+                try:
+                    with transaction.atomic():
+                        AsignacionPorTrabajador.objects.filter(empleado=obj).delete()
+                        # proceder a eliminar el empleado
+                        self.log_deletion(request, obj, str(obj))
+                        obj_display = str(obj)
+                        obj.delete()
+                except Exception:
+                    messages.error(request, _("Ocurrió un error al eliminar los registros relacionados."))
+                    return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+                messages.success(request, _(f'Se eliminó "{obj_display}" y sus registros relacionados correctamente.'))
+                return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+            # Intento normal de borrado: capturar ProtectedError y mostrar aviso
+            try:
+                with transaction.atomic():
+                    self.log_deletion(request, obj, str(obj))
+                    obj_display = str(obj)
+                    obj.delete()
+                messages.success(request, _(f'Se eliminó "{obj_display}" correctamente.'))
+                return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
+            except ProtectedError:
+                # Obtener objetos protegidos que impiden la eliminación
+                protected_qs = AsignacionPorTrabajador.objects.filter(empleado=obj)
+                context = {
+                    **self.admin_site.each_context(request),
+                    "title": _("No se puede eliminar: existen registros relacionados"),
+                    "object": obj,
+                    "protected_qs": protected_qs,
+                    "opts": opts,
+                    "app_label": opts.app_label,
+                }
+                if extra_context:
+                    context.update(extra_context)
+                return TemplateResponse(request, "admin/recursos_humanos/empleado/delete_protected_confirmation.html", context)
 
         context = {
             **self.admin_site.each_context(request),

@@ -17,35 +17,32 @@
 })();
 </script>
 
-        <thead>
-            <tr>
-                <th scope="col" class="column-contrato_numero" style="text-align:center;"><div class="text"><span>No. cotización</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>FECHA</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>EMPLEADOS</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>EMPRESA</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>SUPERVISOR</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>DETALLES</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>DOCUMENTO</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>DÍAS ACTIVOS</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>FECHA TÉRMINO</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span># ACT</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>HISTORIAL</span></div></th>
-                <th scope="col" style="text-align:center;"><div class="text"><span>ACCIONES</span></div></th>
-            <tr>
-                <td class="column-contrato_numero" style="text-align:center;">{{ obj.numero_cotizacion|default:'-' }}</td>
-                <td style="text-align:center">{{ obj.fecha|date:"d/m/Y" }}</td>
-                <td style="text-align:center">{{ obj.empleados.count }}</td>
-                <td style="text-align:center">{{ obj.empresa }}</td>
-
+<style>
     /* Celdas compactas */
+    /* Permitir que la tabla tenga un ancho mínimo mayor que su contenedor para
+       activar el scroll horizontal en .results. No forzamos width:100% porque
+       eso impide el overflow cuando el contenido es más ancho. */
+    #result_list {
+        width: auto;
+        min-width: 1100px; /* ajustar según número de columnas */
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    /* Hacer que el contenedor permita scroll horizontal siempre */
+    .results { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
     #result_list th, 
     #result_list td {
         border: 1px solid #b6b6b6;
-        padding: 6px 8px;
+        padding: 8px 10px;
         text-align: left;
-        font-size: 13px;
         line-height: 1.25;
-        white-space: nowrap; /* Evita que el texto se parta en múltiples líneas */
+        white-space: normal; /* permitir wrap para evitar estirar columnas */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-sizing: border-box;
+        vertical-align: middle;
     }
 
     /* Headers */
@@ -108,7 +105,7 @@
     /* Filas */
     #result_list tbody tr {
         transition: background 0.2s;
-        height: 40px;
+        height: auto;
     }
 
     #result_list tbody tr:hover {
@@ -129,10 +126,17 @@
     /* Ajustes específicos para móvil */
     @media (max-width: 768px) {
         .results {
-            margin: 0 -15px; /* Compensar padding del contenedor padre si existe */
-            width: calc(100% + 30px);
-            padding: 0 15px;
+            /* Evitar márgenes negativos en móvil para que el scrollbar quede alineado
+               con el contenedor del sitio. Usar padding 0 y width 100%. */
+            margin: 0;
+            width: 100%;
+            padding: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
+
+        /* Reducir el min-width de la tabla en móvil para que el scroll sea más razonable */
+        #result_list { min-width: 800px; }
 
         #result_list th,
         #result_list td {
@@ -231,5 +235,4 @@
         </tbody>
     </table>
     </div>
-</form>
 </form>
