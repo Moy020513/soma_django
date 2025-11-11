@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 from django.template.response import TemplateResponse
 import json
 from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR
-from .models import Asignacion, HistorialSupervisorAsignacion, HistorialEmpleadoAsignacion
+from .models import Asignacion, HistorialSupervisorAsignacion, HistorialEmpleadoAsignacion, AsignacionDiaTrabajado
 from apps.recursos_humanos.models import Empleado
 from apps.empresas.models import Empresa
 from .forms_custom import EmpleadoAsignacionFormSet, AsignacionCustomForm, ActividadAsignadaFormSet
@@ -16,14 +16,23 @@ from django.urls import path
 from django.shortcuts import get_object_or_404
 
 
+# Inline para administrar los días trabajados desde el admin de Asignacion
+class DiaTrabajadoInline(admin.TabularInline):
+    model = AsignacionDiaTrabajado
+    extra = 1
+    verbose_name = 'Día trabajado'
+    verbose_name_plural = 'Días trabajados'
+
+
 @admin.register(Asignacion)
 class AsignacionAdmin(admin.ModelAdmin):
+    inlines = [DiaTrabajadoInline]
     def save_form(self, request, form, change):
         return form.save(commit=False)
     form = AsignacionCustomForm
     change_form_template = 'admin/asignaciones/asignacion/change_form.html'
     change_list_template = 'admin/asignaciones/asignacion/change_list.html'
-    list_display = ('fecha', 'get_empleados', 'empresa', 'supervisor', 'numero_cotizacion', 'detalles')
+    list_display = ('numero_cotizacion', 'fecha', 'get_empleados', 'empresa', 'supervisor', 'detalles', 'fecha_termino_display', 'dias_activos')
     list_filter = ('fecha', 'empresa')
     search_fields = (
         'empleados__usuario__first_name',
@@ -42,6 +51,25 @@ class AsignacionAdmin(admin.ModelAdmin):
     def get_empleados(self, obj):
         return ', '.join([str(e) for e in obj.empleados.all()])
     get_empleados.short_description = 'Empleados'
+
+    def dias_activos(self, obj):
+        try:
+            return obj.dias_trabajados.count()
+        except Exception:
+            return 0
+    dias_activos.short_description = 'Días activos'
+
+    def fecha_termino_display(self, obj):
+        if obj.fecha_termino:
+            try:
+                return obj.fecha_termino.strftime('%d/%m/%Y')
+            except Exception:
+                return str(obj.fecha_termino)
+        return ''
+    fecha_termino_display.short_description = 'Fecha término'
+    fecha_termino_display.admin_order_field = 'fecha_termino'
+
+
 
     # Añadir botón/columna historial en la lista
     def historial_action(self, obj):

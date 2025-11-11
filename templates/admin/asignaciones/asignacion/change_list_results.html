@@ -167,6 +167,8 @@
                 <th scope="col"><div class="text"><span>SUPERVISOR</span></div></th>
                 <th scope="col"><div class="text"><span>DETALLES</span></div></th>
                 <th scope="col"><div class="text"><span>DOCUMENTO</span></div></th>
+                <th scope="col"><div class="text"><span>DÍAS ACTIVOS</span></div></th>
+                <th scope="col"><div class="text"><span>FECHA TÉRMINO</span></div></th>
                 <th scope="col"><div class="text"><span># ACT</span></div></th>
                 <th scope="col"><div class="text"><span>HISTORIAL</span></div></th>
                 <th scope="col"><div class="text"><span>ACCIONES</span></div></th>
@@ -190,6 +192,8 @@
                         -
                     {% endif %}
                 </td>
+                <td style="text-align:center">{{ obj.dias_trabajados.count }}</td>
+                <td style="text-align:center">{% if obj.fecha_termino %}{{ obj.fecha_termino|date:"d/m/Y" }}{% endif %}</td>
                 <td style="text-align:center;">{{ obj.actividades_total }}</td>
                 <td style="text-align:center;">
                     <a href="{% url 'admin:asignaciones_asignacion_historial' obj.pk %}" class="btn-action history">Historial</a>

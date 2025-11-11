@@ -137,6 +137,9 @@ class Asignacion(models.Model):
     numero_cotizacion = models.BigIntegerField(blank=True, null=True, verbose_name='No. cotización')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    # Nuevo campo: fecha de término de la asignación. Se establecerá cuando
+    # todas las actividades estén completadas (fecha de la última actividad).
+    fecha_termino = models.DateField(null=True, blank=True, verbose_name='Fecha de término')
 
     class Meta:
         verbose_name = 'Asignación'
@@ -184,6 +187,37 @@ class Asignacion(models.Model):
             # llamarán a save_model y gestionarán errores de formulario.
             pass
         super().save(*args, **kwargs)
+
+    def recompute_fecha_termino(self):
+        """
+        Recalcula y establece `fecha_termino` en base a las actividades completadas
+        (usa la fecha máxima de `fecha_completada`) y a los días trabajados si existen.
+        Se llama cuando cambian actividades o días trabajados.
+        """
+        fechas = []
+        # Actividades completadas con fecha
+        for a in self.actividades.filter(completada=True).exclude(fecha_completada__isnull=True):
+            try:
+                fechas.append(a.fecha_completada.date())
+            except Exception:
+                continue
+        # Días trabajados explícitos (si existen)
+        if hasattr(self, 'dias_trabajados'):
+            dias = list(self.dias_trabajados.values_list('fecha', flat=True))
+            for d in dias:
+                if d:
+                    fechas.append(d)
+
+        if fechas:
+            nueva = max(fechas)
+            if self.fecha_termino != nueva:
+                self.fecha_termino = nueva
+                # evitar bucle infinito: save sin recalcular otra vez
+                super(Asignacion, self).save(update_fields=['fecha_termino'])
+        else:
+            if self.fecha_termino is not None:
+                self.fecha_termino = None
+                super(Asignacion, self).save(update_fields=['fecha_termino'])
 
     def clean(self):
         """
@@ -246,3 +280,75 @@ class HistorialEmpleadoAsignacion(models.Model):
     def __str__(self):
         emp = self.empleado.nombre_completo if self.empleado else 'Empleado desconocido'
         return f"{emp} - {self.get_accion_display()} @ {self.timestamp.strftime('%d/%m/%Y %H:%M')}"
+
+
+class AsignacionDiaTrabajado(models.Model):
+    """Días reales trabajados en una asignación. Permite registrar días no
+    consecutivos en los que se trabajó sobre la asignación."""
+    asignacion = models.ForeignKey('Asignacion', on_delete=models.CASCADE, related_name='dias_trabajados')
+    fecha = models.DateField(verbose_name='Fecha trabajada')
+    notas = models.CharField(max_length=255, blank=True, null=True, verbose_name='Notas (opcional)')
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Día trabajado'
+        verbose_name_plural = 'Días trabajados'
+        unique_together = ('asignacion', 'fecha')
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.asignacion} - {self.fecha.isoformat()}"
+
+
+# Señales para recalcular fecha_termino cuando cambian actividades o días trabajados
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+
+@receiver(post_save, sender=ActividadAsignada)
+def actividad_saved_recompute_fecha_termino(sender, instance, **kwargs):
+    try:
+        asign = instance.asignacion
+        asign.recompute_fecha_termino()
+    except Exception:
+        pass
+
+
+@receiver(post_delete, sender=ActividadAsignada)
+def actividad_deleted_recompute_fecha_termino(sender, instance, **kwargs):
+    try:
+        asign = instance.asignacion
+        asign.recompute_fecha_termino()
+    except Exception:
+        pass
+
+
+@receiver(post_save, sender=AsignacionDiaTrabajado)
+def dia_trabajado_saved_recompute(sender, instance, **kwargs):
+    try:
+        asign = instance.asignacion
+        asign.recompute_fecha_termino()
+    except Exception:
+        pass
+
+
+@receiver(post_delete, sender=AsignacionDiaTrabajado)
+def dia_trabajado_deleted_recompute(sender, instance, **kwargs):
+    try:
+        asign = instance.asignacion
+        asign.recompute_fecha_termino()
+    except Exception:
+        pass
+
+
+@receiver(post_save, sender=Asignacion)
+def asignacion_saved_recompute_on_complete(sender, instance, created, **kwargs):
+    """
+    Si la asignación ha sido marcada como completada, recalcular la fecha de término.
+    También útil si se edita desde el admin para forzar el cálculo.
+    """
+    try:
+        if instance.completada:
+            instance.recompute_fecha_termino()
+    except Exception:
+        pass
