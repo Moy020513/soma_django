@@ -8,6 +8,21 @@ from django.template.response import TemplateResponse
 import json
 from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR
 from .models import Empresa, Contacto
+from .models import CTZ
+from django import forms
+
+class CTZForm(forms.ModelForm):
+    class Meta:
+        model = CTZ
+        fields = '__all__'
+        widgets = {
+            'pu': forms.NumberInput(attrs={'readonly': 'readonly'}),
+            'total_pu': forms.NumberInput(attrs={'readonly': 'readonly'}),
+            'proveedor': forms.NumberInput(attrs={'min': 0}),
+            'mo_soma': forms.NumberInput(attrs={'min': 0}),
+            'otros_materiales': forms.NumberInput(attrs={'min': 0}),
+            'porcentaje_pu': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+        }
 from django.db.models.deletion import ProtectedError
 class ContactoInline(admin.TabularInline):
     model = Contacto
@@ -314,5 +329,82 @@ class ContactoAdmin(admin.ModelAdmin):
     search_fields = ('nombre', 'apellidos', 'telefono', 'correo', 'empresa__nombre')
     verbose_name = 'Contacto'
     verbose_name_plural = 'Contactos'
+
+
+@admin.register(CTZ)
+class CTZAdmin(admin.ModelAdmin):
+    form = CTZForm
+    list_display = ('empresa', 'proveedor_display', 'mo_soma_display', 'otros_materiales_display', 'pu_display', 'porcentaje_pu_display', 'total_pu_display', 'fecha_creacion')
+    list_filter = ('empresa',)
+    search_fields = ('empresa__nombre',)
+    # Mostrar los campos calculados como inputs readonly (no como "readonly_fields")
+    # para que puedan actualizarse dinámicamente desde JS en el formulario.
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+    fieldsets = (
+        (None, {
+            'fields': ('empresa',)
+        }),
+        ('Costos', {
+            'fields': ('proveedor', 'mo_soma', 'otros_materiales', 'porcentaje_pu')
+        }),
+        ('Cálculos', {
+            'fields': ('pu', 'total_pu')
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        # Asegurarse de recalcular antes de guardar (aunque el modelo ya lo hace)
+        obj.pu = obj.calcular_pu()
+        obj.total_pu = obj.calcular_total_pu(obj.pu)
+        super().save_model(request, obj, form, change)
+
+    class Media:
+        js = ('js/ctz_admin.js',)
+
+    # Formateo para la vista de lista: mostrar signos de moneda y porcentaje
+    def _fmt_money(self, v):
+        try:
+            # Use a non-breaking space between the currency symbol and the amount
+            # so browsers won't wrap the sign and the number onto separate lines.
+            return f"$\u00A0{int(v):,}"
+        except Exception:
+            return f"$\u00A0{v}"
+
+    def proveedor_display(self, obj):
+        return self._fmt_money(obj.proveedor)
+    proveedor_display.short_description = 'Proveedor'
+    proveedor_display.admin_order_field = 'proveedor'
+
+    def mo_soma_display(self, obj):
+        return self._fmt_money(obj.mo_soma)
+    mo_soma_display.short_description = 'MO SOMA'
+    mo_soma_display.admin_order_field = 'mo_soma'
+
+    def otros_materiales_display(self, obj):
+        return self._fmt_money(obj.otros_materiales)
+    otros_materiales_display.short_description = 'Otros materiales'
+    otros_materiales_display.admin_order_field = 'otros_materiales'
+
+    def pu_display(self, obj):
+        return self._fmt_money(obj.pu)
+    pu_display.short_description = 'PU'
+    pu_display.admin_order_field = 'pu'
+
+    def total_pu_display(self, obj):
+        return self._fmt_money(obj.total_pu)
+    total_pu_display.short_description = 'TOTAL PU'
+    total_pu_display.admin_order_field = 'total_pu'
+
+    def porcentaje_pu_display(self, obj):
+        try:
+            # Mostrar el valor tal cual seguido de % (ej. 1.25%)
+            s = format(obj.porcentaje_pu, 'f')
+            # quitar ceros innecesarios
+            s = s.rstrip('0').rstrip('.') if '.' in s else s
+            return f"{s}%"
+        except Exception:
+            return f"{obj.porcentaje_pu}%"
+    porcentaje_pu_display.short_description = 'Porcentaje PU'
+    porcentaje_pu_display.admin_order_field = 'porcentaje_pu'
 
 

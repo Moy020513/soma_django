@@ -45,6 +45,51 @@
       overflow: hidden;
     }
 
+    /* Por defecto algunos changelists usan table-layout fixed para layouts compactos.
+       Para CTZ queremos que las columnas crezcan según el contenido más largo, así que
+       anulamos a table-layout:auto más abajo para el modelo ctz. */
+    #changelist table, #result_list, #changelist .results table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    #changelist th, #changelist td, #result_list th, #result_list td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 768px) {
+      #changelist th, #changelist td, #result_list th, #result_list td {
+        white-space: normal;
+      }
+    }
+
+   /* Para CTZ: usar table-layout:auto y permitir que columnas crezcan según el contenido
+     más largo. Usamos min-width en px para una base razonable pero permitimos expansión. */
+   body.app-empresas.model-ctz #result_list table,
+   body.app-empresas.model-ctz #result_list .results table {
+    table-layout: auto !important;
+   }
+   body.app-empresas.model-ctz #result_list th.column-empresa { min-width: 220px; }
+   body.app-empresas.model-ctz #result_list th.column-proveedor_display { min-width: 100px; }
+   body.app-empresas.model-ctz #result_list th.column-mo_soma_display { min-width: 100px; }
+   body.app-empresas.model-ctz #result_list th.column-otros_materiales_display { min-width: 100px; }
+   body.app-empresas.model-ctz #result_list th.column-pu_display { min-width: 80px; }
+   body.app-empresas.model-ctz #result_list th.column-porcentaje_pu_display { min-width: 90px; }
+   body.app-empresas.model-ctz #result_list th.column-total_pu_display { min-width: 120px; }
+   body.app-empresas.model-ctz #result_list th.column-fecha_creacion { min-width: 160px; }
+   /* Asegurar que las celdas siguen la misma anchura mínima que los encabezados, pero
+     que puedan crecer en caso de contenido más largo. */
+   body.app-empresas.model-ctz #result_list td.column-empresa { min-width: 220px; }
+   body.app-empresas.model-ctz #result_list td.column-proveedor_display { min-width: 100px; }
+   body.app-empresas.model-ctz #result_list td.column-mo_soma_display { min-width: 100px; }
+   body.app-empresas.model-ctz #result_list td.column-otros_materiales_display { min-width: 100px; }
+   body.app-empresas.model-ctz #result_list td.column-pu_display { min-width: 80px; }
+   body.app-empresas.model-ctz #result_list td.column-porcentaje_pu_display { min-width: 90px; }
+   body.app-empresas.model-ctz #result_list td.column-total_pu_display { min-width: 120px; }
+   body.app-empresas.model-ctz #result_list td.column-fecha_creacion { min-width: 160px; }
+
     .breadcrumbs {
       background: #f9fafb;
       padding: 1rem 2rem;
@@ -122,6 +167,78 @@
     #changelist tbody td {
       padding: 0.875rem 1rem;
       border-bottom: 1px solid #f3f4f6;
+    }
+    /* Reglas adicionales para asegurar una única fila: forzar que los hijos sean inline
+       y centrar verticalmente. Usamos selectors específicos y !important para sobreescribir
+       estilos del admin que podrían usar elementos de bloque internos. */
+    body.app-empresas.model-ctz #result_list th, 
+    body.app-empresas.model-ctz #result_list td {
+      white-space: nowrap !important;
+      vertical-align: middle !important;
+      text-align: left;
+    }
+
+    /* Centramos las columnas de PU, porcentaje y TOTAL PU; evitar que el símbolo y
+       el número aparezcan en líneas separadas forzando que los hijos sean inline-block */
+   body.app-empresas.model-ctz #result_list td.column-pu_display,
+    body.app-empresas.model-ctz #result_list td.column-proveedor_display,
+    body.app-empresas.model-ctz #result_list td.column-mo_soma_display,
+    body.app-empresas.model-ctz #result_list td.column-otros_materiales_display,
+    body.app-empresas.model-ctz #result_list td.column-total_pu_display,
+    body.app-empresas.model-ctz #result_list td.column-porcentaje_pu_display,
+    /* También apuntar a las clases 'field-*' que Django puede generar en el tbody */
+    body.app-empresas.model-ctz #result_list td.field-pu_display,
+    body.app-empresas.model-ctz #result_list td.field-proveedor_display,
+    body.app-empresas.model-ctz #result_list td.field-mo_soma_display,
+    body.app-empresas.model-ctz #result_list td.field-otros_materiales_display,
+    body.app-empresas.model-ctz #result_list td.field-total_pu_display,
+    body.app-empresas.model-ctz #result_list td.field-porcentaje_pu_display {
+      text-align: center !important;
+    }
+
+  body.app-empresas.model-ctz #result_list td.column-pu_display > *,
+    body.app-empresas.model-ctz #result_list td.column-proveedor_display > *,
+    body.app-empresas.model-ctz #result_list td.column-mo_soma_display > *,
+    body.app-empresas.model-ctz #result_list td.column-otros_materiales_display > *,
+    body.app-empresas.model-ctz #result_list td.column-total_pu_display > *,
+    body.app-empresas.model-ctz #result_list td.column-porcentaje_pu_display > *,
+    /* hijos directos de 'field-*' */
+    body.app-empresas.model-ctz #result_list td.field-pu_display > *,
+    body.app-empresas.model-ctz #result_list td.field-proveedor_display > *,
+    body.app-empresas.model-ctz #result_list td.field-mo_soma_display > *,
+    body.app-empresas.model-ctz #result_list td.field-otros_materiales_display > *,
+    body.app-empresas.model-ctz #result_list td.field-total_pu_display > *,
+    body.app-empresas.model-ctz #result_list td.field-porcentaje_pu_display > * {
+      display: inline-block !important;
+      white-space: nowrap !important;
+      vertical-align: middle !important;
+    }
+
+    /* Si el inline-block no es suficiente, forzamos layout flex en las celdas numéricas
+       para que sus hijos se coloquen en una sola fila (alineados y con separación). */
+    body.app-empresas.model-ctz #result_list td.column-pu_display,
+    body.app-empresas.model-ctz #result_list td.column-proveedor_display,
+    body.app-empresas.model-ctz #result_list td.column-mo_soma_display,
+    body.app-empresas.model-ctz #result_list td.column-otros_materiales_display,
+    body.app-empresas.model-ctz #result_list td.column-total_pu_display,
+    body.app-empresas.model-ctz #result_list td.column-porcentaje_pu_display,
+    body.app-empresas.model-ctz #result_list td.field-pu_display,
+    body.app-empresas.model-ctz #result_list td.field-proveedor_display,
+    body.app-empresas.model-ctz #result_list td.field-mo_soma_display,
+    body.app-empresas.model-ctz #result_list td.field-otros_materiales_display,
+    body.app-empresas.model-ctz #result_list td.field-total_pu_display,
+    body.app-empresas.model-ctz #result_list td.field-porcentaje_pu_display {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px;
+    }
+
+    /* Si hay enlaces (empresa), asegurar que el link no haga wrap interno */
+    body.app-empresas.model-ctz #result_list td.column-empresa a {
+      display: inline-block !important;
+      white-space: nowrap !important;
+      vertical-align: middle !important;
     }
   </style>
 {% endblock %}
