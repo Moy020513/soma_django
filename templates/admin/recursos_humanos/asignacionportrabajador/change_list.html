@@ -1,0 +1,71 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+<div class="actions" style="display:none;">
+    <span class="action-counter" data-actions-icnt="0"></span>
+    <span class="all"></span>
+        <input type="checkbox" id="action-toggle" style="display: none;" />
+</div>
+{{ block.super }}
+    <style>
+        /* Center specific columns in the asignacionportrabajador changelist */
+        body.model-asignacionportrabajador #result_list th, 
+        body.model-asignacionportrabajador #result_list td {
+            text-align: center;
+        }
+        /* Also ensure the contrato_numero column cells are centered */
+        body.model-asignacionportrabajador #result_list td.column-contrato_numero {
+            text-align: center !important;
+        }
+    </style>
+
+    <script>
+        // Ensure the hidden admin action toggle exists early so admin JS can attach listeners.
+        // Placing this in extrahead increases the chance it runs before admin actions.js.
+        (function() {
+            function ensureActionToggle() {
+                if (!document.getElementById('action-toggle')) {
+                    var div = document.createElement('div');
+                    div.style.display = 'none';
+                    div.innerHTML = '<input type="checkbox" id="action-toggle" />';
+                    var body = document.getElementsByTagName('body')[0] || document.documentElement;
+                    body.insertBefore(div, body.firstChild);
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', ensureActionToggle);
+            } else {
+                ensureActionToggle();
+            }
+        })();
+    </script>
+{% endblock %}
+
+{% block result_list %}
+    <script>
+    (function(){
+        try {
+            if (!document.getElementById('action-toggle')) {
+                var d = document.createElement('div');
+                d.className = 'actions';
+                d.style.display = 'none';
+                d.innerHTML = '<span class="action-counter" data-actions-icnt="' + (typeof cl !== 'undefined' ? cl.result_count : 0) + '"></span><span class="all"></span><input type="checkbox" id="action-toggle" />';
+                document.documentElement.appendChild(d);
+            }
+        } catch (e) {}
+    })();
+    </script>
+    <style>
+        /* Centrar encabezados y celdas del changelist (específico para este modelo) */
+        #changelist-form table#result_list th,
+        #changelist-form table#result_list td {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+        #changelist-form table#result_list td.column-contrato_numero,
+        #changelist-form table#result_list th.column-contrato_numero {
+            text-align: center !important;
+        }
+    </style>
+    {{ block.super }}
+{% endblock %}

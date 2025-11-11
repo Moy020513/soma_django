@@ -1,24 +1,41 @@
 {% load i18n %}
 
-<style>
-    /* Contenedor principal: controlar el ancho y scroll */
-    .results {
-        width: 100%;
-        max-width: 100vw; /* No exceder el viewport */
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+<script>
+// Asegurar que exista el checkbox 'action-toggle' para que actions.js no falle.
+(function(){
+    try {
+        if (!document.getElementById('action-toggle')) {
+            var d = document.createElement('div');
+            d.className = 'actions';
+            d.style.display = 'none';
+            d.innerHTML = '<span class="action-counter" data-actions-icnt="0"></span><span class="all"></span><input type="checkbox" id="action-toggle" />';
+            document.documentElement.appendChild(d);
+        }
+    } catch (e) {
+        // silencioso
     }
+})();
+</script>
 
-    /* Tabla: permitir que crezca según contenido pero con scroll */
-    #result_list {
-        width: max-content; /* Se ajusta al contenido */
-        min-width: 100%; /* Al menos ocupa todo el ancho disponible */
-        border-collapse: collapse;
-        table-layout: auto;
-    }
+        <thead>
+            <tr>
+                <th scope="col" class="column-contrato_numero" style="text-align:center;"><div class="text"><span>No. cotización</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>FECHA</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>EMPLEADOS</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>EMPRESA</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>SUPERVISOR</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>DETALLES</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>DOCUMENTO</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>DÍAS ACTIVOS</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>FECHA TÉRMINO</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span># ACT</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>HISTORIAL</span></div></th>
+                <th scope="col" style="text-align:center;"><div class="text"><span>ACCIONES</span></div></th>
+            <tr>
+                <td class="column-contrato_numero" style="text-align:center;">{{ obj.numero_cotizacion|default:'-' }}</td>
+                <td style="text-align:center">{{ obj.fecha|date:"d/m/Y" }}</td>
+                <td style="text-align:center">{{ obj.empleados.count }}</td>
+                <td style="text-align:center">{{ obj.empresa }}</td>
 
     /* Celdas compactas */
     #result_list th, 
@@ -156,14 +173,21 @@
     }
 </style>
 
-<div class="results">
+<form id="changelist-form" method="post" novalidate>
+    {% csrf_token %}
+    <div class="actions" style="display:none;">
+        <span class="action-counter" data-actions-icnt="0"></span>
+        <span class="all"></span>
+        <input type="checkbox" id="action-toggle" />
+    </div>
+    <div class="results">
     <table id="result_list">
         <thead>
             <tr>
-                <th scope="col"><div class="text"><span>No. cotización</span></div></th>
+                <th scope="col" class="column-contrato_numero"><div class="text"><span>No. cotización</span></div></th>
                 <th scope="col"><div class="text"><span>FECHA</span></div></th>
                 <th scope="col"><div class="text"><span>EMPLEADOS</span></div></th>
-                <th scope="col"><div class="text"><span>EMPRESA</span></div></th>
+                     <th scope="col"><div class="text"><span>EMPRESA</span></div></th>
                 <th scope="col"><div class="text"><span>SUPERVISOR</span></div></th>
                 <th scope="col"><div class="text"><span>DETALLES</span></div></th>
                 <th scope="col"><div class="text"><span>DOCUMENTO</span></div></th>
@@ -177,7 +201,7 @@
         <tbody>
             {% for obj in cl.result_list %}
             <tr>
-                <td>{{ obj.numero_cotizacion|default:'-' }}</td>
+                <td class="column-contrato_numero">{{ obj.numero_cotizacion|default:'-' }}</td>
                 <td>{{ obj.fecha|date:"d/m/Y" }}</td>
                 <td style="text-align:center">{{ obj.empleados.count }}</td>
                 <td>{{ obj.empresa }}</td>
@@ -206,4 +230,6 @@
             {% endfor %}
         </tbody>
     </table>
-</div>
+    </div>
+</form>
+</form>

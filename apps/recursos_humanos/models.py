@@ -34,6 +34,11 @@ class Contrato(models.Model):
 class AsignacionPorTrabajador(models.Model):
     contrato = models.ForeignKey(Contrato, on_delete=models.CASCADE, related_name="asignaciones", verbose_name="No. contrato")
     empleado = models.ForeignKey("Empleado", on_delete=models.PROTECT, related_name="asignaciones_contrato", verbose_name="Trabajador")
+    # Datos derivados para facilitar reporting y edición
+    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name='asignaciones_por_trabajador', verbose_name='Empresa', null=True, blank=True)
+    fecha_inicio = models.DateField(null=True, blank=True, verbose_name='Periodo inicio')
+    fecha_termino = models.DateField(null=True, blank=True, verbose_name='Periodo término')
+    nss = models.CharField(max_length=11, blank=True, verbose_name='NSS')
 
     class Meta:
         verbose_name = "Asignación por trabajador"
@@ -346,3 +351,63 @@ class Inasistencia(models.Model):
         return f"{self.empleado} - {self.fecha} ({self.tipo})"
 
  
+# Señal para sincronizar AsignacionPorTrabajador cuando se guarda un Contrato
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db.models.signals import m2m_changed
+
+
+@receiver(post_save, sender=Contrato)
+def sync_asignaciones_por_trabajador(sender, instance, **kwargs):
+    """Crear/actualizar AsignacionPorTrabajador a partir de las asignaciones vinculadas en el contrato.
+    Se ejecuta siempre que se guarde un Contrato, independientemente de la fuente (admin, vista, script).
+    """
+    try:
+        asigns = instance.asignaciones_vinculadas.all()
+        emp_map = {}
+        for a in asigns:
+            # Evitar hacer joins innecesarios si la relación no existe
+            for emp in a.empleados.all():
+                emp_map.setdefault(emp.pk, {'empleado': emp, 'fechas_inicio': [], 'fechas_termino': []})
+                if getattr(a, 'fecha', None):
+                    emp_map[emp.pk]['fechas_inicio'].append(a.fecha)
+                if getattr(a, 'fecha_termino', None):
+                    emp_map[emp.pk]['fechas_termino'].append(a.fecha_termino)
+
+        existing_qs = AsignacionPorTrabajador.objects.filter(contrato=instance)
+        existing_map = {ap.empleado_id: ap for ap in existing_qs}
+
+        for emp_pk, info in emp_map.items():
+            empleado = info['empleado']
+            fecha_inicio = min(info['fechas_inicio']) if info['fechas_inicio'] else None
+            fecha_termino = max(info['fechas_termino']) if info['fechas_termino'] else None
+            defaults = {
+                'empresa': instance.empresa,
+                'fecha_inicio': fecha_inicio,
+                'fecha_termino': fecha_termino,
+                'nss': getattr(empleado, 'nss', '') or ''
+            }
+            AsignacionPorTrabajador.objects.update_or_create(contrato=instance, empleado=empleado, defaults=defaults)
+
+        # Borrar registros que ya no correspondan
+        to_delete = [ap.pk for eid, ap in existing_map.items() if eid not in emp_map]
+        if to_delete:
+            AsignacionPorTrabajador.objects.filter(pk__in=to_delete).delete()
+    except Exception:
+        # No interrumpir el flujo por errores aquí; registrar si se desea.
+        pass
+
+
+@receiver(m2m_changed, sender=Contrato.asignaciones_vinculadas.through)
+def contrato_asignaciones_m2m_changed(sender, instance, action, **kwargs):
+    """Cuando cambian las asignaciones vinculadas a un contrato, sincronizar los registros
+    de AsignacionPorTrabajador (post_add/post_remove/post_clear).
+    """
+    try:
+        if action in ('post_add', 'post_remove', 'post_clear'):
+            # Llamar a la misma función de sincronización para evitar duplicar lógica
+            sync_asignaciones_por_trabajador(sender, instance)
+    except Exception:
+        pass
+
+

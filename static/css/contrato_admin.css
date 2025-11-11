@@ -12,3 +12,54 @@ select[id^="id_asignaciones_vinculadas_to"] {
 .filtered {
     min-height: 240px;
 }
+
+/* Centrar encabezados (th) en las listas del admin y centrar la columna No. contrato */
+/* Centrar encabezados (th) en los change-lists y asegurar prioridad */
+.change-list thead th {
+    text-align: center !important;
+}
+
+/* Restricción: aplicar reglas sólo en el changelist del modelo AsignacionPorTrabajador
+   (body tiene la clase 'model-asignacionportrabajador' en el admin). Esto evita afectar
+   otros modelos del admin globalmente. */
+body.model-asignacionportrabajador .change-list thead th {
+    text-align: center !important;
+}
+
+/* Centrar la celda de la columna personalizada (Django añade la clase 'column-<name>') */
+.change-list td.column-contrato_numero,
+.change-list th.column-contrato_numero {
+    text-align: center !important;
+}
+
+/* Asegurar que el enlace dentro de la celda también esté centrado */
+.change-list td.column-contrato_numero a {
+    display: inline-block;
+    text-align: center !important;
+}
+
+/* Media query para pantallas pequeñas */
+@media (max-width: 800px) {
+    body.model-asignacionportrabajador .change-list thead th {
+        text-align: center !important;
+    }
+}
+
+/* Reglas adicionales y más específicas para la plantilla personalizada que usa #result_list */
+body.model-asignacionportrabajador #result_list th,
+body.model-asignacionportrabajador #result_list td,
+body.model-asignacionportrabajador table#result_list th,
+body.model-asignacionportrabajador table#result_list td {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Asegurar que la columna personalizada se centre y que el enlace esté centrado */
+body.model-asignacionportrabajador td.column-contrato_numero,
+body.model-asignacionportrabajador th.column-contrato_numero {
+    text-align: center !important;
+}
+body.model-asignacionportrabajador td.column-contrato_numero a {
+    display: block !important;
+    text-align: center !important;
+}

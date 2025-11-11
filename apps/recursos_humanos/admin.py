@@ -8,6 +8,7 @@ from django.contrib.admin.utils import unquote
 from django.urls import reverse
 from django.db import models as dj_models
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador
+from django.utils.html import format_html
 from .models import Inasistencia
 from apps.asignaciones.models import Asignacion
 from django.http import JsonResponse
@@ -89,6 +90,39 @@ class ContratoAdmin(admin.ModelAdmin):
                 else:
                         contrato.asignaciones_vinculadas.clear()
                 self.save_m2m()
+                # Crear/actualizar AsignacionPorTrabajador para cada empleado encontrado en las asignaciones
+                try:
+                    # Mapear empleado -> lista de asignaciones relacionadas en este contrato
+                    emp_map = {}
+                    for a in asigns:
+                        for emp in a.empleados.all():
+                            emp_map.setdefault(emp.pk, {'empleado': emp, 'fechas_inicio': [], 'fechas_termino': []})
+                            if getattr(a, 'fecha', None):
+                                emp_map[emp.pk]['fechas_inicio'].append(a.fecha)
+                            if getattr(a, 'fecha_termino', None):
+                                emp_map[emp.pk]['fechas_termino'].append(a.fecha_termino)
+                    from .models import AsignacionPorTrabajador
+                    existing_qs = AsignacionPorTrabajador.objects.filter(contrato=contrato)
+                    existing_map = {ap.empleado_id: ap for ap in existing_qs}
+                    # Actualizar o crear
+                    for emp_pk, info in emp_map.items():
+                        empleado = info['empleado']
+                        fecha_inicio = min(info['fechas_inicio']) if info['fechas_inicio'] else None
+                        fecha_termino = max(info['fechas_termino']) if info['fechas_termino'] else None
+                        defaults = {
+                            'empresa': contrato.empresa,
+                            'fecha_inicio': fecha_inicio,
+                            'fecha_termino': fecha_termino,
+                            'nss': getattr(empleado, 'nss', '') or ''
+                        }
+                        AsignacionPorTrabajador.objects.update_or_create(contrato=contrato, empleado=empleado, defaults=defaults)
+                    # Borrar registros que ya no correspondan
+                    to_delete = [ap.pk for eid, ap in existing_map.items() if eid not in emp_map]
+                    if to_delete:
+                        AsignacionPorTrabajador.objects.filter(pk__in=to_delete).delete()
+                except Exception:
+                    # no bloquear el guardado de contrato por errores en la creación automática
+                    pass
             return contrato
 
     form = ContratoForm
@@ -206,9 +240,54 @@ class ContratoAdmin(admin.ModelAdmin):
 # Admin AsignacionPorTrabajador
 @admin.register(AsignacionPorTrabajador)
 class AsignacionPorTrabajadorAdmin(admin.ModelAdmin):
-    list_display = ("contrato", "empleado")
-    list_filter = ("contrato", "empleado")
+    change_list_template = 'admin/recursos_humanos/asignacionportrabajador/change_list.html'
+    list_display = ("contrato_numero", "empresa", "empleado", "periodo", "nss")
+    list_filter = ("empresa", "contrato", "empleado")
     search_fields = ("contrato__numero_contrato", "empleado__numero_empleado", "empleado__usuario__first_name", "empleado__usuario__last_name")
+    class Media:
+        css = {
+            'all': ('/static/css/contrato_admin.css',)
+        }
+
+    def periodo(self, obj):
+        """Mostrar periodo como 'dd/mm/YYYY — dd/mm/YYYY' o fecha de inicio si falta término."""
+        def fmt(d):
+            try:
+                return d.strftime('%d/%m/%Y') if d else ''
+            except Exception:
+                return str(d) if d else ''
+
+        if obj.fecha_inicio and obj.fecha_termino:
+            return f"{fmt(obj.fecha_inicio)} — {fmt(obj.fecha_termino)}"
+        if obj.fecha_inicio:
+            return fmt(obj.fecha_inicio)
+        return ''
+
+    periodo.short_description = 'Periodo'
+    
+    from django.utils.html import format_html
+
+    def contrato_numero(self, obj):
+        """Mostrar únicamente el número de contrato (evita usar __str__ del Contrato)."""
+        try:
+            val = obj.contrato.numero_contrato if obj.contrato else ''
+            return format_html('<div style="text-align:center;">{}</div>', val)
+        except Exception:
+            return ''
+
+    contrato_numero.short_description = 'No. contrato'
+    contrato_numero.admin_order_field = 'contrato__numero_contrato'
+
+    def empresa_display(self, obj):
+        try:
+            return format_html('<div style="text-align:center;">{}</div>', obj.empresa.nombre if obj.empresa else '')
+        except Exception:
+            return ''
+    empresa_display.short_description = 'Empresa'
+    empresa_display.admin_order_field = 'empresa__nombre'
+
+    # Ajustar list_display para usar empresa_display
+    list_display = ("contrato_numero", "empresa_display", "empleado", "periodo", "nss")
     # autocomplete_fields = ["contrato", "empleado"]
 from .forms_inasistencia import InasistenciaForm
 # Admin para estatus de empleado
