@@ -11,6 +11,7 @@ from django.db import models as dj_models
 from django.db import transaction
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador
 from django.utils.html import format_html
+from django.utils import timezone
 from .models import Inasistencia
 from apps.asignaciones.models import Asignacion
 from django.http import JsonResponse
@@ -395,7 +396,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
     form = EmpleadoForm
     save_on_top = True
     # Use model fields directly in changelist so values render reliably
-    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'salario_inicial', 'salario_actual', 'fecha_ingreso', 'activo']
+    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'salario_inicial', 'salario_actual', 'salario_fecha_ultima_modificacion', 'fecha_ingreso', 'activo']
     list_filter = ['puesto', 'activo', 'fecha_ingreso', 'fecha_nacimiento']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
@@ -491,6 +492,23 @@ class EmpleadoAdmin(admin.ModelAdmin):
             return ''
     salario_actual_display.short_description = 'Salario actual'
     salario_actual_display.admin_order_field = 'salario_actual'
+
+    def salario_fecha_ultima_modificacion(self, obj):
+        """Devuelve la fecha del último cambio de salario (si existe)."""
+        try:
+            last = obj.historial_salario.first()
+            if last and last.fecha:
+                # Convertir a la zona horaria configurada en settings (si es aware)
+                try:
+                    fecha_local = timezone.localtime(last.fecha)
+                except Exception:
+                    fecha_local = last.fecha
+                # Formatear como dd/mm/YYYY HH:MM
+                return fecha_local.strftime('%d/%m/%Y %H:%M')
+        except Exception:
+            pass
+        return ''
+    salario_fecha_ultima_modificacion.short_description = 'Última modificación salario'
 
     def delete_view(self, request, object_id, extra_context=None):
         """Vista de borrado personalizada que evita construir URLs con reverse

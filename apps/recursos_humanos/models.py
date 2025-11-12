@@ -4,6 +4,8 @@ from django.urls import reverse
 from apps.usuarios.models import Usuario
 from apps.empresas.models import Empresa
 import re
+import logging
+from decimal import Decimal
 # --- Modelo Contrato ---
 class Contrato(models.Model):
     numero_contrato = models.CharField(max_length=30, unique=True, verbose_name="No. contrato")
@@ -248,7 +250,8 @@ class Empleado(models.Model):
         # Generar número de empleado si viene vacío
         if not self.numero_empleado:
             self.numero_empleado = self._generate_numero_empleado()
-        is_new = self.pk is None
+        # use Django internal state to detect create vs update
+        is_new = getattr(self, '_state', None) and getattr(self._state, 'adding', False)
         # Detectar cambio de salario: si ya existe en DB y cambia salario_actual, crear historial
         salario_prev = None
         if not is_new:
@@ -259,7 +262,6 @@ class Empleado(models.Model):
                 salario_prev = None
 
         super().save(*args, **kwargs)
-
         # Si no es nuevo y salario_prev difiere del actual, crear registro de cambio
         if not is_new and salario_prev is not None and salario_prev != self.salario_actual:
             try:
@@ -271,7 +273,35 @@ class Empleado(models.Model):
                     salario_nuevo=self.salario_actual,
                 )
             except Exception:
-                pass
+                logging.getLogger(__name__).exception("Error al crear CambioSalarioEmpleado en actualización")
+
+        # Si es nuevo y trae salario_actual (no cero), crear un registro inicial en el historial
+        if is_new:
+            try:
+                from django.utils import timezone
+                salario_val = getattr(self, 'salario_actual', None)
+                # Crear registro inicial si el salario actual fue proporcionado y es distinto de 0
+                if salario_val is not None and Decimal(salario_val) != Decimal('0'):
+                    # evitar duplicados por guardados múltiples
+                    if not CambioSalarioEmpleado.objects.filter(empleado=self).exists():
+                        # Usar salario_inicial si fue proporcionado, si no usar 0
+                        salario_inicial_val = getattr(self, 'salario_inicial', None)
+                        try:
+                            if salario_inicial_val is not None and Decimal(salario_inicial_val) != Decimal('0'):
+                                salario_anterior_val = Decimal(salario_inicial_val)
+                            else:
+                                salario_anterior_val = Decimal('0.00')
+                        except Exception:
+                            salario_anterior_val = Decimal('0.00')
+                        CambioSalarioEmpleado.objects.create(
+                            empleado=self,
+                            fecha=timezone.now(),
+                            salario_anterior=salario_anterior_val,
+                            salario_nuevo=Decimal(salario_val),
+                            observaciones='Registro inicial de salario'
+                        )
+            except Exception:
+                logging.getLogger(__name__).exception("Error al crear CambioSalarioEmpleado inicial")
         # Crear periodo de estatus 'activo' si es nuevo y no existe ninguno
         if is_new and not self.periodos_estatus.exists():
             from .models import PeriodoEstatusEmpleado
@@ -363,6 +393,70 @@ class CambioSalarioEmpleado(models.Model):
 
     def __str__(self):
         return f"{self.empleado} - {self.fecha.strftime('%Y-%m-%d %H:%M')} : {self.salario_anterior} → {self.salario_nuevo}"
+
+    @property
+    def delta_amount(self):
+        try:
+            return self.salario_nuevo - self.salario_anterior
+        except Exception:
+            return None
+
+    def formatted_delta(self):
+        """Devuelve el delta formateado con signo y dos decimales, e.g. '+$200.00' o '-$50.00'."""
+        delta = self.delta_amount
+        if delta is None:
+            return ''
+        try:
+            sign = '+' if delta >= 0 else '-'
+            return f"{sign}${abs(float(delta)):,.2f}"
+        except Exception:
+            return ''
+
+    def formatted_salario_anterior(self):
+        try:
+            return f"${float(self.salario_anterior):,.2f}"
+        except Exception:
+            return ''
+
+    def formatted_salario_nuevo(self):
+        try:
+            return f"${float(self.salario_nuevo):,.2f}"
+        except Exception:
+            return ''
+    def _is_first_record(self):
+        try:
+            first = self.empleado.historial_salario.order_by('fecha').first()
+            return first and first.pk == self.pk
+        except Exception:
+            return False
+
+    def salario_anterior_preferido(self):
+        """Devuelve el salario anterior preferido: si este registro es el primero y el empleado tiene
+        `salario_inicial` distinto de 0, lo devuelve; en otro caso devuelve `salario_anterior` del registro."""
+        try:
+            if self._is_first_record():
+                si = getattr(self.empleado, 'salario_inicial', None)
+                if si is not None and Decimal(si) != Decimal('0'):
+                    return Decimal(si)
+        except Exception:
+            pass
+        return self.salario_anterior
+
+    def formatted_salario_anterior_preferido(self):
+        try:
+            val = self.salario_anterior_preferido()
+            return f"${float(val):,.2f}"
+        except Exception:
+            return ''
+
+    def formatted_delta_preferido(self):
+        try:
+            prev = self.salario_anterior_preferido()
+            delta = Decimal(self.salario_nuevo) - Decimal(prev)
+            sign = '+' if delta >= 0 else '-'
+            return f"{sign}${abs(float(delta)):,.2f}"
+        except Exception:
+            return ''
 
 from django.conf import settings
 

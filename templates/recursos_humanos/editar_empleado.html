@@ -98,6 +98,11 @@
                 {{ form.puesto.errors }}
               </div>
               <div class="col-md-4">
+                <label class="form-label">{{ form.salario_inicial.label }}</label>
+                {{ form.salario_inicial }}
+                {{ form.salario_inicial.errors }}
+              </div>
+              <div class="col-md-4">
                 <label class="form-label">{{ form.salario_actual.label }}</label>
                 {{ form.salario_actual }}
                 {{ form.salario_actual.errors }}
@@ -242,6 +247,9 @@
               <button type="button" class="btn btn-info" data-bs-toggle="collapse" data-bs-target="#historial-estatus" aria-expanded="false" aria-controls="historial-estatus">
                 <i class="fas fa-history me-1"></i> Ver historial de estatus
               </button>
+              <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#historial-salario" aria-expanded="false" aria-controls="historial-salario">
+                <i class="fas fa-coins me-1"></i> Ver historial de salario
+              </button>
             </div>
             <div class="collapse mt-4" id="historial-estatus">
               <div class="card card-body">
@@ -256,6 +264,22 @@
                     </li>
                   {% empty %}
                     <li>No hay historial de estatus.</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+            <div class="collapse mt-4" id="historial-salario">
+              <div class="card card-body">
+                <h6>Historial de cambios de salario</h6>
+                <ul>
+                  {% for cambio in historial_salario %}
+                    <li>
+                      <strong>{{ cambio.fecha|date:"d/m/Y H:i" }}</strong> — De <strong>{{ cambio.formatted_salario_anterior_preferido }}</strong> a <strong>{{ cambio.formatted_salario_nuevo }}</strong>
+                      {% if cambio.formatted_delta_preferido %} <small>({{ cambio.formatted_delta_preferido }})</small>{% endif %}
+                      {% if cambio.observaciones %}<br><small>{{ cambio.observaciones }}</small>{% endif %}
+                    </li>
+                  {% empty %}
+                    <li>No hay historial de cambios de salario.</li>
                   {% endfor %}
                 </ul>
               </div>

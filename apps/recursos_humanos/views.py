@@ -35,6 +35,7 @@ def editar_empleado(request, empleado_id):
         'sexo': empleado_instance.sexo,
         'fecha_ingreso': empleado_instance.fecha_ingreso.strftime('%Y-%m-%d') if empleado_instance.fecha_ingreso else '',
         'puesto': empleado_instance.puesto.pk if empleado_instance.puesto else None,
+        'salario_inicial': empleado_instance.salario_inicial,
         'salario_actual': empleado_instance.salario_actual,
     }
     periodo_form = NuevoPeriodoEstatusForm(initial={'empleado_instance': empleado_instance})
@@ -109,6 +110,7 @@ def editar_empleado(request, empleado_id):
         'periodo_form': periodo_form,
         'estatus_actual': estatus_actual,
         'periodo_actual': periodo_actual,
+        'historial_salario': empleado_instance.historial_salario.order_by('fecha') if empleado_instance else [],
     })
 
 # Vista para listar inasistencias
