@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-truck me-2" style="color: var(--soma-orange);"></i>
+                    {{ vehiculo.modelo }}
+                </h5>
+                <span class="badge bg-secondary fs-6">{{ vehiculo.get_estado_display }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="vehicle-detail-card">
+                            <h6 class="text-muted mb-3"><i class="fas fa-info-circle me-2"></i>Información Básica</h6>
+
+                            <div class="detail-row">
+                                <span class="detail-label">
+                                    <i class="fas fa-id-card me-2"></i>Placas:
+                                </span>
+                                <span class="detail-value fw-bold">{{ vehiculo.placas }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="detail-label">
+                                    <i class="fas fa-file-contract me-2"></i>No. Seguro:
+                                </span>
+                                <span class="detail-value">{% if vehiculo.numero_seguro %}{{ vehiculo.numero_seguro }}{% else %}<span class="text-muted">No disponible</span>{% endif %}</span>
+                            </div>
+
+                            {% if vehiculo.observaciones %}
+                            <div class="detail-row mt-3">
+                                <span class="detail-label"><i class="fas fa-comment me-2"></i>Observaciones:</span>
+                                <div class="detail-value mt-1">{{ vehiculo.observaciones }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="vehicle-detail-card">
+                            <h6 class="text-muted mb-3"><i class="fas fa-user me-2"></i>Asignación</h6>
+
+                            <div class="detail-row">
+                                <span class="detail-label"><small class="text-muted">Asignado a:</small></span>
+                                <div class="detail-value fw-semibold">{{ empleado.numero_empleado }} - {{ empleado.usuario.get_full_name }}</div>
+                            </div>
+
+                            <div class="detail-row mt-2">
+                                <span class="detail-label"><small class="text-muted">Fecha de asignación:</small></span>
+                                <div class="detail-value">{{ asignacion.fecha_asignacion|date:"d/m/Y" }}</div>
+                            </div>
+
+                            {% if asignacion.observaciones %}
+                            <div class="detail-row mt-3">
+                                <span class="detail-label"><small class="text-muted">Observaciones de la asignación:</small></span>
+                                <div class="detail-value mt-1"><small>{{ asignacion.observaciones }}</small></div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center d-flex justify-content-center gap-2">
+                    <a href="{% url 'flota:mis_transferencias' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i> Ver mis transferencias
+                    </a>
+                    <a href="{% url 'flota:pedir_gasolina' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-gas-pump me-2"></i> Pedir gasolina
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog me-2" style="color: var(--soma-blue);"></i>Acciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'flota:mis_transferencias' %}" class="btn btn-outline-info">
+                        <i class="fas fa-exchange-alt me-2"></i>Solicitar/Ver transferencias
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

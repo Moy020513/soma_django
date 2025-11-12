@@ -113,9 +113,12 @@
                 {% endif %}
 
                 <!-- Formulario para registrar uso / kilometraje -->
-                <div class="mt-4 text-center">
+                <div class="mt-4 text-center d-flex justify-content-center gap-2">
                     <a href="{% url 'registrar_km' %}" class="btn btn-primary btn-lg">
                         <i class="fas fa-tachometer-alt me-2"></i> Registrar kilometraje
+                    </a>
+                    <a href="{% url 'flota:pedir_gasolina' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-gas-pump me-2"></i> Pedir gasolina
                     </a>
                 </div>
             </div>

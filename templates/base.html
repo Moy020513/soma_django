@@ -224,7 +224,12 @@
                            data-bs-toggle="tooltip" 
                            data-bs-placement="bottom" 
                            data-tooltip-custom="Mi Vehículo - {{ vehiculo_menu.placas }}">
-                            <i class="fas fa-car text-white"></i>
+                            {% comment %} Mostrar icono distinto para vehículos externos {% endcomment %}
+                            {% if vehiculo_menu_is_externo %}
+                                <i class="fas fa-truck text-white"></i>
+                            {% else %}
+                                <i class="fas fa-car text-white"></i>
+                            {% endif %}
                         </a>
                         {% endif %}
                         

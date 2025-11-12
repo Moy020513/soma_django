@@ -75,6 +75,11 @@ class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
         if self.object.titulo.startswith('📤 Inspección de Herramienta Enviada') and self.object.url.endswith('/responder/'):
             from django.shortcuts import redirect
             return redirect(self.object.url)
+        # Si el usuario es admin, redirigir al detalle admin (muestra más acciones)
+        if request.user.is_superuser:
+            from django.shortcuts import redirect
+            from django.urls import reverse
+            return redirect(reverse('notificaciones:admin_detalle', args=[self.object.pk]))
         # Marcar como leída si no lo está
         if not self.object.leida:
             self.object.leida = True
@@ -185,7 +190,60 @@ class DetalleNotificacionAdminView(LoginRequiredMixin, UserPassesTestMixin, Deta
             except RespuestaNotificacion.DoesNotExist:
                 respuesta = None
         context['respuesta'] = respuesta
+        # Si la notificación proviene de una solicitud de gasolina, pasar el objeto GasolinaRequest
+        gasolina_request = None
+        try:
+            # Priorizar query param gasolina_id (seteado al crear la notificación)
+            gasolina_id = self.request.GET.get('gasolina_id')
+            if gasolina_id:
+                try:
+                    gid = int(gasolina_id)
+                except Exception:
+                    gid = None
+            else:
+                url = self.object.url or ''
+                import re
+                m = re.search(r'flota_vehicular_gasolinarequest_change.*?(\d+)', url)
+                if not m:
+                    # soportar URL relativas tipo /admin/flota_vehicular/gasolinarequest/<id>/change/
+                    m2 = re.search(r'/admin/.*/flota_vehicular/gasolinarequest/(\d+)/', url)
+                    if m2:
+                        gid = int(m2.group(1))
+                    else:
+                        gid = None
+                else:
+                    gid = int(m.group(1))
+
+            if gid:
+                from apps.flota_vehicular.models import GasolinaRequest
+                try:
+                    gasolina_request = GasolinaRequest.objects.get(pk=gid)
+                except GasolinaRequest.DoesNotExist:
+                    gasolina_request = None
+            # Si no encontramos gasolina_request aún, intentar resolver por nombre de archivo en el mensaje
+            if not gasolina_request:
+                try:
+                    import re
+                    mfile = re.search(r'Comprobante:\s*(/media/[^\s]+)', (self.object.mensaje or ''))
+                    if mfile:
+                        path = mfile.group(1)
+                        fname = path.split('/')[-1]
+                        from apps.flota_vehicular.models import GasolinaRequest
+                        gasolina_request = GasolinaRequest.objects.filter(comprobante__endswith=fname).order_by('-fecha').first()
+                except Exception:
+                    gasolina_request = None
+        except Exception:
+            gasolina_request = None
+        context['gasolina_request'] = gasolina_request
         return context
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        # Marcar como leída si no lo está
+        if not self.object.leida:
+            self.object.leida = True
+            self.object.save()
+        return super().get(request, *args, **kwargs)
 
 # Vista para detalle de notificación de cumpleaños
 class DetalleCumpleanosNotificacionView(LoginRequiredMixin, DetailView):

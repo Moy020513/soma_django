@@ -143,3 +143,26 @@ class RegistroUsoForm(forms.ModelForm):
         if kf is not None and kf < 0:
             raise forms.ValidationError('El kilometraje no puede ser negativo.')
         return cleaned
+
+
+class GasolinaRequestForm(forms.ModelForm):
+    class Meta:
+        from .models import GasolinaRequest
+        model = GasolinaRequest
+        fields = ['precio', 'comprobante', 'observaciones']
+        widgets = {
+            'precio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'comprobante': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'precio': 'Precio total de la gasolina (MXN)',
+            'comprobante': 'Comprobante de pago (imagen/PDF)',
+            'observaciones': 'Observaciones (opcional)'
+        }
+
+    def clean_precio(self):
+        p = self.cleaned_data.get('precio')
+        if p is None or p <= 0:
+            raise forms.ValidationError('Ingresa un precio válido mayor a 0')
+        return p

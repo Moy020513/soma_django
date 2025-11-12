@@ -4,7 +4,9 @@ from .models import (
     RegistroUso, TenenciaVehicular, VerificacionVehicular
 )
 from .models import VehiculoExterno, AsignacionVehiculoExterno
+from .models import GasolinaRequest
 from django.utils.html import format_html
+from django.shortcuts import redirect
 
 
 @admin.register(Vehiculo)
@@ -263,3 +265,99 @@ class AsignacionVehiculoExternoAdmin(admin.ModelAdmin):
             if not otras:
                 obj.vehiculo_externo.estado = 'disponible'
                 obj.vehiculo_externo.save()
+
+
+@admin.register(GasolinaRequest)
+class GasolinaRequestAdmin(admin.ModelAdmin):
+    list_display = ['empleado', 'get_vehiculo_display', 'precio', 'fecha', 'estado', 'comprobante_link']
+    list_filter = ['estado', 'fecha']
+    search_fields = ['empleado__usuario__username', 'empleado__usuario__first_name', 'empleado__usuario__last_name']
+    readonly_fields = ['fecha', 'comprobante_link']
+    actions = ['aprobar_solicitudes', 'rechazar_solicitudes']
+    change_form_template = 'admin/flota_vehicular/gasolinarequest_change_form.html'
+
+    def get_vehiculo_display(self, obj):
+        return obj.vehiculo or obj.vehiculo_externo
+    get_vehiculo_display.short_description = 'Vehículo'
+
+    def comprobante_link(self, obj):
+        if obj.comprobante:
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.comprobante.url, obj.comprobante.name.split('/')[-1])
+        return ''
+    comprobante_link.short_description = 'Comprobante'
+
+    def aprobar_solicitudes(self, request, queryset):
+        updated = queryset.filter(estado='pendiente').update(estado='revisado')
+        # Notificar a empleados
+        for req in queryset:
+            try:
+                from apps.notificaciones.models import Notificacion
+                Notificacion.objects.create(
+                    usuario=req.empleado.usuario,
+                    titulo='✅ Solicitud de gasolina aprobada',
+                    mensaje=f'Tu solicitud de gasolina del {req.fecha.date()} por ${req.precio} ha sido aprobada.',
+                    tipo='success'
+                )
+            except Exception:
+                pass
+        self.message_user(request, f'{updated} solicitudes marcadas como aprobadas.')
+    aprobar_solicitudes.short_description = 'Marcar solicitudes seleccionadas como Aprobadas'
+
+    def rechazar_solicitudes(self, request, queryset):
+        updated = queryset.filter(estado='pendiente').update(estado='rechazado')
+        for req in queryset:
+            try:
+                from apps.notificaciones.models import Notificacion
+                Notificacion.objects.create(
+                    usuario=req.empleado.usuario,
+                    titulo='❌ Solicitud de gasolina rechazada',
+                    mensaje=f'Tu solicitud de gasolina del {req.fecha.date()} por ${req.precio} ha sido rechazada.',
+                    tipo='danger'
+                )
+            except Exception:
+                pass
+        self.message_user(request, f'{updated} solicitudes marcadas como rechazadas.')
+    rechazar_solicitudes.short_description = 'Marcar solicitudes seleccionadas como Rechazadas'
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path('<path:object_id>/aprobar/', self.admin_site.admin_view(self.aprobar_view), name='flota_vehicular_gasolinarequest_aprobar'),
+            path('<path:object_id>/rechazar/', self.admin_site.admin_view(self.rechazar_view), name='flota_vehicular_gasolinarequest_rechazar'),
+        ]
+        return custom + urls
+
+    def aprobar_view(self, request, object_id):
+        obj = self.get_object(request, object_id)
+        if obj and obj.estado == 'pendiente':
+            obj.estado = 'revisado'
+            obj.save()
+            try:
+                from apps.notificaciones.models import Notificacion
+                Notificacion.objects.create(
+                    usuario=obj.empleado.usuario,
+                    titulo='✅ Solicitud de gasolina aprobada',
+                    mensaje=f'Tu solicitud de gasolina del {obj.fecha.date()} por ${obj.precio} ha sido aprobada.',
+                    tipo='success'
+                )
+            except Exception:
+                pass
+        return redirect(request.META.get('HTTP_REFERER', '/admin/'))
+
+    def rechazar_view(self, request, object_id):
+        obj = self.get_object(request, object_id)
+        if obj and obj.estado == 'pendiente':
+            obj.estado = 'rechazado'
+            obj.save()
+            try:
+                from apps.notificaciones.models import Notificacion
+                Notificacion.objects.create(
+                    usuario=obj.empleado.usuario,
+                    titulo='❌ Solicitud de gasolina rechazada',
+                    mensaje=f'Tu solicitud de gasolina del {obj.fecha.date()} por ${obj.precio} ha sido rechazada.',
+                    tipo='danger'
+                )
+            except Exception:
+                pass
+        return redirect(request.META.get('HTTP_REFERER', '/admin/'))

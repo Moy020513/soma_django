@@ -6,7 +6,8 @@ from django.utils import timezone
 from django.db import transaction
 
 from .models import TransferenciaVehicular, AsignacionVehiculo, Vehiculo
-from .forms import SolicitudTransferenciaForm, InspeccionTransferenciaForm, RespuestaTransferenciaForm
+from .forms import SolicitudTransferenciaForm, InspeccionTransferenciaForm, RespuestaTransferenciaForm, GasolinaRequestForm
+from .models import GasolinaRequest
 from apps.recursos_humanos.models import Empleado
 from apps.notificaciones.models import Notificacion
 from apps.usuarios.models import Usuario
@@ -567,3 +568,97 @@ def mis_transferencias(request):
         'titulo': 'Mis Transferencias',
     }
     return render(request, 'flota_vehicular/mis_transferencias.html', context)
+
+
+@login_required
+def pedir_gasolina(request):
+    """Permite al empleado subir comprobante de gasolina con precio; notifica a todos los admins."""
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está asociado a un empleado.')
+        return redirect('perfil_usuario')
+
+    # Determinar vehículo asignado (interno primero, luego externo)
+    asignacion = AsignacionVehiculo.objects.filter(empleado=empleado, estado='activa').select_related('vehiculo').first()
+    vehiculo = None
+    vehiculo_externo = None
+    if asignacion:
+        vehiculo = asignacion.vehiculo
+    else:
+        try:
+            from .models import AsignacionVehiculoExterno
+            asign_ext = AsignacionVehiculoExterno.objects.filter(empleado=empleado, estado='activa').select_related('vehiculo_externo').first()
+            if asign_ext:
+                vehiculo_externo = asign_ext.vehiculo_externo
+        except Exception:
+            vehiculo_externo = None
+
+    if not vehiculo and not vehiculo_externo:
+        messages.info(request, 'No tienes un vehículo asignado para solicitar gasolina.')
+        return redirect('perfil_usuario')
+
+    # Bloquear si ya hay una solicitud pendiente (evitar mostrar el formulario)
+    from .models import GasolinaRequest
+    if GasolinaRequest.objects.filter(empleado=empleado, estado='pendiente').exists():
+        messages.info(request, 'Ya tienes una solicitud pendiente. Espera a que sea revisada.')
+        return redirect('mi_vehiculo')
+
+    if request.method == 'POST':
+        # Prevent new pending requests
+        from .models import GasolinaRequest
+        if GasolinaRequest.objects.filter(empleado=empleado, estado='pendiente').exists():
+            messages.info(request, 'Ya tienes una solicitud pendiente. Espera a que sea revisada.')
+            return redirect('mi_vehiculo')
+
+        form = GasolinaRequestForm(request.POST, request.FILES)
+        if form.is_valid():
+            req = form.save(commit=False)
+            req.empleado = empleado
+            req.vehiculo = vehiculo
+            req.vehiculo_externo = vehiculo_externo
+            req.save()
+
+            # Notificar a todos los administradores
+            admins = Usuario.objects.filter(is_staff=True)
+            for admin in admins:
+                try:
+                    url = reverse('admin:flota_vehicular_gasolinarequest_change', args=[req.pk])
+                except Exception:
+                    url = ''
+                # Incluir la URL del comprobante en el mensaje para que pueda enlazarse desde el detalle
+                mensaje = f'El empleado {empleado.usuario.get_full_name()} ha subido un comprobante de gasolina para {vehiculo or vehiculo_externo}.'
+                if req.comprobante:
+                    try:
+                        mensaje += f' Comprobante: {req.comprobante.url}'
+                    except Exception:
+                        pass
+                # Creamos la notificación y le asignamos una URL hacia el detalle admin de notificaciones
+                noti = Notificacion.objects.create(
+                    usuario=admin,
+                    titulo='📄 Solicitud de gasolina',
+                    mensaje=mensaje,
+                    tipo='info',
+                    url=''
+                )
+                try:
+                    # URL pública de detalle para admins que incluye referencia a la gasolina
+                    noti.url = reverse('notificaciones:admin_detalle', args=[noti.pk]) + f'?gasolina_id={req.pk}'
+                    # También mantenemos la URL al change en caso de necesitarla
+                    # (guardada en mensaje y útil para backfills)
+                    noti.save()
+                except Exception:
+                    # Si no podemos construir la URL pública no bloqueamos la operación
+                    pass
+
+            messages.success(request, 'Solicitud enviada. Los administradores serán notificados.')
+            return redirect('mi_vehiculo')
+    else:
+        form = GasolinaRequestForm()
+
+    context = {
+        'form': form,
+        'vehiculo': vehiculo or vehiculo_externo,
+        'empleado': empleado,
+        'titulo': 'Pedir gasolina',
+    }
+    return render(request, 'flota_vehicular/pedir_gasolina.html', context)

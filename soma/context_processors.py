@@ -1,6 +1,11 @@
 from django.contrib.admin.models import LogEntry
 from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import AsignacionVehiculo
+try:
+    # Import optional models for vehículos externos (puede no existir en instalaciones antiguas)
+    from apps.flota_vehicular.models import AsignacionVehiculoExterno
+except Exception:
+    AsignacionVehiculoExterno = None
 from apps.herramientas.models import AsignacionHerramienta
 
 def vehiculo_asignado_context(request):
@@ -11,17 +16,27 @@ def vehiculo_asignado_context(request):
     try:
         empleado = Empleado.objects.filter(usuario=request.user).first()
         if empleado:
+            # Priorizar vehículo de la flota interna
             asignacion_vehiculo = AsignacionVehiculo.objects.filter(
-                empleado=empleado, 
+                empleado=empleado,
                 estado='activa'
             ).select_related('vehiculo').first()
-            
             if asignacion_vehiculo:
-                return {'vehiculo_menu': asignacion_vehiculo.vehiculo}
-        
-        return {'vehiculo_menu': None}
-    except:
-        return {'vehiculo_menu': None}
+                return {'vehiculo_menu': asignacion_vehiculo.vehiculo, 'vehiculo_menu_is_externo': False}
+
+            # Si no hay vehículo interno, intentar vehículo externo (si el modelo está disponible)
+            if AsignacionVehiculoExterno is not None:
+                asign_ext = AsignacionVehiculoExterno.objects.filter(
+                    empleado=empleado,
+                    estado='activa'
+                ).select_related('vehiculo_externo').first()
+                if asign_ext:
+                    # indicar que es externo para plantillas (evitar acceder a _meta desde templates)
+                    return {'vehiculo_menu': asign_ext.vehiculo_externo, 'vehiculo_menu_is_externo': True}
+
+        return {'vehiculo_menu': None, 'vehiculo_menu_is_externo': False}
+    except Exception:
+        return {'vehiculo_menu': None, 'vehiculo_menu_is_externo': False}
 
 
 def herramienta_asignada_context(request):

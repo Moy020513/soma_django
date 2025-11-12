@@ -1,0 +1,20 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block object-tools %}
+    {{ block.super }}
+    {% if is_popup != '1' and not is_popup %}
+        {% if original and original.estado == 'pendiente' %}
+            <div class="object-tools">
+                <ul class="object-tools">
+                    <li>
+                        <a class="addlink" href="{% url 'admin:flota_vehicular_gasolinarequest_aprobar' original.pk %}">{% trans "Aprobar solicitud" %}</a>
+                    </li>
+                    <li>
+                        <a class="deletelink" href="{% url 'admin:flota_vehicular_gasolinarequest_rechazar' original.pk %}">{% trans "Rechazar solicitud" %}</a>
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

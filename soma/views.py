@@ -7,6 +7,10 @@ from django.urls import reverse
 from django.contrib import admin as djadmin
 from apps.recursos_humanos.models import Empleado
 from apps.flota_vehicular.models import Vehiculo, TransferenciaVehicular, AsignacionVehiculo
+try:
+    from apps.flota_vehicular.models import AsignacionVehiculoExterno
+except Exception:
+    AsignacionVehiculoExterno = None
 from apps.herramientas.models import Herramienta, AsignacionHerramienta
 from apps.notificaciones.models import Notificacion
 from apps.flota_vehicular.forms import RegistroUsoForm
@@ -319,6 +323,7 @@ def mi_vehiculo(request):
     empleado = Empleado.objects.filter(usuario=request.user).first()
     vehiculo_asignado = None
     asignacion_vehiculo = None
+    es_externo = False
     
     if empleado:
         asignacion_vehiculo = AsignacionVehiculo.objects.filter(
@@ -328,18 +333,35 @@ def mi_vehiculo(request):
         
         if asignacion_vehiculo:
             vehiculo_asignado = asignacion_vehiculo.vehiculo
+
+        # Si no hay asignación interna, comprobar vehículo externo (si el modelo existe)
+        if not vehiculo_asignado and AsignacionVehiculoExterno is not None:
+            asign_ext = AsignacionVehiculoExterno.objects.filter(
+                empleado=empleado,
+                estado='activa'
+            ).select_related('vehiculo_externo').first()
+            if asign_ext:
+                vehiculo_asignado = asign_ext.vehiculo_externo
+                asignacion_vehiculo = asign_ext
+                es_externo = True
     
     # Si no tiene vehículo asignado, redirigir al perfil
     if not vehiculo_asignado:
         messages.info(request, 'No tienes vehículo asignado actualmente.')
         return redirect('perfil_usuario')
-    
+
     context = {
         'titulo': 'Mi Vehículo',
         'vehiculo': vehiculo_asignado,
         'asignacion': asignacion_vehiculo,
         'empleado': empleado,
+        'es_externo': es_externo,
     }
+
+    # Renderizar plantilla simplificada para vehículos externos
+    if es_externo:
+        return render(request, 'mi_vehiculo_externo.html', context)
+
     return render(request, 'mi_vehiculo.html', context)
 
 

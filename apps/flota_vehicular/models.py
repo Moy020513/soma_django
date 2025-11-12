@@ -219,3 +219,29 @@ class VerificacionVehicular(models.Model):
     
     def __str__(self):
         return f"Verificación {self.get_tipo_verificacion_display()} - {self.vehiculo} ({self.fecha_verificacion.year})"
+
+
+class GasolinaRequest(models.Model):
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('revisado', 'Revisado'),
+        ('rechazado', 'Rechazado'),
+    ]
+
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
+    vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, null=True, blank=True)
+    vehiculo_externo = models.ForeignKey('VehiculoExterno', on_delete=models.CASCADE, null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    comprobante = models.FileField(upload_to='flota/gasolina/')
+    observaciones = models.TextField(blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+
+    class Meta:
+        verbose_name = 'Solicitud de Gasolina'
+        verbose_name_plural = 'Solicitudes de Gasolina'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        v = self.vehiculo or self.vehiculo_externo
+        return f"Solicitud Gasolina {v} - {self.empleado} ({self.fecha.date()})"
