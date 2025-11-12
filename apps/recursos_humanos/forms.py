@@ -29,6 +29,8 @@ class EmpleadoRegistroForm(forms.Form):
     # Laborales
     fecha_ingreso = forms.DateField(label='Fecha de ingreso', required=True, widget=forms.DateInput(attrs={'type': 'date'}))
     puesto = forms.ModelChoiceField(queryset=Puesto.objects.filter(activo=True), required=True, label='Puesto')
+    salario_inicial = forms.DecimalField(label='Salario inicial', required=False, max_digits=10, decimal_places=2, min_value=0)
+    salario_actual = forms.DecimalField(label='Salario actual', required=False, max_digits=10, decimal_places=2, min_value=0)
     # Eliminado campo de supervisor en registro de empleado
 
     def clean_telefono(self):

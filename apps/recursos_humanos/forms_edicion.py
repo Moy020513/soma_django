@@ -24,6 +24,7 @@ class EmpleadoEdicionForm(forms.Form):
     sexo = forms.ChoiceField(choices=[('M','Masculino'), ('F','Femenino'), ('I','Indefinido')], required=True, label='Sexo')
     fecha_ingreso = forms.DateField(label='Fecha de ingreso', required=True, widget=forms.DateInput(attrs={'type': 'date'}))
     puesto = forms.ModelChoiceField(queryset=Puesto.objects.filter(activo=True), required=True, label='Puesto')
+    salario_actual = forms.DecimalField(label='Salario actual', required=False, max_digits=10, decimal_places=2, min_value=0)
 
     def clean_telefono(self):
         tel = self.cleaned_data['telefono']

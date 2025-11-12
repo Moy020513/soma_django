@@ -35,6 +35,7 @@ def editar_empleado(request, empleado_id):
         'sexo': empleado_instance.sexo,
         'fecha_ingreso': empleado_instance.fecha_ingreso.strftime('%Y-%m-%d') if empleado_instance.fecha_ingreso else '',
         'puesto': empleado_instance.puesto.pk if empleado_instance.puesto else None,
+        'salario_actual': empleado_instance.salario_actual,
     }
     periodo_form = NuevoPeriodoEstatusForm(initial={'empleado_instance': empleado_instance})
     if request.method == 'POST':
@@ -59,6 +60,17 @@ def editar_empleado(request, empleado_id):
             empleado_instance.telefono_personal = cd['telefono']
             empleado_instance.puesto = cd['puesto']
             empleado_instance.fecha_ingreso = cd['fecha_ingreso']
+            # Actualizar salario si viene en el formulario
+            try:
+                if 'salario_inicial' in cd:
+                    empleado_instance.salario_inicial = cd.get('salario_inicial') or 0
+            except Exception:
+                pass
+            try:
+                if 'salario_actual' in cd:
+                    empleado_instance.salario_actual = cd.get('salario_actual') or 0
+            except Exception:
+                pass
             empleado_instance.save()
             messages.success(request, f"Empleado actualizado correctamente: {user.username}.")
             periodo_agregado = False
@@ -158,6 +170,8 @@ def registrar_empleado(request):
                 'sexo': empleado_instance.sexo,
                 'fecha_ingreso': empleado_instance.fecha_ingreso.strftime('%Y-%m-%d') if empleado_instance.fecha_ingreso else '',
                 'puesto': empleado_instance.puesto.pk if empleado_instance.puesto else None,
+                    'salario_inicial': empleado_instance.salario_inicial,
+                    'salario_actual': empleado_instance.salario_actual,
             }
         except Empleado.DoesNotExist:
             empleado_instance = None
@@ -184,6 +198,17 @@ def registrar_empleado(request):
                 empleado_instance.telefono_personal = cd['telefono']
                 empleado_instance.puesto = cd['puesto']
                 empleado_instance.fecha_ingreso = cd['fecha_ingreso']
+                # Actualizar salarios si vienen en el formulario
+                try:
+                    if 'salario_inicial' in cd:
+                        empleado_instance.salario_inicial = cd.get('salario_inicial') or empleado_instance.salario_inicial or 0
+                except Exception:
+                    pass
+                try:
+                    if 'salario_actual' in cd:
+                        empleado_instance.salario_actual = cd.get('salario_actual') or empleado_instance.salario_actual or 0
+                except Exception:
+                    pass
                 empleado_instance.save()
                 messages.success(request, f"Empleado actualizado correctamente: {user.username}.")
             else:
@@ -206,7 +231,8 @@ def registrar_empleado(request):
                     fecha_ingreso=cd['fecha_ingreso'],
                     fecha_baja=None,
                     motivo_baja='',
-                    salario_actual=0,
+                    salario_inicial=(cd.get('salario_inicial') or 0),
+                    salario_actual=(cd.get('salario_actual') or 0),
                     activo=True,
                 )
                 empleado.save()

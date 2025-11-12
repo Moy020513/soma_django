@@ -86,3 +86,25 @@
         }
     })();
 </script>
+<script>
+    // Formatear columnas de salario: añadir prefijo $ y mostrar $0.00 cuando estén vacías
+    (function(){
+        try {
+            var sel = ['td.field-salario_inicial', 'td.field-salario_inicial_display', 'td.field-salario_actual', 'td.field-salario_actual_display'];
+            sel.forEach(function(selector){
+                document.querySelectorAll(selector).forEach(function(td){
+                    try {
+                        var txt = td.innerText.trim();
+                        if(!txt) {
+                            td.innerText = '$0.00';
+                        } else if(!txt.includes('$')) {
+                            td.innerText = '$' + txt;
+                        }
+                    } catch(e){}
+                });
+            });
+        } catch(e) {
+            console && console.error && console.error(e);
+        }
+    })();
+</script>

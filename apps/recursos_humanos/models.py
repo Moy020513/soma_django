@@ -177,6 +177,8 @@ class Empleado(models.Model):
     fecha_baja = models.DateField(null=True, blank=True, verbose_name="Fecha de baja")
     motivo_baja = models.TextField(blank=True, verbose_name="Motivo de baja")
     salario_actual = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Salario actual")
+    # Nuevo campo: salario inicial (se guarda al registrar al empleado)
+    salario_inicial = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Salario inicial", default=0)
     
     # Documentos
     foto = models.ImageField(upload_to='empleados/fotos/', blank=True, null=True, verbose_name="Fotografía")
@@ -247,7 +249,29 @@ class Empleado(models.Model):
         if not self.numero_empleado:
             self.numero_empleado = self._generate_numero_empleado()
         is_new = self.pk is None
+        # Detectar cambio de salario: si ya existe en DB y cambia salario_actual, crear historial
+        salario_prev = None
+        if not is_new:
+            try:
+                prev = Empleado.objects.get(pk=self.pk)
+                salario_prev = prev.salario_actual
+            except Empleado.DoesNotExist:
+                salario_prev = None
+
         super().save(*args, **kwargs)
+
+        # Si no es nuevo y salario_prev difiere del actual, crear registro de cambio
+        if not is_new and salario_prev is not None and salario_prev != self.salario_actual:
+            try:
+                from django.utils import timezone
+                CambioSalarioEmpleado.objects.create(
+                    empleado=self,
+                    fecha=timezone.now(),
+                    salario_anterior=salario_prev,
+                    salario_nuevo=self.salario_actual,
+                )
+            except Exception:
+                pass
         # Crear periodo de estatus 'activo' si es nuevo y no existe ninguno
         if is_new and not self.periodos_estatus.exists():
             from .models import PeriodoEstatusEmpleado
@@ -322,6 +346,23 @@ class PeriodoEstatusEmpleado(models.Model):
     def __str__(self):
         fin = self.fecha_fin.strftime('%Y-%m-%d') if self.fecha_fin else "actual"
         return f"{self.empleado} - {self.estatus} ({self.fecha_inicio} a {fin})"
+
+
+class CambioSalarioEmpleado(models.Model):
+    """Historial de cambios de salario por empleado."""
+    empleado = models.ForeignKey('Empleado', on_delete=models.CASCADE, related_name='historial_salario')
+    fecha = models.DateTimeField()
+    salario_anterior = models.DecimalField(max_digits=10, decimal_places=2)
+    salario_nuevo = models.DecimalField(max_digits=10, decimal_places=2)
+    observaciones = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Cambio de salario de empleado'
+        verbose_name_plural = 'Historial de cambios de salario'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.empleado} - {self.fecha.strftime('%Y-%m-%d %H:%M')} : {self.salario_anterior} → {self.salario_nuevo}"
 
 from django.conf import settings
 

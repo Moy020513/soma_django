@@ -394,7 +394,8 @@ class EmpleadoForm(forms.ModelForm):
 class EmpleadoAdmin(admin.ModelAdmin):
     form = EmpleadoForm
     save_on_top = True
-    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'fecha_ingreso', 'activo']
+    # Use model fields directly in changelist so values render reliably
+    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'salario_inicial', 'salario_actual', 'fecha_ingreso', 'activo']
     list_filter = ['puesto', 'activo', 'fecha_ingreso', 'fecha_nacimiento']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
@@ -466,6 +467,30 @@ class EmpleadoAdmin(admin.ModelAdmin):
         return obj.usuario.get_full_name()
     nombre_completo.short_description = 'Nombre completo'
     nombre_completo.admin_order_field = 'usuario__first_name'
+
+    def salario_inicial_display(self, obj):
+        try:
+            val = getattr(obj, 'salario_inicial', None)
+            # Mostrar $0.00 cuando no tenga valor
+            if val is None:
+                val = 0
+            # Formatear con signo peso y dos decimales
+            return format_html('<span style="white-space:nowrap">${:,.2f}</span>', float(val))
+        except Exception:
+            return ''
+    salario_inicial_display.short_description = 'Salario inicial'
+    salario_inicial_display.admin_order_field = 'salario_inicial'
+
+    def salario_actual_display(self, obj):
+        try:
+            val = getattr(obj, 'salario_actual', None)
+            if val is None:
+                val = 0
+            return format_html('<span style="white-space:nowrap">${:,.2f}</span>', float(val))
+        except Exception:
+            return ''
+    salario_actual_display.short_description = 'Salario actual'
+    salario_actual_display.admin_order_field = 'salario_actual'
 
     def delete_view(self, request, object_id, extra_context=None):
         """Vista de borrado personalizada que evita construir URLs con reverse
