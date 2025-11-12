@@ -119,6 +119,7 @@
                                         {% endif %}
                                     {% endfor %}
                                 {% elif app.app_label == 'flota_vehicular' %}
+                                    {# Mostrar Vehículos primero, luego Vehículos Externos, luego el resto en el orden original #}
                                     {% for model in app.models %}
                                         {% if model.name == 'Vehículos' %}
                                             <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
@@ -127,7 +128,14 @@
                                         {% endif %}
                                     {% endfor %}
                                     {% for model in app.models %}
-                                        {% if model.name != 'Vehículos' %}
+                                        {% if model.name == 'Vehículos Externos' %}
+                                            <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
+                                                <i class="fas fa-angle-right me-2"></i>{{ model.name }}
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for model in app.models %}
+                                        {% if model.name != 'Vehículos' and model.name != 'Vehículos Externos' %}
                                             <a href="{{ model.admin_url }}" class="list-group-item list-group-item-action admin-module-link">
                                                 <i class="fas fa-angle-right me-2"></i>{{ model.name }}
                                             </a>

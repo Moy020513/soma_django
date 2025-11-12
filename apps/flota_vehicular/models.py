@@ -41,6 +41,56 @@ class Vehiculo(models.Model):
     def __str__(self):
         return f"{self.marca} {self.modelo} - {self.placas}"
 
+
+class VehiculoExterno(models.Model):
+    """Vehículos que no pertenecen a la flota pero pueden ser registrados y asignados a empleados.
+
+    Campos mínimos: placas, modelo, numero_seguro (opcional). Se mantiene un estado para saber si
+    está asignado o disponible.
+    """
+    ESTADOS_VEHICULO = [
+        ('disponible', 'Disponible'),
+        ('asignado', 'Asignado'),
+        ('mantenimiento', 'Mantenimiento'),
+        ('baja', 'Baja'),
+    ]
+
+    placas = models.CharField(max_length=20, unique=True)
+    modelo = models.CharField(max_length=100)
+    numero_seguro = models.CharField(max_length=100, null=True, blank=True, verbose_name='No. seguro')
+    estado = models.CharField(max_length=20, choices=ESTADOS_VEHICULO, default='disponible')
+    observaciones = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Vehículo Externo'
+        verbose_name_plural = 'Vehículos Externos'
+
+    def __str__(self):
+        return f"{self.modelo} - {self.placas}"
+
+
+class AsignacionVehiculoExterno(models.Model):
+    ESTADOS_ASIGNACION = [
+        ('activa', 'Activa'),
+        ('finalizada', 'Finalizada'),
+        ('pendiente', 'Pendiente'),
+    ]
+
+    vehiculo_externo = models.ForeignKey(VehiculoExterno, on_delete=models.CASCADE, related_name='asignaciones')
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
+    fecha_asignacion = models.DateField()
+    fecha_finalizacion = models.DateField(null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS_ASIGNACION, default='activa')
+    observaciones = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Asignación Vehículo Externo'
+        verbose_name_plural = 'Asignaciones Vehículos Externos'
+
+    def __str__(self):
+        return f"{self.vehiculo_externo} - {self.empleado}"
+
+
 class AsignacionVehiculo(models.Model):
     ESTADOS_ASIGNACION = [
         ('activa', 'Activa'),

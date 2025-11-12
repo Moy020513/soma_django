@@ -3,6 +3,7 @@ from .models import (
     Vehiculo, AsignacionVehiculo, TransferenciaVehicular, 
     RegistroUso, TenenciaVehicular, VerificacionVehicular
 )
+from .models import VehiculoExterno, AsignacionVehiculoExterno
 from django.utils.html import format_html
 
 
@@ -32,6 +33,19 @@ class VehiculoAdmin(admin.ModelAdmin):
         }),
     )
 
+@admin.register(VehiculoExterno)
+class VehiculoExternoAdmin(admin.ModelAdmin):
+    list_display = ['placas', 'modelo', 'numero_seguro', 'estado']
+    list_filter = ['estado']
+    search_fields = ['placas', 'modelo', 'numero_seguro']
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('placas', 'modelo', 'numero_seguro')
+        }),
+        ('Estado', {
+            'fields': ('estado', 'observaciones')
+        }),
+    )
 
 @admin.register(AsignacionVehiculo)
 class AsignacionVehiculoAdmin(admin.ModelAdmin):
@@ -122,7 +136,7 @@ class TransferenciaVehicularAdmin(admin.ModelAdmin):
 
 @admin.register(RegistroUso)
 class RegistroUsoAdmin(admin.ModelAdmin):
-    list_display = ['vehiculo', 'empleado', 'fecha', 'kilometraje_inicio', 'kilometraje_fin']
+    list_display = ['vehiculo', 'empleado', 'fecha', 'proposito', 'kilometraje_inicio', 'kilometraje_fin']
     list_filter = ['fecha', 'vehiculo__marca']
     search_fields = ['vehiculo__placas', 'empleado__nombre', 'proposito']
     date_hierarchy = 'fecha'
@@ -214,3 +228,38 @@ class VerificacionVehicularAdmin(admin.ModelAdmin):
         return ''
     documento_link.short_description = 'Documento'
     documento_link.allow_tags = True
+
+@admin.register(AsignacionVehiculoExterno)
+class AsignacionVehiculoExternoAdmin(admin.ModelAdmin):
+    list_display = ['vehiculo_externo', 'empleado', 'fecha_asignacion', 'fecha_finalizacion', 'estado']
+    list_filter = ['estado', 'fecha_asignacion']
+    search_fields = ['vehiculo_externo__placas', 'empleado__usuario__username']
+    date_hierarchy = 'fecha_asignacion'
+
+    fieldsets = (
+        (None, {
+            'fields': ('vehiculo_externo', 'empleado')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_asignacion', 'fecha_finalizacion', 'estado')
+        }),
+        ('Observaciones', {
+            'fields': ('observaciones',),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Actualizar estado del vehículo externo según asignación
+        if obj.estado == 'activa':
+            obj.vehiculo_externo.estado = 'asignado'
+            obj.vehiculo_externo.save()
+        elif obj.estado == 'finalizada':
+            otras = AsignacionVehiculoExterno.objects.filter(
+                vehiculo_externo=obj.vehiculo_externo,
+                estado='activa'
+            ).exclude(id=obj.id).exists()
+            if not otras:
+                obj.vehiculo_externo.estado = 'disponible'
+                obj.vehiculo_externo.save()
