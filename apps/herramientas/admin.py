@@ -11,7 +11,7 @@ class HerramientaAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'categoria', 'marca', 'codigo')
+            'fields': ('nombre', 'categoria', 'lugar_pertenencia', 'marca', 'codigo')
         }),
         ('Estado', {
             'fields': ('estado',)
@@ -23,7 +23,8 @@ class HerramientaAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         # Asegura generación del código si no existe
         if not obj.codigo:
-            obj.save()
+            # llamar super().save_model para respetar hooks y signals
+            super().save_model(request, obj, form, change)
         else:
             super().save_model(request, obj, form, change)
 

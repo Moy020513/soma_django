@@ -21,9 +21,16 @@ class Herramienta(models.Model):
         ('CAR', 'Carpintería'),
         ('OTR', 'Otros'),
     ]
+    LUGARES = [
+        ('GDL', 'GDL'),
+        ('MEX', 'MEX'),
+        ('CDMX', 'CDMX'),
+        ('QRO', 'QRO'),
+    ]
 
     nombre = models.CharField(max_length=200)
     categoria = models.CharField(max_length=3, choices=CATEGORIAS)
+    lugar_pertenencia = models.CharField(max_length=4, choices=LUGARES, verbose_name='Lugar de pertenencia')
     marca = models.CharField(max_length=100, blank=True)
     codigo = models.CharField(max_length=20, unique=True, blank=True, help_text="Se genera automáticamente según la categoría")
     estado = models.CharField(max_length=20, choices=ESTADOS_HERRAMIENTA, default='disponible')
@@ -38,21 +45,22 @@ class Herramienta(models.Model):
     def _generar_siguiente_codigo(self):
         """Obtiene el siguiente código incremental dentro de la categoría actual."""
         # Bloquea filas relevantes para evitar colisiones concurrentes
-        ultimo = (
+        prefix = f"{self.lugar_pertenencia}-{self.categoria}-"
+        codigos = (
             Herramienta.objects.select_for_update()
-            .filter(categoria=self.categoria, codigo__startswith=self.categoria)
-            .order_by('-codigo')
+            .filter(lugar_pertenencia=self.lugar_pertenencia, categoria=self.categoria, codigo__startswith=prefix)
             .values_list('codigo', flat=True)
-            .first()
         )
-        if ultimo:
+        max_num = 0
+        for c in codigos:
             try:
-                num_actual = int(ultimo[len(self.categoria):])
-            except ValueError:
-                num_actual = 0
-        else:
-            num_actual = 0
-        return f"{self.categoria}{num_actual + 1:03d}"
+                parts = c.split('-')
+                num = int(parts[-1])
+                if num > max_num:
+                    max_num = num
+            except Exception:
+                continue
+        return f"{prefix}{max_num + 1:03d}"
 
     def save(self, *args, **kwargs):
         # Determinar si la categoría cambió (solo si ya existe en BD)
@@ -60,12 +68,14 @@ class Herramienta(models.Model):
         if self.pk:
             try:
                 original = Herramienta.objects.get(pk=self.pk)
-                if original.categoria != self.categoria:
+                if original.categoria != self.categoria or original.lugar_pertenencia != getattr(self, 'lugar_pertenencia', None):
                     categoria_cambiada = True
             except Herramienta.DoesNotExist:
                 pass
 
-        if (not self.codigo and self.categoria) or (categoria_cambiada and self.categoria):
+        # Generar código solo si tenemos categoría y lugar de pertenencia
+        tiene_lugar = bool(getattr(self, 'lugar_pertenencia', None))
+        if (not self.codigo and self.categoria and tiene_lugar) or (categoria_cambiada and self.categoria and tiene_lugar):
             with transaction.atomic():
                 self.codigo = self._generar_siguiente_codigo()
                 super().save(*args, **kwargs)
