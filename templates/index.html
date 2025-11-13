@@ -247,7 +247,13 @@
                             <strong style="color: var(--soma-orange);">{{ user.first_name|default:user.username }}</strong>
                         </p>
                         <p class="welcome-sub mb-0">¡Que tengas un buen día!</p>
+                        {% if frase_administradores %}
+            <div class="profile-phrase" style="font-weight:600; color:#1a365d; margin-bottom:8px;">
+                 {{ frase_administradores }}
+            </div>
+            {% endif %}
                     </div>
+                    
                     <div class="welcome-meta d-none d-sm-block">
                         {% if empleado %}
                             <div><strong>#{{ empleado.numero_empleado }}</strong></div>

@@ -253,7 +253,10 @@
                     <img src="{% static 'images/logo_soma.png' %}" alt="Servicios Industriales SOMA" class="login-logo">
                 </div>
                 
-                <p>Por favor, inicia sesión para continuar.</p>
+                                {% if frase_administradores %}
+                                    <p style="font-weight:600; color:#1a365d; margin-bottom:8px;">{{ frase_administradores }}</p>
+                                {% endif %}
+                                <p>Por favor, inicia sesión para continuar.</p>
             </div>
 
             {% if form.errors and not form.non_field_errors %}

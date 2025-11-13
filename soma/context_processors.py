@@ -118,3 +118,15 @@ def admin_app_list(request):
         return {'app_list': app_list, 'ordered_app_list': ordered}
     except Exception:
         return {'app_list': []}
+
+
+def frase_administradores(request):
+    """Provee la frase activa definida por administradores (si existe)."""
+    try:
+        from .models import FraseAdministradores
+        frase = FraseAdministradores.objects.filter(activo=True).order_by('-fecha_creacion').first()
+        if frase:
+            return {'frase_administradores': frase.texto}
+    except Exception:
+        pass
+    return {'frase_administradores': ''}
