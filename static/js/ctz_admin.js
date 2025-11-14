@@ -121,9 +121,9 @@
               var r = rows[ri]; var idInput = r.querySelector('input[name$="-id"]'); if(idInput && idInput.value) initialCount += 1;
             }
           }catch(e){}
-          if(!totalInput){ totalInput = document.createElement('input'); totalInput.type = 'hidden'; totalInput.name = prefix + '-TOTAL_FORMS'; totalInput.value = String(count); adminForm.appendChild(totalInput); console && console.log && console.log('ctz_admin: injected', totalInput.name, totalInput.value); }
+          if(!totalInput){ totalInput = document.createElement('input'); totalInput.type = 'hidden'; totalInput.name = prefix + '-TOTAL_FORMS'; totalInput.value = String(count); adminForm.appendChild(totalInput); }
           else { totalInput.value = String(count); }
-          if(!initialInput){ initialInput = document.createElement('input'); initialInput.type = 'hidden'; initialInput.name = prefix + '-INITIAL_FORMS'; initialInput.value = String(initialCount); adminForm.appendChild(initialInput); console && console.log && console.log('ctz_admin: injected', initialInput.name, initialInput.value); }
+          if(!initialInput){ initialInput = document.createElement('input'); initialInput.type = 'hidden'; initialInput.name = prefix + '-INITIAL_FORMS'; initialInput.value = String(initialCount); adminForm.appendChild(initialInput); }
           else { initialInput.value = String(initialCount); }
           if(!minInput){ minInput = document.createElement('input'); minInput.type = 'hidden'; minInput.name = prefix + '-MIN_NUM_FORMS'; minInput.value = '0'; adminForm.appendChild(minInput); }
           if(!maxInput){ maxInput = document.createElement('input'); maxInput.type = 'hidden'; maxInput.name = prefix + '-MAX_NUM_FORMS'; maxInput.value = '1000'; adminForm.appendChild(maxInput); }
@@ -139,10 +139,10 @@
             // ensure the management inputs exist and are enabled
             var totalInput = adminForm.querySelector('input[name="' + prefix + '-TOTAL_FORMS"]');
             var initialInput = adminForm.querySelector('input[name="' + prefix + '-INITIAL_FORMS"]');
-            if(totalInput && totalInput.disabled){ totalInput.disabled = false; console && console.log && console.log('ctz_admin: enabled', totalInput.name); }
-            if(initialInput && initialInput.disabled){ initialInput.disabled = false; console && console.log && console.log('ctz_admin: enabled', initialInput.name); }
-            if(!totalInput){ totalInput = document.createElement('input'); totalInput.type = 'hidden'; totalInput.name = prefix + '-TOTAL_FORMS'; totalInput.value = '0'; adminForm.appendChild(totalInput); console && console.log && console.log('ctz_admin: submit-injected', totalInput.name, totalInput.value); }
-            if(!initialInput){ initialInput = document.createElement('input'); initialInput.type = 'hidden'; initialInput.name = prefix + '-INITIAL_FORMS'; initialInput.value = '0'; adminForm.appendChild(initialInput); console && console.log && console.log('ctz_admin: submit-injected', initialInput.name, initialInput.value); }
+            if(totalInput && totalInput.disabled){ totalInput.disabled = false; }
+            if(initialInput && initialInput.disabled){ initialInput.disabled = false; }
+            if(!totalInput){ totalInput = document.createElement('input'); totalInput.type = 'hidden'; totalInput.name = prefix + '-TOTAL_FORMS'; totalInput.value = '0'; adminForm.appendChild(totalInput); }
+            if(!initialInput){ initialInput = document.createElement('input'); initialInput.type = 'hidden'; initialInput.name = prefix + '-INITIAL_FORMS'; initialInput.value = '0'; adminForm.appendChild(initialInput); }
 
             // Snapshot what will actually be sent for items-* keys
                 try{
@@ -163,12 +163,11 @@
                         injectedValues.push(v);
                       }catch(e){}
                     }
-                    console && console.log && console.log('ctz_admin: submit-injected count for', 'ctz_items_' + owner, injectedCount, 'values=', injectedValues);
+                    // submit-injected count for ctz_items_<owner> (silent)
                   });
                   var fd = new FormData(adminForm);
                   var keys = [];
                   for(var k of fd.keys()){ if(String(k).indexOf(prefix + '-') === 0) keys.push(k); }
-                  console && console.log && console.log('ctz_admin: submit snapshot, items- keys in FormData:', keys);
                 }catch(e){ console && console.warn && console.warn('ctz_admin: FormData snapshot failed', e); }
           }catch(e){ console && console.warn && console.warn('ctz_admin: submit-time ensure error', e); }
         }, true);
@@ -250,9 +249,9 @@
       var wrapper = findFieldWrapper(fieldName);
       var modules = Array.prototype.slice.call(document.querySelectorAll('div.module, div.inline-group, div.inline-related'));
       var target = null; for(var i=0;i<modules.length;i++){ var h2 = modules[i].querySelector('h2'); var txt = h2 && h2.textContent ? h2.textContent.trim() : ''; if(!target && txt.indexOf('Costos') === 0) target = modules[i]; }
-      if(!wrapper) console && console.log && console.log('ctz_admin: wrapper not found for', fieldName); else console && console.log && console.log('ctz_admin: wrapper for', fieldName, wrapper.tagName);
+  // silent when wrapper not found to avoid noisy console output in production
       // avoid duplicate inside wrapper (extra safety)
-      if(wrapper && wrapper.querySelector('.ctz-add-btn')) return;
+  if(wrapper && wrapper.querySelector('.ctz-add-btn')) return;
       var a = document.createElement('a');
       a.href = '#';
       a.className = 'ctz-add-btn';
@@ -406,7 +405,7 @@
       // insert button in DOM
       if(wrapper && wrapper.parentNode){ if(wrapper.nextSibling) wrapper.parentNode.insertBefore(a, wrapper.nextSibling); else wrapper.parentNode.appendChild(a); }
       else if(target && target.appendChild){ var holder = document.createElement('div'); holder.className = 'ctz-add-holder'; holder.style.marginTop = '6px'; holder.appendChild(a); target.appendChild(holder); }
-      else console && console.warn && console.warn('ctz_admin: cannot place add button for', fieldName);
+  else {/* cannot place add button: silent fallback will use Costos toolbar */}
     }
 
     // insert buttons for each field
