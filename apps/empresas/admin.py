@@ -9,6 +9,7 @@ import json
 from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR
 from .models import Empresa, Contacto
 from .models import CTZ
+from .models import CTZItem
 from django import forms
 
 class CTZForm(forms.ModelForm):
@@ -334,6 +335,7 @@ class ContactoAdmin(admin.ModelAdmin):
 @admin.register(CTZ)
 class CTZAdmin(admin.ModelAdmin):
     form = CTZForm
+    inlines = []
     list_display = ('empresa', 'proveedor_display', 'mo_soma_display', 'otros_materiales_display', 'pu_display', 'porcentaje_pu_display', 'total_pu_display', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('empresa__nombre',)
@@ -356,10 +358,97 @@ class CTZAdmin(admin.ModelAdmin):
         # Asegurarse de recalcular antes de guardar (aunque el modelo ya lo hace)
         obj.pu = obj.calcular_pu()
         obj.total_pu = obj.calcular_total_pu(obj.pu)
+        # Guardar primero el objeto para asegurar que tiene PK
         super().save_model(request, obj, form, change)
+        # Sincronizar los CTZItem como reflejo de los campos individuales.
+        # En este diseño dejamos el inline fuera del admin y gestionamos los
+        # items en el servidor: borramos cualquier ítem previo de los tipos
+        # manejados y (re)creamos uno por tipo con la cantidad actual.
+        try:
+            # Borrar items antiguos de los tipos manejados
+            # If the client submitted per-item values (ctz_items_<tipo>) use them.
+            from .models import CTZItem
+            prov_items = request.POST.getlist('ctz_items_proveedor') if request is not None else []
+            mo_items = request.POST.getlist('ctz_items_mo_soma') if request is not None else []
+            otros_items = request.POST.getlist('ctz_items_otros_materiales') if request is not None else []
+            # (diagnostics removed) -- proceed with processing of posted ctz_items_*
+            # remove previous items for these types
+            obj.items.filter(tipo__in=['proveedor', 'mo_soma', 'otros_materiales']).delete()
+            new_items = []
+            if prov_items or mo_items or otros_items:
+                # create one CTZItem per posted value (allow multiple per type)
+                for v in prov_items:
+                    try:
+                        vv = int(float(v))
+                    except Exception:
+                        continue
+                    new_items.append(CTZItem(ctz=obj, tipo='proveedor', cantidad=vv))
+                for v in mo_items:
+                    try:
+                        vv = int(float(v))
+                    except Exception:
+                        continue
+                    new_items.append(CTZItem(ctz=obj, tipo='mo_soma', cantidad=vv))
+                for v in otros_items:
+                    try:
+                        vv = int(float(v))
+                    except Exception:
+                        continue
+                    new_items.append(CTZItem(ctz=obj, tipo='otros_materiales', cantidad=vv))
+            else:
+                # fallback: create a single CTZItem per type from the main fields
+                try:
+                    prov = int(obj.proveedor or 0)
+                except Exception:
+                    prov = 0
+                try:
+                    mo = int(obj.mo_soma or 0)
+                except Exception:
+                    mo = 0
+                try:
+                    otros = int(obj.otros_materiales or 0)
+                except Exception:
+                    otros = 0
+                if prov:
+                    new_items.append(CTZItem(ctz=obj, tipo='proveedor', cantidad=prov))
+                if mo:
+                    new_items.append(CTZItem(ctz=obj, tipo='mo_soma', cantidad=mo))
+                if otros:
+                    new_items.append(CTZItem(ctz=obj, tipo='otros_materiales', cantidad=otros))
+            # If we have items to create (either from posted values or from fallback), persist them
+            if new_items:
+                created = CTZItem.objects.bulk_create(new_items)
+                # Recalcular totales basados en lo que acabamos de crear + base
+                try:
+                    # compute sums directly from the created/new_items to avoid cached relation issues
+                    prov_sum = sum(i.cantidad for i in new_items if i.tipo == 'proveedor')
+                    mo_sum = sum(i.cantidad for i in new_items if i.tipo == 'mo_soma')
+                    otros_sum = sum(i.cantidad for i in new_items if i.tipo == 'otros_materiales')
+                    base_prov = int(obj.proveedor or 0)
+                    base_mo = int(obj.mo_soma or 0)
+                    base_otros = int(obj.otros_materiales or 0)
+                    obj.pu = base_prov + prov_sum + base_mo + mo_sum + base_otros + otros_sum
+                    obj.total_pu = obj.calcular_total_pu(obj.pu)
+                    obj.save(update_fields=['pu', 'total_pu'])
+                except Exception:
+                    try:
+                        obj.pu = obj.calcular_pu()
+                        obj.total_pu = obj.calcular_total_pu(obj.pu)
+                        obj.save(update_fields=['pu', 'total_pu'])
+                    except Exception:
+                        pass
+                # (diagnostics removed)
+        except Exception:
+            # No queremos romper la operación de guardado del admin por errores
+            # en la sincronización de items; loguear sería ideal.
+            pass
 
     class Media:
         js = ('js/ctz_admin.js',)
+        css = {
+            'all': ('css/ctz_admin_hide_items.css',)
+        }
+
 
     # Formateo para la vista de lista: mostrar signos de moneda y porcentaje
     def _fmt_money(self, v):
@@ -371,16 +460,45 @@ class CTZAdmin(admin.ModelAdmin):
             return f"$\u00A0{v}"
 
     def proveedor_display(self, obj):
+        # Mostrar suma de items si existen, sino el campo antiguo
+        try:
+            # Mostrar la suma del campo base más los items asociados
+            from django.db.models import Sum
+            base = int(obj.proveedor or 0)
+            extras_agg = obj.items.filter(tipo='proveedor').aggregate(s=Sum('cantidad')) if hasattr(obj, 'items') else {'s': 0}
+            extras = int(extras_agg.get('s') or 0)
+            v = base + extras
+            return self._fmt_money(v)
+        except Exception:
+            pass
         return self._fmt_money(obj.proveedor)
     proveedor_display.short_description = 'Proveedor'
     proveedor_display.admin_order_field = 'proveedor'
 
     def mo_soma_display(self, obj):
+        try:
+            from django.db.models import Sum
+            base = int(obj.mo_soma or 0)
+            extras_agg = obj.items.filter(tipo='mo_soma').aggregate(s=Sum('cantidad')) if hasattr(obj, 'items') else {'s': 0}
+            extras = int(extras_agg.get('s') or 0)
+            v = base + extras
+            return self._fmt_money(v)
+        except Exception:
+            pass
         return self._fmt_money(obj.mo_soma)
     mo_soma_display.short_description = 'MO SOMA'
     mo_soma_display.admin_order_field = 'mo_soma'
 
     def otros_materiales_display(self, obj):
+        try:
+            from django.db.models import Sum
+            base = int(obj.otros_materiales or 0)
+            extras_agg = obj.items.filter(tipo='otros_materiales').aggregate(s=Sum('cantidad')) if hasattr(obj, 'items') else {'s': 0}
+            extras = int(extras_agg.get('s') or 0)
+            v = base + extras
+            return self._fmt_money(v)
+        except Exception:
+            pass
         return self._fmt_money(obj.otros_materiales)
     otros_materiales_display.short_description = 'Otros materiales'
     otros_materiales_display.admin_order_field = 'otros_materiales'
@@ -406,5 +524,16 @@ class CTZAdmin(admin.ModelAdmin):
             return f"{obj.porcentaje_pu}%"
     porcentaje_pu_display.short_description = 'Porcentaje PU'
     porcentaje_pu_display.admin_order_field = 'porcentaje_pu'
+
+
+class CTZItemInline(admin.TabularInline):
+    model = CTZItem
+    extra = 1
+    fields = ('tipo', 'descripcion', 'cantidad')
+    verbose_name = 'Ítem CTZ'
+    verbose_name_plural = 'Ítems CTZ'
+
+# Insertar el inline en CTZAdmin (después de la clase para mantener orden de archivo)
+
 
 

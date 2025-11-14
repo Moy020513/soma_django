@@ -83,7 +83,23 @@ class CTZ(models.Model):
 
     def calcular_pu(self):
         try:
-            pu = int((self.proveedor or 0) + (self.mo_soma or 0) + (self.otros_materiales or 0))
+            # Calcular PU combinando los campos individuales y cualquier ítem relacionado.
+            # Esto asegura que en la lista (y en los cálculos) se refleje la suma total
+            # del campo base más los ítems adicionales añadidos por el usuario.
+            proveedor_sum = int(self.proveedor or 0)
+            mo_sum = int(self.mo_soma or 0)
+            otros_sum = int(self.otros_materiales or 0)
+            try:
+                if self.pk:
+                    items = self.items.all()
+                    if items.exists():
+                        proveedor_sum += int(sum(i.cantidad for i in items.filter(tipo='proveedor')))
+                        mo_sum += int(sum(i.cantidad for i in items.filter(tipo='mo_soma')))
+                        otros_sum += int(sum(i.cantidad for i in items.filter(tipo='otros_materiales')))
+            except Exception:
+                # Si algo falla al leer items, seguimos con los valores base
+                pass
+            pu = proveedor_sum + mo_sum + otros_sum
         except Exception:
             pu = 0
         return pu
@@ -103,4 +119,35 @@ class CTZ(models.Model):
         self.pu = self.calcular_pu()
         self.total_pu = self.calcular_total_pu(self.pu)
         super().save(*args, **kwargs)
+
+
+class CTZItem(models.Model):
+    """Item asociado a una CTZ para permitir múltiples entradas por tipo (proveedor, MO SOMA, otros materiales)."""
+    TIPOS = [
+        ('proveedor', 'Proveedor'),
+        ('mo_soma', 'MO SOMA'),
+        ('otros_materiales', 'Otros materiales'),
+    ]
+    ctz = models.ForeignKey(CTZ, on_delete=models.CASCADE, related_name='items')
+    tipo = models.CharField(max_length=30, choices=TIPOS)
+    descripcion = models.CharField(max_length=200, blank=True)
+    cantidad = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Ítem CTZ'
+        verbose_name_plural = 'Ítems CTZ'
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.cantidad}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Al guardar un item, forzar recálculo de su CTZ padre
+        try:
+            self.ctz.pu = self.ctz.calcular_pu()
+            self.ctz.total_pu = self.ctz.calcular_total_pu(self.ctz.pu)
+            self.ctz.save()
+        except Exception:
+            pass
+
 

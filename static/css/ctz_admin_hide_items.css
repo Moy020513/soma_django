@@ -1,0 +1,7 @@
+/* Hide the visual inline group for Ítems CTZ while keeping inputs in the DOM */
+#items-group, .js-inline-admin-formset.inline-group[data-inline-type="tabular"][data-inline-formset*="\"name\": \"#items\""] {
+  display: none !important;
+}
+
+/* Ensure any errorlist within the hidden group doesn't show visibly */
+#items-group .errorlist { display: none !important; }
