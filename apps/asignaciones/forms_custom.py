@@ -165,3 +165,37 @@ class AsignacionCustomForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError('Ya existe una asignación con ese No. cotización.')
         return val
+
+
+# Formulario para Inline de Días trabajados: añadir leyendas (help_text) y widgets
+from .models import AsignacionDiaTrabajado
+
+class AsignacionDiaTrabajadoForm(forms.ModelForm):
+    class Meta:
+        model = AsignacionDiaTrabajado
+        fields = ('fecha', 'notas')
+        widgets = {
+            'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'notas': forms.TextInput(attrs={'placeholder': 'Opcional: notas sobre el día (incidencias, observaciones)'}),
+        }
+        help_texts = {
+            'fecha': 'Fecha en que se trabajó (día de la actividad).',
+            'notas': 'Notas opcionales: observaciones, incidencias o comentarios sobre la jornada.',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hacer los campos compactos visualmente en el admin inline
+        try:
+            # Agregar clases y atributos visibles: placeholder y title para la leyenda
+            self.fields['fecha'].widget.attrs.update({
+                'class': 'vDateField',
+                'placeholder': 'Fecha en que se trabajó (dd/mm/yyyy)',
+                'title': 'Fecha en que se trabajó (día de la actividad)'
+            })
+            self.fields['notas'].widget.attrs.update({'class': 'vTextField', 'style': 'width: 320px;', 'placeholder': 'Opcional: notas sobre el día (incidencias, observaciones)'} )
+            # Asegurar help_text también (por si el template lo muestra)
+            self.fields['fecha'].help_text = 'Fecha en que se trabajó (día de la actividad).'
+            self.fields['notas'].help_text = 'Notas opcionales: observaciones, incidencias o comentarios sobre la jornada.'
+        except Exception:
+            pass

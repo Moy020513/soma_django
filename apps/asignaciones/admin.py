@@ -22,6 +22,12 @@ class DiaTrabajadoInline(admin.TabularInline):
     extra = 1
     verbose_name = 'Día trabajado'
     verbose_name_plural = 'Días trabajados'
+    # Usar formulario personalizado que agrega help_text a los campos
+    try:
+        from .forms_custom import AsignacionDiaTrabajadoForm
+        form = AsignacionDiaTrabajadoForm
+    except Exception:
+        form = None
 
 
 @admin.register(Asignacion)
