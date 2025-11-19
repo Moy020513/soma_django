@@ -68,14 +68,32 @@ class ContratoAdmin(admin.ModelAdmin):
                 else:
                     if fechas:
                         contrato.fecha_termino = max(fechas)
-                # Calcular cantidad_empleados como suma de empleados por asignación
-                total_emps = 0
-                for a in asigns:
+                # Calcular cantidad_empleados como el número de empleados únicos en
+                # todas las asignaciones seleccionadas, incluyendo al supervisor si existe
+                try:
+                    empleados_set = set()
+                    for a in asigns:
+                        try:
+                            # añadir empleados M2M
+                            for e in a.empleados.all():
+                                if getattr(e, 'pk', None):
+                                    empleados_set.add(e.pk)
+                        except Exception:
+                            pass
+                        # añadir supervisor si existe y no está ya en el set
+                        try:
+                            sup = getattr(a, 'supervisor', None)
+                            if sup and getattr(sup, 'pk', None):
+                                empleados_set.add(sup.pk)
+                        except Exception:
+                            pass
+                    contrato.cantidad_empleados = len(empleados_set)
+                except Exception:
+                    # fallback conservador: mantener valor previo o contar como 0
                     try:
-                        total_emps += a.empleados.count()
+                        contrato.cantidad_empleados = contrato.cantidad_empleados or 0
                     except Exception:
-                        pass
-                contrato.cantidad_empleados = total_emps
+                        contrato.cantidad_empleados = 0
                 # Calcular días activos como la suma de días_trabajados por asignación
                 total_dias = 0
                 for a in asigns:
@@ -134,7 +152,7 @@ class ContratoAdmin(admin.ModelAdmin):
         css = {
             'all': ('/static/css/contrato_admin.css',)
         }
-    list_display = ("numero_contrato", "empresa", "fecha_inicio", "fecha_termino", "cantidad_empleados", 'dias_activos')
+    list_display = ("numero_contrato", "empresa", 'fecha_inicio_display', 'fecha_termino_display', "cantidad_empleados", 'dias_activos', 'numeros_cotizacion', 'empleados_en_contrato')
     list_filter = ("empresa", "fecha_inicio", "fecha_termino")
     search_fields = ("numero_contrato", "empresa__nombre")
     # autocomplete_fields = ["empresa"]
@@ -169,6 +187,26 @@ class ContratoAdmin(admin.ModelAdmin):
         html = '<ul>' + ''.join(parts) + '</ul>'
         return mark_safe(html)
 
+    def fecha_inicio_display(self, obj):
+        try:
+            if not getattr(obj, 'fecha_inicio', None):
+                return ''
+            return obj.fecha_inicio.strftime('%d/%m/%Y')
+        except Exception:
+            return ''
+    fecha_inicio_display.short_description = 'Fecha de inicio'
+    fecha_inicio_display.admin_order_field = 'fecha_inicio'
+
+    def fecha_termino_display(self, obj):
+        try:
+            if not getattr(obj, 'fecha_termino', None):
+                return ''
+            return obj.fecha_termino.strftime('%d/%m/%Y')
+        except Exception:
+            return ''
+    fecha_termino_display.short_description = 'Fecha de término'
+    fecha_termino_display.admin_order_field = 'fecha_termino'
+
     resumen_asignaciones.short_description = 'Resumen de asignaciones'
 
     def get_urls(self):
@@ -178,6 +216,66 @@ class ContratoAdmin(admin.ModelAdmin):
             path('assignments-info/', self.admin_site.admin_view(self.assignments_info_view), name='recursos_humanos_contrato_assignments_info'),
         ]
         return custom + urls
+
+    def get_queryset(self, request):
+        """Prefetch related objects to avoid N+1 in changelist when showing cotizaciones y empleados."""
+        qs = super().get_queryset(request)
+        try:
+            # Prefetch empleados y supervisor de las asignaciones vinculadas para reducir consultas
+            return qs.prefetch_related('asignaciones_vinculadas__empleados', 'asignaciones_vinculadas__supervisor__usuario')
+        except Exception:
+            return qs
+
+    def numeros_cotizacion(self, obj):
+        """Devuelve los números de cotización vinculados separados por comas."""
+        try:
+            nums = [str(a.numero_cotizacion) if getattr(a, 'numero_cotizacion', None) else '(sin cot)' for a in obj.asignaciones_vinculadas.all()]
+            return ', '.join(nums)
+        except Exception:
+            return ''
+    numeros_cotizacion.short_description = 'No. cotización'
+
+    def empleados_en_contrato(self, obj):
+        """Lista los nombres de los empleados que estuvieron en este contrato (evita duplicados)."""
+        try:
+            # Construir la lista en orden de asignaciones: supervisor (si existe) primero, luego empleados
+            names = []
+            seen = set()
+            for a in obj.asignaciones_vinculadas.all():
+                # supervisor first
+                try:
+                    sup = getattr(a, 'supervisor', None)
+                    if sup and getattr(sup, 'pk', None):
+                        try:
+                            sup_name = sup.usuario.get_full_name() if getattr(sup, 'usuario', None) else str(sup)
+                        except Exception:
+                            sup_name = str(sup)
+                        if sup_name and sup_name not in seen:
+                            seen.add(sup_name)
+                            names.append(sup_name)
+                except Exception:
+                    pass
+                # then employees in the assignment in their stored order
+                try:
+                    for e in a.empleados.all():
+                        try:
+                            nombre = e.usuario.get_full_name() if getattr(e, 'usuario', None) else str(e)
+                        except Exception:
+                            nombre = str(e)
+                        if nombre and nombre not in seen:
+                            seen.add(nombre)
+                            names.append(nombre)
+                except Exception:
+                    continue
+
+            # Mostrar cada empleado en una línea sin que el navegador rompa el nombre (nowrap)
+            if not names:
+                return ''
+            from django.utils.html import format_html_join
+            return format_html_join('\n', '<div style="white-space:nowrap;">{}</div>', ((n,) for n in names))
+        except Exception:
+            return ''
+    empleados_en_contrato.short_description = 'Empleados'
 
     def assignments_info_view(self, request):
         """Devuelve JSON con empresa_id/nombre, total_emps y periodo (fecha_min - fecha_max) para los IDs enviados."""
@@ -201,7 +299,8 @@ class ContratoAdmin(admin.ModelAdmin):
                     'fecha_termino': a.fecha_termino.strftime('%Y-%m-%d') if getattr(a, 'fecha_termino', None) else None,
                     'empresa_id': getattr(a, 'empresa_id', None),
                     'empresa_nombre': getattr(a.empresa, 'nombre', '') if getattr(a, 'empresa', None) else '',
-                    'empleados': a.empleados.count() if hasattr(a, 'empleados') else 0,
+                    # Contar empleados incluyendo al supervisor (sin duplicados)
+                    'empleados': (len(set(list(a.empleados.values_list('pk', flat=True)) + ([a.supervisor.pk] if getattr(a, 'supervisor', None) and getattr(a.supervisor, 'pk', None) else []))) if hasattr(a, 'empleados') else 0),
                     'dias_activos': a.dias_trabajados.count() if hasattr(a, 'dias_trabajados') else 0,
                 })
             return JsonResponse({'ok': True, 'assignments': data})
@@ -219,8 +318,22 @@ class ContratoAdmin(admin.ModelAdmin):
         empresa_ids = set(a.empresa_id for a in asigns)
         empresa_id = asigns[0].empresa_id if len(empresa_ids) == 1 else None
         empresa_name = asigns[0].empresa.nombre if empresa_id else ''
-        # Total empleados
-        total_emps = sum(a.empleados.count() for a in asigns)
+        # Total empleados: contar empleados únicos entre las asignaciones seleccionadas,
+        # incluyendo supervisores de cada asignación si existen
+        total_set = set()
+        for a in asigns:
+            try:
+                for pk in a.empleados.values_list('pk', flat=True):
+                    total_set.add(pk)
+            except Exception:
+                pass
+            try:
+                sup = getattr(a, 'supervisor', None)
+                if sup and getattr(sup, 'pk', None):
+                    total_set.add(sup.pk)
+            except Exception:
+                pass
+        total_emps = len(total_set)
         # Total dias activos
         total_dias = sum(a.dias_trabajados.count() for a in asigns)
         # Periodo
