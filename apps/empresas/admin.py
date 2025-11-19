@@ -10,6 +10,22 @@ from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR
 from .models import Empresa, Contacto
 from .models import CTZ
 from .models import CTZItem
+from .models import CTZFormato
+from django import forms
+
+
+class CTZFormatoForm(forms.ModelForm):
+    class Meta:
+        model = CTZFormato
+        fields = '__all__'
+        widgets = {
+            'pu': forms.NumberInput(attrs={'step': '0.01'}),
+            # Renderizar subtotal/iva/total como inputs readonly para permitir que el JS los actualice.
+            'subtotal': forms.NumberInput(attrs={'readonly': 'readonly'}),
+            'iva': forms.NumberInput(attrs={'readonly': 'readonly'}),
+            'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
+            'cantidad': forms.NumberInput(attrs={'step': '0.001'}),
+        }
 from django import forms
 
 class CTZForm(forms.ModelForm):
@@ -534,6 +550,43 @@ class CTZItemInline(admin.TabularInline):
     verbose_name_plural = 'Ítems CTZ'
 
 # Insertar el inline en CTZAdmin (después de la clase para mantener orden de archivo)
+
+
+class CTZFormatoAdmin(admin.ModelAdmin):
+    form = CTZFormatoForm
+    """Admin para CTZFormato: permite seleccionar CTZ y copia/consulta total_pu via AJAX.
+    Además calcula los campos `subtotal`, `iva` y `total` en el cliente para mostrarlos como readonly.
+    """
+    list_display = ('ctz', 'partida', 'cantidad', 'unidad', 'pu', 'subtotal', 'iva', 'total')
+    list_filter = ('ctz',)
+    search_fields = ('partida', 'concepto')
+    # Usamos el ModelForm para renderizar subtotal/iva/total como inputs readonly
+    fields = ('ctz', 'partida', 'concepto', 'cantidad', 'unidad', 'pu', 'subtotal', 'iva', 'total')
+
+    class Media:
+        js = ('js/ctz_formato_admin.js',)
+
+    def get_urls(self):
+        # Añadir una URL propia para consultar el total_pu de una CTZ concreta.
+        from django.urls import path
+        urls = super().get_urls()
+        my_urls = [
+            path('ctz-total-pu/<int:ctz_id>/', self.admin_site.admin_view(self.ctz_total_pu_view), name='ctz_total_pu'),
+        ]
+        return my_urls + urls
+
+    def ctz_total_pu_view(self, request, ctz_id):
+        # Devuelve JSON con el total_pu de la CTZ solicitada.
+        from django.http import JsonResponse
+        from django.shortcuts import get_object_or_404
+        try:
+            ctz = get_object_or_404(CTZ, pk=ctz_id)
+            return JsonResponse({'total_pu': ctz.total_pu})
+        except Exception:
+            return JsonResponse({'error': 'not found'}, status=404)
+
+
+admin.site.register(CTZFormato, CTZFormatoAdmin)
 
 
 

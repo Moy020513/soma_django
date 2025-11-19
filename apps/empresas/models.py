@@ -155,3 +155,51 @@ class CTZItem(models.Model):
             pass
 
 
+class CTZFormato(models.Model):
+    """Detalle de formato asociado a una CTZ: partidas/conceptos con cantidad, unidad, PU y total."""
+    ctz = models.ForeignKey(CTZ, on_delete=models.CASCADE, related_name='formatos', verbose_name='CTZ', null=True, blank=True)
+    partida = models.CharField(max_length=100, verbose_name='Partida')
+    concepto = models.TextField(verbose_name='Concepto')
+    cantidad = models.DecimalField(max_digits=12, decimal_places=3, default=1, verbose_name='Cantidad')
+    unidad = models.CharField(max_length=30, verbose_name='Unidad', blank=True)
+    pu = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='PU')
+    # Antes: `total` (cantidad * pu). Ahora lo llamamos `subtotal` y añadimos IVA y TOTAL.
+    subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Subtotal')
+    iva = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='IVA')
+    total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='TOTAL')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'CTZ Formato'
+        verbose_name_plural = 'CTZs Formato'
+
+    def __str__(self):
+        return f"{self.partida} — {self.concepto[:40]}"
+
+    def save(self, *args, **kwargs):
+        # Si se vinculó una CTZ y no se especificó PU manualmente, usar total_pu de la CTZ
+        try:
+            if self.ctz and (not self.pu or float(self.pu) == 0):
+                # usar total_pu del CTZ como PU por unidad
+                self.pu = float(self.ctz.total_pu or 0)
+        except Exception:
+            pass
+        # Calcular subtotal = cantidad * pu
+        try:
+            self.subtotal = float(self.cantidad or 0) * float(self.pu or 0)
+        except Exception:
+            self.subtotal = 0
+        # Calcular IVA = 16% del subtotal
+        try:
+            self.iva = round(float(self.subtotal or 0) * 0.16, 2)
+        except Exception:
+            self.iva = 0
+        # Calcular total = subtotal + iva
+        try:
+            self.total = round(float(self.subtotal or 0) + float(self.iva or 0), 2)
+        except Exception:
+            self.total = self.subtotal
+        super().save(*args, **kwargs)
+
+
