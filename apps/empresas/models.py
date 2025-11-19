@@ -156,8 +156,13 @@ class CTZItem(models.Model):
 
 
 class CTZFormato(models.Model):
-    """Detalle de formato asociado a una CTZ: partidas/conceptos con cantidad, unidad, PU y total."""
+    """Detalle de formato asociado a una(s) CTZ(s): partidas/conceptos con cantidad, unidad, PU y totales.
+    Ahora soporta vincular múltiples CTZs (campo `ctzs`) para permitir ingresar una cantidad distinta
+    por cada CTZ y calcular subtotales agregados.
+    """
     ctz = models.ForeignKey(CTZ, on_delete=models.CASCADE, related_name='formatos', verbose_name='CTZ', null=True, blank=True)
+    # Nuevo: permitir seleccionar múltiples CTZs en el formulario. No sustituye `ctz` para compatibilidad.
+    ctzs = models.ManyToManyField(CTZ, blank=True, related_name='formatos_multi', verbose_name='CTZs')
     partida = models.CharField(max_length=100, verbose_name='Partida')
     concepto = models.TextField(verbose_name='Concepto')
     cantidad = models.DecimalField(max_digits=12, decimal_places=3, default=1, verbose_name='Cantidad')

@@ -17,14 +17,15 @@ from django import forms
 class CTZFormatoForm(forms.ModelForm):
     class Meta:
         model = CTZFormato
-        fields = '__all__'
+        # Excluir campos legacy `ctz`, `cantidad`, `unidad` y `pu` del formulario principal.
+        # El admin mostrará únicamente el M2M `ctzs`, los campos descriptivos y los totales
+        # (subtotal/iva/total) que son actualizados por el JS en base a las entradas por-CTZ.
+        fields = ('ctzs', 'partida', 'concepto', 'subtotal', 'iva', 'total')
         widgets = {
-            'pu': forms.NumberInput(attrs={'step': '0.01'}),
             # Renderizar subtotal/iva/total como inputs readonly para permitir que el JS los actualice.
             'subtotal': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'iva': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
-            'cantidad': forms.NumberInput(attrs={'step': '0.001'}),
         }
 from django import forms
 
@@ -557,11 +558,18 @@ class CTZFormatoAdmin(admin.ModelAdmin):
     """Admin para CTZFormato: permite seleccionar CTZ y copia/consulta total_pu via AJAX.
     Además calcula los campos `subtotal`, `iva` y `total` en el cliente para mostrarlos como readonly.
     """
-    list_display = ('ctz', 'partida', 'cantidad', 'unidad', 'pu', 'subtotal', 'iva', 'total')
-    list_filter = ('ctz',)
+    # Mostrar sólo campos relevantes en el changelist; los campos por-CTZ
+    # (cantidad, unidad, pu) se manejan dinámicamente y no aparecen aquí.
+    list_display = ('partida', 'concepto', 'subtotal', 'iva', 'total')
+    list_filter = ('ctzs',)
+    # Mostrar selector horizontal para la M2M `ctzs` para que sea más usable
+    # en el admin (dos columnas con botones Agregar/Quitar).
+    filter_horizontal = ('ctzs',)
     search_fields = ('partida', 'concepto')
     # Usamos el ModelForm para renderizar subtotal/iva/total como inputs readonly
-    fields = ('ctz', 'partida', 'concepto', 'cantidad', 'unidad', 'pu', 'subtotal', 'iva', 'total')
+    # Usar solo el campo M2M `ctzs` (ya no usamos el dropdown single `ctz` en el formulario)
+    # Mantener sólo los campos necesarios en el formulario principal.
+    fields = ('ctzs', 'partida', 'concepto', 'subtotal', 'iva', 'total')
 
     class Media:
         js = ('js/ctz_formato_admin.js',)
@@ -584,6 +592,46 @@ class CTZFormatoAdmin(admin.ModelAdmin):
             return JsonResponse({'total_pu': ctz.total_pu})
         except Exception:
             return JsonResponse({'error': 'not found'}, status=404)
+
+    def save_model(self, request, obj, form, change):
+        """Calcular subtotal/iva/total a partir de las CTZs seleccionadas y las cantidades
+        publicadas en campos con nombre 'ctz_qty_<id>'. Luego guardar el objeto y las relaciones m2m.
+        """
+        try:
+            # obtener lista de CTZs seleccionadas (como strings)
+            ctz_ids = request.POST.getlist('ctzs') or []
+            subtotal = 0.0
+            for cid in ctz_ids:
+                try:
+                    c = CTZ.objects.get(pk=int(cid))
+                except Exception:
+                    continue
+                pu = float(getattr(c, 'total_pu', 0) or 0)
+                qty_raw = request.POST.get(f'ctz_qty_{cid}', '')
+                try:
+                    qty = float(qty_raw.replace(',', '.')) if qty_raw else 0.0
+                except Exception:
+                    qty = 0.0
+                subtotal += pu * qty
+            obj.subtotal = round(subtotal, 2)
+            obj.iva = round(obj.subtotal * 0.16, 2)
+            obj.total = round(obj.subtotal + obj.iva, 2)
+        except Exception:
+            # fallback: dejar que el modelo calcule lo que pueda
+            try:
+                obj.subtotal = obj.subtotal
+                obj.iva = obj.iva
+                obj.total = obj.total
+            except Exception:
+                pass
+
+        # Guardar el objeto primero para que tenga PK, luego guardar m2m
+        super().save_model(request, obj, form, change)
+        try:
+            if hasattr(form, 'save_m2m'):
+                form.save_m2m()
+        except Exception:
+            pass
 
 
 admin.site.register(CTZFormato, CTZFormatoAdmin)
