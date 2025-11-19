@@ -336,7 +336,7 @@ class ContactoAdmin(admin.ModelAdmin):
 class CTZAdmin(admin.ModelAdmin):
     form = CTZForm
     inlines = []
-    list_display = ('empresa', 'proveedor_display', 'mo_soma_display', 'otros_materiales_display', 'pu_display', 'porcentaje_pu_display', 'total_pu_display', 'fecha_creacion')
+    list_display = ('id_manual', 'empresa', 'proveedor_display', 'mo_soma_display', 'otros_materiales_display', 'pu_display', 'porcentaje_pu_display', 'total_pu_display', 'fecha_creacion')
     list_filter = ('empresa',)
     search_fields = ('empresa__nombre',)
     # Mostrar los campos calculados como inputs readonly (no como "readonly_fields")
@@ -344,7 +344,7 @@ class CTZAdmin(admin.ModelAdmin):
     readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
     fieldsets = (
         (None, {
-            'fields': ('empresa',)
+            'fields': ('empresa', 'id_manual')
         }),
         ('Costos', {
             'fields': ('proveedor', 'mo_soma', 'otros_materiales', 'porcentaje_pu')

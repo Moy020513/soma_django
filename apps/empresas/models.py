@@ -71,6 +71,8 @@ class CTZ(models.Model):
     # Campos calculados (guardamos como int para facilitar reportes)
     pu = models.IntegerField(default=0, verbose_name='PU')
     total_pu = models.IntegerField(default=0, verbose_name='TOTAL PU')
+    # Identificador manual (editable por el usuario). No confundir con la PK automática `id`.
+    id_manual = models.CharField(max_length=50, blank=True, null=True, verbose_name='ID')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -79,7 +81,9 @@ class CTZ(models.Model):
         verbose_name_plural = 'CTZs'
 
     def __str__(self):
-        return f"CTZ {self.pk} - {self.empresa}"
+        # Mostrar el id manual si existe, sino la PK
+        ident = self.id_manual or str(self.pk)
+        return f"CTZ {ident} - {self.empresa}"
 
     def calcular_pu(self):
         try:
