@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>CTZ Formato {{ object.pk }}</title>
+  <style>
+    body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #222 }
+    h1 { font-size: 18px; margin-bottom: 6px }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left }
+    th { background: #f6f6f6 }
+    .right { text-align: right }
+    .summary { margin-top: 12px; width: 40%; float: right }
+  </style>
+</head>
+<body>
+  <h1>Formato: {{ object.partida }}</h1>
+  <div><strong>Concepto general:</strong> {{ object.concepto }}</div>
+  <div><strong>Fecha:</strong> {{ object.fecha_creacion }}</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>CTZ</th>
+        <th>Concepto</th>
+        <th>Unidad</th>
+        <th class="right">PU</th>
+        <th class="right">Cantidad</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in object.detalles.all %}
+        <tr>
+          <td>{{ d.ctz.id_manual|default:d.ctz.pk }}</td>
+          <td>{{ d.concepto }}</td>
+          <td>{{ d.unidad }}</td>
+          <td class="right">{{ d.pu }}</td>
+          <td class="right">{{ d.cantidad }}</td>
+          <td class="right">{{ d.total }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">No hay detalles registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="summary">
+    <table>
+      <tr><th>Subtotal</th><td class="right">{{ object.subtotal }}</td></tr>
+      <tr><th>IVA</th><td class="right">{{ object.iva }}</td></tr>
+      <tr><th>TOTAL</th><td class="right">{{ object.total }}</td></tr>
+    </table>
+  </div>
+
+</body>
+</html>

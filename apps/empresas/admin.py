@@ -574,7 +574,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
     """
     # Mostrar sólo campos relevantes en el changelist; los campos por-CTZ
     # (cantidad, unidad, pu) se manejan dinámicamente y no aparecen aquí.
-    list_display = ('partida', 'concepto', 'ctzs_breakdown', 'subtotal', 'iva', 'total')
+    list_display = ('partida', 'concepto', 'ctzs_breakdown', 'subtotal', 'iva', 'total', 'export_pdf_link')
     list_filter = ('ctzs',)
     # Mostrar selector horizontal para la M2M `ctzs` para que sea más usable
     # en el admin (dos columnas con botones Agregar/Quitar).
@@ -629,9 +629,11 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         # Añadir una URL propia para consultar el total_pu de una CTZ concreta.
         from django.urls import path
         urls = super().get_urls()
+        # Namespaced names so they can be reversed as admin:<app>_<model>_<name>
         my_urls = [
-            path('ctz-total-pu/<int:ctz_id>/', self.admin_site.admin_view(self.ctz_total_pu_view), name='ctz_total_pu'),
-            path('ctz-detalles/<int:formato_id>/', self.admin_site.admin_view(self.ctz_detalles_view), name='ctz_detalles'),
+            path('ctz-total-pu/<int:ctz_id>/', self.admin_site.admin_view(self.ctz_total_pu_view), name=f'{self.opts.app_label}_{self.opts.model_name}_ctz_total_pu'),
+            path('ctz-detalles/<int:formato_id>/', self.admin_site.admin_view(self.ctz_detalles_view), name=f'{self.opts.app_label}_{self.opts.model_name}_ctz_detalles'),
+            path('export-pdf/<int:pk>/', self.admin_site.admin_view(self.export_pdf_view), name=f'{self.opts.app_label}_{self.opts.model_name}_export_pdf'),
         ]
         return my_urls + urls
 
@@ -665,6 +667,137 @@ class CTZFormatoAdmin(admin.ModelAdmin):
             return JsonResponse({'detalles': detalles})
         except Exception:
             return JsonResponse({'error': 'not found'}, status=404)
+
+    def export_pdf_view(self, request, pk):
+        from django.http import HttpResponse
+        from django.shortcuts import get_object_or_404
+        from django.template.loader import render_to_string
+        try:
+            obj = get_object_or_404(CTZFormato, pk=pk)
+            html = render_to_string('admin/empresas/ctzformato/pdf.html', {'object': obj})
+            # Intentar generar PDF usando WeasyPrint si está disponible
+            try:
+                from weasyprint import HTML
+            except Exception as e:
+                # Mostrar instrucciones útiles si WeasyPrint no está instalado
+                install_cmd = (
+                    "pip install weasyprint\n"
+                    "# En Debian/Ubuntu también: sudo apt install libcairo2 libpango-1.0-0 \\" 
+                    "libgdk-pixbuf2.0-0 libffi-dev shared-mime-info"
+                )
+                hint = (
+                    f"<h2>WeasyPrint no está disponible</h2>"
+                    f"<p>Para habilitar la descarga en PDF instala WeasyPrint y sus dependencias del sistema.</p>"
+                    f"<pre>{install_cmd}</pre>"
+                    f"<p>Error detectado: {e}</p>"
+                )
+                return HttpResponse(hint, content_type='text/html', status=501)
+
+            try:
+                pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+                resp = HttpResponse(pdf, content_type='application/pdf')
+                resp['Content-Disposition'] = f'attachment; filename="ctzformato_{obj.pk}.pdf"'
+                return resp
+            except Exception as e:
+                # Si WeasyPrint falla (por ejemplo incompatibilidad con pydyf),
+                # intentamos usar wkhtmltopdf (pdfkit) si está disponible, lo
+                # que suele producir PDFs fieles al HTML/CSS (más parecido al
+                # diseño que adjuntaste). Si no hay wkhtmltopdf, caemos al
+                # fallback ReportLab ya implementado.
+                try:
+                    import shutil
+                    wk = shutil.which('wkhtmltopdf')
+                    if wk:
+                        try:
+                            import pdfkit
+                            config = pdfkit.configuration(wkhtmltopdf=wk)
+                            options = {
+                                'enable-local-file-access': None,
+                                'page-size': 'A4',
+                                'encoding': 'UTF-8',
+                            }
+                            pdf_bytes = pdfkit.from_string(html, False, configuration=config, options=options)
+                            if isinstance(pdf_bytes, bytes):
+                                resp = HttpResponse(pdf_bytes, content_type='application/pdf')
+                                resp['Content-Disposition'] = f'attachment; filename="ctzformato_{obj.pk}.pdf"'
+                                return resp
+                        except Exception:
+                            # Si pdfkit no está instalado o wkhtmltopdf falla,
+                            # pasamos al fallback ReportLab
+                            pass
+                except Exception:
+                    pass
+
+                # Fallback: intentar ReportLab (ya implementado) para asegurar
+                # que siempre devolvemos un PDF aunque sea con diseño simple.
+                try:
+                    from io import BytesIO
+                    from reportlab.lib.pagesizes import A4
+                    from reportlab.pdfgen import canvas
+
+                    buffer = BytesIO()
+                    c = canvas.Canvas(buffer, pagesize=A4)
+                    width, height = A4
+                    x = 40
+                    y = height - 40
+                    c.setFont('Helvetica-Bold', 14)
+                    c.drawString(x, y, f'CTZ Formato #{obj.pk}')
+                    y -= 24
+                    c.setFont('Helvetica', 10)
+                    c.drawString(x, y, f'Partida: {obj.partida}')
+                    y -= 14
+                    c.drawString(x, y, f'Concepto: {obj.concepto or ""}')
+                    y -= 20
+
+                    # Encabezado tabla simple
+                    c.setFont('Helvetica-Bold', 9)
+                    c.drawString(x, y, 'CTZ')
+                    c.drawString(x+80, y, 'Concepto')
+                    c.drawString(x+300, y, 'Unidad')
+                    c.drawString(x+360, y, 'PU')
+                    c.drawString(x+420, y, 'Cant')
+                    c.drawString(x+470, y, 'Total')
+                    y -= 12
+                    c.setFont('Helvetica', 9)
+                    for d in obj.detalles.select_related('ctz').all():
+                        if y < 60:
+                            c.showPage()
+                            y = height - 40
+                        c.drawString(x, y, str(getattr(d.ctz, 'id_manual', d.ctz.pk)))
+                        c.drawString(x+80, y, (d.concepto or '')[:30])
+                        c.drawString(x+300, y, (d.unidad or '')[:10])
+                        c.drawRightString(x+400, y, str(d.pu))
+                        c.drawRightString(x+460, y, str(d.cantidad))
+                        c.drawRightString(x+520, y, str(d.total))
+                        y -= 12
+
+                    # Totales
+                    y -= 10
+                    c.setFont('Helvetica-Bold', 10)
+                    c.drawRightString(x+520, y, f'Total: {obj.total}')
+                    c.showPage()
+                    c.save()
+                    buffer.seek(0)
+                    resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+                    resp['Content-Disposition'] = f'attachment; filename="ctzformato_{obj.pk}.pdf"'
+                    return resp
+                except Exception:
+                    # Fallback final: devolver HTML con el error para diagnóstico
+                    fallback = f"<h2>Error generando PDF</h2><p>{e}</p>" + html
+                    return HttpResponse(fallback, content_type='text/html', status=500)
+        except Exception:
+            return HttpResponse('No se encontró el CTZ Formato.', status=404)
+
+    def export_pdf_link(self, obj):
+        """Enlace para exportar este CTZFormato a PDF."""
+        try:
+            # Nombre completo del url name en el namespace admin:
+            # admin:<app_label>_<model_name>_export_pdf
+            url = reverse('admin:%s_%s_export_pdf' % (self.opts.app_label, self.opts.model_name), args=(obj.pk,))
+            return format_html('<a class="button" href="{}">Exportar PDF</a>', url)
+        except Exception:
+            return ''
+    export_pdf_link.short_description = 'Acciones'
 
     def save_model(self, request, obj, form, change):
         """Calcular subtotal/iva/total a partir de las CTZs seleccionadas y las cantidades

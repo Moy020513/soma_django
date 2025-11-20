@@ -15,3 +15,4 @@ weasyprint==59.0
 reportlab==4.4.4
 pytz
 gunicorn==21.2.0
+pdfkit==1.0.0
