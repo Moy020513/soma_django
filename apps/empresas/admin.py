@@ -696,15 +696,37 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                         for i, page in enumerate(reader.pages):
                             # choose corresponding background page or fallback to first
                             bg_page = bg.pages[i] if i < len(bg.pages) else bg.pages[0]
-                            # Merge content on top of background but translated down
+                            # Compute horizontal centering offset between bg and page
+                            try:
+                                try:
+                                    bg_w = float(bg_page.mediabox.width)
+                                except Exception:
+                                    bg_w = float(bg_page.mediabox.upper_right[0]) - float(bg_page.mediabox.lower_left[0])
+                            except Exception:
+                                bg_w = None
+                            try:
+                                try:
+                                    src_w = float(page.mediabox.width)
+                                except Exception:
+                                    src_w = float(page.mediabox.upper_right[0]) - float(page.mediabox.lower_left[0])
+                            except Exception:
+                                src_w = None
+                            x_shift = 0
+                            if bg_w is not None and src_w is not None:
+                                try:
+                                    # Center the generated content horizontally over the background
+                                    x_shift = (bg_w - src_w) / 2.0
+                                except Exception:
+                                    x_shift = 0
+                            # Merge content on top of background but translated down and centered
                             try:
                                 # merge_translated_page takes (page, tx, ty)
-                                bg_page.merge_translated_page(page, 0, -SHIFT)
+                                bg_page.merge_translated_page(page, x_shift, -SHIFT)
                             except Exception:
                                 # fallback: translate source page then merge
                                 try:
                                     from pypdf import Transformation
-                                    page.add_transformation(Transformation().translate(0, -SHIFT))
+                                    page.add_transformation(Transformation().translate(x_shift, -SHIFT))
                                     bg_page.merge_page(page)
                                 except Exception:
                                     try:
@@ -724,12 +746,33 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                             writer = PW()
                             for i, page in enumerate(reader.pages):
                                 bg_page = bg.pages[i] if i < len(bg.pages) else bg.pages[0]
+                                # Try to compute widths for centering
+                                try:
+                                    try:
+                                        bg_w = float(bg_page.mediabox.width)
+                                    except Exception:
+                                        bg_w = float(bg_page.mediabox.upper_right[0]) - float(bg_page.mediabox.lower_left[0])
+                                except Exception:
+                                    bg_w = None
+                                try:
+                                    try:
+                                        src_w = float(page.mediabox.width)
+                                    except Exception:
+                                        src_w = float(page.mediabox.upper_right[0]) - float(page.mediabox.lower_left[0])
+                                except Exception:
+                                    src_w = None
+                                x_shift = 0
+                                if bg_w is not None and src_w is not None:
+                                    try:
+                                        x_shift = (bg_w - src_w) / 2.0
+                                    except Exception:
+                                        x_shift = 0
                                 try:
                                     # PyPDF2 historically has mergeTranslatedPage
-                                    bg_page.mergeTranslatedPage(page, 0, -SHIFT)
+                                    bg_page.mergeTranslatedPage(page, x_shift, -SHIFT)
                                 except Exception:
                                     try:
-                                        page.add_transformation(Transformation().translate(0, -SHIFT))
+                                        page.add_transformation(Transformation().translate(x_shift, -SHIFT))
                                         bg_page.merge_page(page)
                                     except Exception:
                                         try:
@@ -788,6 +831,11 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                                 'enable-local-file-access': None,
                                 'page-size': 'A4',
                                 'encoding': 'UTF-8',
+                                # wkhtmltopdf margins adjusted to 10mm (1.0cm)
+                                'margin-left': '10mm',
+                                'margin-right': '10mm',
+                                'margin-top': '10mm',
+                                'margin-bottom': '10mm',
                             }
                             pdf_bytes = pdfkit.from_string(html, False, configuration=config, options=options)
                             if isinstance(pdf_bytes, bytes):
@@ -815,8 +863,10 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     buffer = BytesIO()
                     c = canvas.Canvas(buffer, pagesize=A4)
                     width, height = A4
-                    x = 40
-                    y = height - 40
+                    # apply 1.0cm margins (1cm = 28.3464567 points)
+                    MARGIN = 1.0 * 28.3464567
+                    x = MARGIN
+                    y = height - MARGIN
                     c.setFont('Helvetica-Bold', 14)
                     c.drawString(x, y, f'CTZ Formato #{obj.pk}')
                     y -= 24

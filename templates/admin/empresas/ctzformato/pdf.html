@@ -4,9 +4,13 @@
   <meta charset="utf-8">
   <title>CTZ Formato {{ object.pk }}</title>
   <style>
-    body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #222 }
+   /* Page margins: 1.0cm on every side (reducido). Use the container width
+     to ensure symmetric left/right margins across renderers. */
+   @page { margin: 1.0cm }
+   body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #222; margin: 0 }
+   .pdf-container { box-sizing: border-box; width: calc(100% - 2cm); margin: 0 auto; }
     h1 { font-size: 18px; margin-bottom: 6px }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px }
+    .content-table { width: 100%; border-collapse: collapse; margin-top: 10px }
     th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left }
     th { background: #f6f6f6 }
     .right { text-align: right }
@@ -14,11 +18,12 @@
   </style>
 </head>
 <body>
-  <h1>Formato: {{ object.partida }}</h1>
-  <div><strong>Concepto general:</strong> {{ object.concepto }}</div>
-  <div><strong>Fecha:</strong> {{ object.fecha_creacion }}</div>
+  <div class="pdf-container">
+    <h1>Formato: {{ object.partida }}</h1>
+    <div><strong>Concepto general:</strong> {{ object.concepto }}</div>
+    <div><strong>Fecha:</strong> {{ object.fecha_creacion }}</div>
 
-  <table>
+  <table class="content-table">
     <thead>
       <tr>
         <th>CTZ</th>
@@ -52,6 +57,32 @@
       <tr><th>TOTAL</th><td class="right">{{ object.total }}</td></tr>
     </table>
   </div>
+  <div style="clear: both"></div>
+
+  <div class="bar" style="height:18px; background:#e0e0e0; margin-top:18px;"></div>
+
+  <div class="terms" style="margin-top:12px; font-size:10.5px; line-height:1.3;">
+    <h3 style="font-size:12px; margin-bottom:8px;">CONDICIONES DE COMPRA</h3>
+    <p>* Propuesta válida por 20 días a partir de la fecha del presente.</p>
+    <p>* El costo se expresa en peso mexicano a excepción que se especifique otro tipo de moneda.</p>
+    <p>* Se considera que el área de trabajo cuenta con los servicios necesarios para desempeñar los trabajos, tales cómo energía eléctrica, agua, etc. En caso de no contar
+    con estos servicios, se cotizará de manera adicional el suministro o abastecimiento de los mismos.</p>
+    <p>* La presente contempla que los trabajos se realizarán en días y horarios hábiles (Salvo que se indique lo contrario), en caso de requerirse trabajos nocturnos o en fin
+    de semana, la presente deberá ajustarse.</p>
+    <p>* Para la realización de estos trabajos no se contempla el movimiento de maquinaria, equipo o mobiliario (Salvo que se indique lo contrario)</p>
+    <p>* Todo trabajo que no se encuentre dentro del presente será considerado cómo adicional, quedando fuera del costo y tiempo programado de ejecución del
+    presente.</p>
+    <p>* Todo el personal se encuentra cubierto de acuerdo con lo establecido por la ley.</p>
+    <p>* Todos los trabajos de SOMA están 100% garantizados.</p>
+
+    <p style="text-align:center; font-weight:700; margin-top:12px;">Quedamos a sus órdenes para cualquier duda o aclaración.<br/>Saludos Cordiales</p>
+
+    <div style="margin-top:28px; text-align:right;">
+      <div style="font-size:14px; color:#2b4f9d; font-weight:700">Guadalupe Flores Díaz</div>
+      <div style="font-size:11px; color:#444;">Gerente General</div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
