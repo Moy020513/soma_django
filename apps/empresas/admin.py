@@ -672,9 +672,78 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         from django.http import HttpResponse
         from django.shortcuts import get_object_or_404
         from django.template.loader import render_to_string
+        from django.contrib.staticfiles import finders
         try:
             obj = get_object_or_404(CTZFormato, pk=pk)
             html = render_to_string('admin/empresas/ctzformato/pdf.html', {'object': obj})
+            # Helper: if there's a membretado PDF in static/pdf/membretado.pdf,
+            # try to merge it as background onto each page of the generated PDF.
+            def _merge_with_membrete(pdf_bytes: bytes) -> bytes:
+                try:
+                    memb_path = finders.find('pdf/membretado.pdf')
+                    if not memb_path:
+                        return pdf_bytes
+                    import io
+                    # We'll shift the content down to avoid overlapping the membretado header.
+                    # Aumentado para dejar más espacio entre el encabezado membretado y el contenido.
+                    SHIFT = 160  # points to move content down; adjust if needed
+                    # Try modern pypdf first
+                    try:
+                        from pypdf import PdfReader, PdfWriter
+                        reader = PdfReader(io.BytesIO(pdf_bytes))
+                        bg = PdfReader(open(memb_path, 'rb'))
+                        writer = PdfWriter()
+                        for i, page in enumerate(reader.pages):
+                            # choose corresponding background page or fallback to first
+                            bg_page = bg.pages[i] if i < len(bg.pages) else bg.pages[0]
+                            # Merge content on top of background but translated down
+                            try:
+                                # merge_translated_page takes (page, tx, ty)
+                                bg_page.merge_translated_page(page, 0, -SHIFT)
+                            except Exception:
+                                # fallback: translate source page then merge
+                                try:
+                                    from pypdf import Transformation
+                                    page.add_transformation(Transformation().translate(0, -SHIFT))
+                                    bg_page.merge_page(page)
+                                except Exception:
+                                    try:
+                                        bg_page.merge_page(page)
+                                    except Exception:
+                                        bg_page.mergePage(page)
+                            writer.add_page(bg_page)
+                        out = io.BytesIO()
+                        writer.write(out)
+                        return out.getvalue()
+                    except Exception:
+                        # Try PyPDF2 as fallback
+                        try:
+                            from PyPDF2 import PdfReader as PR, PdfWriter as PW  # type: ignore[reportMissingImports]
+                            reader = PR(io.BytesIO(pdf_bytes))
+                            bg = PR(open(memb_path, 'rb'))
+                            writer = PW()
+                            for i, page in enumerate(reader.pages):
+                                bg_page = bg.pages[i] if i < len(bg.pages) else bg.pages[0]
+                                try:
+                                    # PyPDF2 historically has mergeTranslatedPage
+                                    bg_page.mergeTranslatedPage(page, 0, -SHIFT)
+                                except Exception:
+                                    try:
+                                        page.add_transformation(Transformation().translate(0, -SHIFT))
+                                        bg_page.merge_page(page)
+                                    except Exception:
+                                        try:
+                                            bg_page.merge_page(page)
+                                        except Exception:
+                                            bg_page.mergePage(page)
+                                writer.add_page(bg_page)
+                            out = io.BytesIO()
+                            writer.write(out)
+                            return out.getvalue()
+                        except Exception:
+                            return pdf_bytes
+                except Exception:
+                    return pdf_bytes
             # Intentar generar PDF usando WeasyPrint si está disponible
             try:
                 from weasyprint import HTML
@@ -695,6 +764,10 @@ class CTZFormatoAdmin(admin.ModelAdmin):
 
             try:
                 pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+                try:
+                    pdf = _merge_with_membrete(pdf)
+                except Exception:
+                    pass
                 resp = HttpResponse(pdf, content_type='application/pdf')
                 resp['Content-Disposition'] = f'attachment; filename="ctzformato_{obj.pk}.pdf"'
                 return resp
@@ -718,6 +791,10 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                             }
                             pdf_bytes = pdfkit.from_string(html, False, configuration=config, options=options)
                             if isinstance(pdf_bytes, bytes):
+                                try:
+                                    pdf_bytes = _merge_with_membrete(pdf_bytes)
+                                except Exception:
+                                    pass
                                 resp = HttpResponse(pdf_bytes, content_type='application/pdf')
                                 resp['Content-Disposition'] = f'attachment; filename="ctzformato_{obj.pk}.pdf"'
                                 return resp
@@ -778,7 +855,12 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     c.showPage()
                     c.save()
                     buffer.seek(0)
-                    resp = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+                    rl_bytes = buffer.getvalue()
+                    try:
+                        rl_bytes = _merge_with_membrete(rl_bytes)
+                    except Exception:
+                        pass
+                    resp = HttpResponse(rl_bytes, content_type='application/pdf')
                     resp['Content-Disposition'] = f'attachment; filename="ctzformato_{obj.pk}.pdf"'
                     return resp
                 except Exception:
