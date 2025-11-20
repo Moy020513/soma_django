@@ -183,6 +183,13 @@ class CTZFormato(models.Model):
         return f"{self.partida} — {self.concepto[:40]}"
 
     def save(self, *args, **kwargs):
+        # Si la instancia tiene la marca `_skip_recalc`, no recalculamos subtotal/iva/total
+        # porque probablemente vinieron calculados externamente (p. ej. desde el admin
+        # cuando se manejan múltiples CTZs). Esto permite que el admin asigne valores
+        # agregados sin que sean sobrescritos por la lógica por defecto.
+        if getattr(self, '_skip_recalc', False):
+            return super().save(*args, **kwargs)
+
         # Si se vinculó una CTZ y no se especificó PU manualmente, usar total_pu de la CTZ
         try:
             if self.ctz and (not self.pu or float(self.pu) == 0):
@@ -216,6 +223,10 @@ class CTZFormatoDetalle(models.Model):
     cantidad = models.DecimalField(max_digits=12, decimal_places=3, default=0)
     pu = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    # Concepto específico para esta CTZ dentro del formato
+    concepto = models.TextField(verbose_name='Concepto CTZ', blank=True, default='')
+    # Unidad específica para esta CTZ dentro del formato
+    unidad = models.CharField(max_length=30, verbose_name='Unidad CTZ', blank=True, default='')
 
     class Meta:
         verbose_name = 'Detalle CTZ Formato'

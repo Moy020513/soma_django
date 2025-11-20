@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 from django.contrib import admin, messages
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
@@ -14,6 +14,7 @@ from .models import CTZItem
 from .models import CTZFormato
 from .models import CTZFormatoDetalle
 from django import forms
+import logging
 from django.db.models.deletion import ProtectedError
 
 
@@ -385,6 +386,15 @@ class CTZAdmin(admin.ModelAdmin):
         # En este diseño dejamos el inline fuera del admin y gestionamos los
         # items en el servidor: borramos cualquier ítem previo de los tipos
         # manejados y (re)creamos uno por tipo con la cantidad actual.
+        # Logging temporal para depuración: mostrar lo que llega en POST y los
+        # valores calculados antes de guardar. Quitar o bajar nivel una vez
+        # resuelto el problema.
+        logger = logging.getLogger(__name__)
+        try:
+            logger.debug('CTZFormato.save_model POST keys: %s', list(request.POST.keys()))
+        except Exception:
+            pass
+
         try:
             # Borrar items antiguos de los tipos manejados
             # If the client submitted per-item values (ctz_items_<tipo>) use them.
@@ -564,7 +574,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
     """
     # Mostrar sólo campos relevantes en el changelist; los campos por-CTZ
     # (cantidad, unidad, pu) se manejan dinámicamente y no aparecen aquí.
-    list_display = ('partida', 'concepto', 'subtotal', 'iva', 'total')
+    list_display = ('partida', 'concepto', 'ctzs_breakdown', 'subtotal', 'iva', 'total')
     list_filter = ('ctzs',)
     # Mostrar selector horizontal para la M2M `ctzs` para que sea más usable
     # en el admin (dos columnas con botones Agregar/Quitar).
@@ -575,8 +585,45 @@ class CTZFormatoAdmin(admin.ModelAdmin):
     # Mantener sólo los campos necesarios en el formulario principal.
     fields = ('ctzs', 'partida', 'concepto', 'subtotal', 'iva', 'total')
 
+    def ctzs_breakdown(self, obj):
+        """Devuelve una representación HTML con cada CTZ ligada a este formato y sus valores (PU, Cantidad, Total)."""
+        try:
+            detalles = obj.detalles.select_related('ctz').all()
+            if not detalles:
+                return '—'
+            return format_html_join(
+                format_html('<br/>'),
+                '<a href="{}">{}</a> — {} — {} — PU: {} — Cant: {} — Total: {}',
+                ((
+                    reverse('admin:empresas_ctz_change', args=(d.ctz.pk,), current_app=self.admin_site.name),
+                    getattr(d.ctz, 'id_manual', d.ctz.pk),
+                    (d.concepto or '').strip(),
+                    (d.unidad or '').strip(),
+                    d.pu,
+                    d.cantidad,
+                    d.total
+                ) for d in detalles)
+            )
+        except Exception:
+            return '—'
+    ctzs_breakdown.short_description = 'CTZs (PU / Cant / Total)'
+
     class Media:
         js = ('js/ctz_formato_admin.js',)
+
+    def get_inline_instances(self, request, obj=None):
+        """Ocultar los inlines de detalles cuando se está creando (add) un CTZFormato.
+
+        La vista de creación ya muestra controles dinámicos (JS) para introducir
+        las cantidades por CTZ usando el M2M `ctzs` y campos `ctz_qty_<id>`. Si
+        además mostramos el inline `CTZFormatoDetalleInline` aparecerán campos
+        duplicados en la página de "add". Aquí devolvemos una lista vacía para
+        la vista de creación y delegamos al comportamiento por defecto para la
+        vista de cambio (cuando `obj` existe).
+        """
+        if obj is None:
+            return []
+        return super().get_inline_instances(request, obj)
 
     def get_urls(self):
         # Añadir una URL propia para consultar el total_pu de una CTZ concreta.
@@ -584,6 +631,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         my_urls = [
             path('ctz-total-pu/<int:ctz_id>/', self.admin_site.admin_view(self.ctz_total_pu_view), name='ctz_total_pu'),
+            path('ctz-detalles/<int:formato_id>/', self.admin_site.admin_view(self.ctz_detalles_view), name='ctz_detalles'),
         ]
         return my_urls + urls
 
@@ -597,12 +645,42 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         except Exception:
             return JsonResponse({'error': 'not found'}, status=404)
 
+    def ctz_detalles_view(self, request, formato_id):
+        """Devuelve JSON con los detalles guardados para un CTZFormato (lista de dicts)."""
+        from django.http import JsonResponse
+        from django.shortcuts import get_object_or_404
+        try:
+            obj = get_object_or_404(CTZFormato, pk=formato_id)
+            detalles = []
+            for d in obj.detalles.select_related('ctz').all():
+                detalles.append({
+                    'ctz_id': d.ctz.pk,
+                    'ctz_label': getattr(d.ctz, 'id_manual', d.ctz.pk),
+                    'cantidad': str(d.cantidad),
+                    'pu': str(d.pu),
+                    'total': str(d.total),
+                    'concepto': d.concepto or '',
+                    'unidad': d.unidad or '',
+                })
+            return JsonResponse({'detalles': detalles})
+        except Exception:
+            return JsonResponse({'error': 'not found'}, status=404)
+
     def save_model(self, request, obj, form, change):
         """Calcular subtotal/iva/total a partir de las CTZs seleccionadas y las cantidades
         publicadas en campos con nombre 'ctz_qty_<id>'. Luego guardar el objeto y las relaciones m2m.
         """
+        # Construir la instancia desde el form (sin guardar todavía) para
+        # evitar que `form.save()` sobrescriba los campos que calculemos aquí.
         try:
-            # obtener lista de CTZs seleccionadas (como strings)
+            instance = form.save(commit=False)
+        except Exception:
+            # Fallback si algo falla: usar el `obj` pasado por admin
+            instance = obj
+
+        try:
+            # Calcular subtotal/iva/total a partir de las CTZs seleccionadas
+            logger = logging.getLogger(__name__)
             ctz_ids = request.POST.getlist('ctzs') or []
             subtotal = 0.0
             for cid in ctz_ids:
@@ -617,20 +695,47 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                 except Exception:
                     qty = 0.0
                 subtotal += pu * qty
-            obj.subtotal = round(subtotal, 2)
-            obj.iva = round(obj.subtotal * 0.16, 2)
-            obj.total = round(obj.subtotal + obj.iva, 2)
-        except Exception:
-            # fallback: dejar que el modelo calcule lo que pueda
+
+            instance.subtotal = round(subtotal, 2)
+            instance.iva = round(instance.subtotal * 0.16, 2)
+            instance.total = round(instance.subtotal + instance.iva, 2)
             try:
-                obj.subtotal = obj.subtotal
-                obj.iva = obj.iva
-                obj.total = obj.total
+                # Depuración: valores calculados
+                logger.debug('CTZFormato calculated subtotal=%s iva=%s total=%s', instance.subtotal, instance.iva, instance.total)
+                logger.debug('CTZ ids from POST: %s', ctz_ids)
+                # prints además del logger para garantizar salida en runserver
+                try:
+                    print('DEBUG CTZFormato calculated', instance.subtotal, instance.iva, instance.total)
+                    print('DEBUG CTZ ids from POST:', ctz_ids)
+                except Exception:
+                    pass
+                # Logear cantidades enviadas por cada CTZ
+                for cid in ctz_ids:
+                    try:
+                        logger.debug('POST ctz_qty_%s = %s', cid, request.POST.get(f'ctz_qty_{cid}'))
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        except Exception:
+            # fallback: conservar valores ya presentes en la instancia
+            try:
+                instance.subtotal = instance.subtotal
+                instance.iva = instance.iva
+                instance.total = instance.total
             except Exception:
                 pass
 
-        # Guardar el objeto primero para que tenga PK, luego guardar m2m
-        super().save_model(request, obj, form, change)
+        # Evitar que el save del modelo recompute y sobrescriba los valores que
+        # acabamos de calcular (agregados por CTZs). Marcamos la instancia para
+        # que `CTZFormato.save` detecte y salte su recálculo por defecto.
+        try:
+            instance._skip_recalc = True
+        except Exception:
+            pass
+
+        # Guardar la instancia (para obtener PK) y luego aplicar save_m2m
+        instance.save()
         try:
             if hasattr(form, 'save_m2m'):
                 form.save_m2m()
@@ -641,7 +746,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         try:
             from decimal import Decimal
             # eliminar detalles previos
-            obj.detalles.all().delete()
+            instance.detalles.all().delete()
             ctz_ids = request.POST.getlist('ctzs') or []
             detalles = []
             for cid in ctz_ids:
@@ -650,6 +755,8 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                 except Exception:
                     continue
                 qty_raw = request.POST.get(f'ctz_qty_{cid}', '')
+                concept_raw = request.POST.get(f'ctz_concept_{cid}', '')
+                unit_raw = request.POST.get(f'ctz_unit_{cid}', '')
                 try:
                     qty = Decimal(str(qty_raw).replace(',', '.')) if qty_raw else Decimal('0')
                 except Exception:
@@ -661,7 +768,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     pu = Decimal('0')
                 total = (qty * pu).quantize(Decimal('0.01'))
                 if qty and qty != Decimal('0'):
-                    detalles.append(CTZFormatoDetalle(formato=obj, ctz=c, cantidad=qty, pu=pu, total=total))
+                    detalles.append(CTZFormatoDetalle(formato=instance, ctz=c, cantidad=qty, pu=pu, total=total, concepto=concept_raw, unidad=unit_raw))
             if detalles:
                 CTZFormatoDetalle.objects.bulk_create(detalles)
         except Exception:
@@ -673,15 +780,17 @@ class CTZFormatoDetalleInline(admin.TabularInline):
     model = CTZFormatoDetalle
     extra = 0
     readonly_fields = ('pu', 'total')
-    fields = ('ctz', 'cantidad', 'pu', 'total')
+    fields = ('ctz', 'cantidad', 'unidad', 'concepto', 'pu', 'total')
     can_delete = True
 
 
 # Registrar CTZFormato en admin
 admin.site.register(CTZFormato, CTZFormatoAdmin)
 
-# Registrar inline en la clase admin ya definida
-CTZFormatoAdmin.inlines = [CTZFormatoDetalleInline]
+# Nota: no registramos el inline para CTZFormato en el admin. La UI dinámica
+# construida por `static/js/ctz_formato_admin.js` gestiona la creación/edición
+# de los `CTZFormatoDetalle` tanto en add como en change, y persiste via
+# `CTZFormatoAdmin.save_model` evitando mostrar el inline adicional.
 
 
 

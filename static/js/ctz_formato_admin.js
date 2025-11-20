@@ -129,16 +129,22 @@
         var puInput = document.createElement('input'); puInput.type = 'number'; puInput.step = '0.01'; puInput.readOnly = true; puInput.className = 'ctz-pu'; puInput.id = 'id_ctz_pu_'+s.id;
         // cantidad (editable)
         var qtyInput = document.createElement('input'); qtyInput.type = 'number'; qtyInput.step = '0.001'; qtyInput.value = '0'; qtyInput.className = 'ctz-qty'; qtyInput.id = 'id_ctz_qty_'+s.id; qtyInput.name = 'ctz_qty_'+s.id;
+  // concepto específico por CTZ (editable)
+  var conceptInput = document.createElement('input'); conceptInput.type = 'text'; conceptInput.className = 'ctz-concept'; conceptInput.id = 'id_ctz_concept_'+s.id; conceptInput.name = 'ctz_concept_'+s.id; conceptInput.placeholder = 'Concepto específico...'; conceptInput.style.minWidth = '180px';
+    // unidad específica por CTZ
+    var unitInput = document.createElement('input'); unitInput.type = 'text'; unitInput.className = 'ctz-unit'; unitInput.id = 'id_ctz_unit_'+s.id; unitInput.name = 'ctz_unit_'+s.id; unitInput.placeholder = 'Unidad'; unitInput.style.minWidth = '80px';
         // per-ctz total (readonly)
         var perTotal = document.createElement('input'); perTotal.type = 'number'; perTotal.step = '0.01'; perTotal.readOnly = true; perTotal.className = 'ctz-per-total'; perTotal.id = 'id_ctz_total_'+s.id;
         // small layout
         var layout = document.createElement('div');
         layout.appendChild(lbl);
-        var inner = document.createElement('div'); inner.style.display='flex'; inner.style.gap='8px'; inner.style.marginTop='4px';
-        var puWrap = document.createElement('div'); puWrap.appendChild(document.createTextNode('PU: ')); puWrap.appendChild(puInput);
-        var qtyWrap = document.createElement('div'); qtyWrap.appendChild(document.createTextNode('Cantidad: ')); qtyWrap.appendChild(qtyInput);
-        var totalWrap = document.createElement('div'); totalWrap.appendChild(document.createTextNode('Total: ')); totalWrap.appendChild(perTotal);
-        inner.appendChild(puWrap); inner.appendChild(qtyWrap); inner.appendChild(totalWrap);
+  var inner = document.createElement('div'); inner.style.display='flex'; inner.style.gap='8px'; inner.style.marginTop='4px'; inner.style.alignItems='center';
+  var puWrap = document.createElement('div'); puWrap.appendChild(document.createTextNode('PU: ')); puWrap.appendChild(puInput);
+  var qtyWrap = document.createElement('div'); qtyWrap.appendChild(document.createTextNode('Cantidad: ')); qtyWrap.appendChild(qtyInput);
+  var conceptWrap = document.createElement('div'); conceptWrap.appendChild(document.createTextNode('Concepto: ')); conceptWrap.appendChild(conceptInput);
+  var unitWrap = document.createElement('div'); unitWrap.appendChild(document.createTextNode('Unidad: ')); unitWrap.appendChild(unitInput);
+  var totalWrap = document.createElement('div'); totalWrap.appendChild(document.createTextNode('Total: ')); totalWrap.appendChild(perTotal);
+  inner.appendChild(puWrap); inner.appendChild(qtyWrap); inner.appendChild(unitWrap); inner.appendChild(conceptWrap); inner.appendChild(totalWrap);
         layout.appendChild(inner);
         row.appendChild(layout);
         container.appendChild(row);
@@ -157,6 +163,8 @@
           try{ perTotal.value = fmtNumber(parseNumber(qtyInput.value) * parseNumber(puInput.value)); }catch(e){}
           computeAndSetTotals();
         });
+        // Optional: recompute totals when concept changes has no effect, but keep for future
+        conceptInput.addEventListener('input', function(){ /* noop for now */ });
       }
     });
     // finally recompute totals
@@ -169,6 +177,40 @@
     if(selectEl){
       // construir filas si ya hay opciones seleccionadas
       buildCTZRowsFromSelect(selectEl);
+      // Si estamos en la vista de cambio (URL contiene /ctzformato/<id>/change/),
+      // pedir los detalles guardados vía AJAX y rellenar las filas dinámicas.
+      try{
+        var m = window.location.pathname.match(/\/admin\/empresas\/ctzformato\/(\d+)\/change\/?$/);
+        if(m && m[1]){
+          var formatoId = m[1];
+          // esperar un poco para que el widget filter_horizontal esté inicializado
+          setTimeout(function(){
+            fetch('/admin/empresas/ctzformato/ctz-detalles/'+formatoId+'/', {credentials:'same-origin'})
+              .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
+              .then(function(data){
+                if(!data || !data.detalles) return;
+                data.detalles.forEach(function(d){
+                  // Asegurarse de que la fila exista (buildCTZRowsFromSelect ya la creó si la CTZ está seleccionada)
+                  var row = document.querySelector('.ctz-row[data-ctz-id="'+d.ctz_id+'"]');
+                  if(!row){
+                    // Forzar creación si por algún motivo no existe
+                    buildCTZRowsFromSelect(selectEl);
+                    row = document.querySelector('.ctz-row[data-ctz-id="'+d.ctz_id+'"]');
+                  }
+                  if(row){
+                    try{ var qty = row.querySelector('.ctz-qty'); if(qty) qty.value = d.cantidad; }catch(e){}
+                    try{ var concept = row.querySelector('.ctz-concept'); if(concept) concept.value = d.concepto; }catch(e){}
+                    try{ var unit = row.querySelector('.ctz-unit'); if(unit) unit.value = d.unidad; }catch(e){}
+                    try{ var pu = row.querySelector('.ctz-pu'); if(pu) pu.value = fmtNumber(d.pu); }catch(e){}
+                    try{ var per = row.querySelector('.ctz-per-total'); if(per) per.value = fmtNumber(d.total); }catch(e){}
+                  }
+                });
+                computeAndSetTotals();
+              })
+              .catch(function(e){ console && console.debug && console.debug('fetch detalles failed', e); });
+          }, 60);
+        }
+      }catch(e){}
       // Intentar escuchar cambios en el select "elegidos" (_to) o en el propio select
       var chosen = document.getElementById(selectEl.id + '_to') || selectEl;
       try{
