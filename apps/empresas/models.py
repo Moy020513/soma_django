@@ -208,3 +208,27 @@ class CTZFormato(models.Model):
         super().save(*args, **kwargs)
 
 
+class CTZFormatoDetalle(models.Model):
+    """Detalle por CTZ dentro de un CTZFormato: guarda cantidad, PU y total para
+    cada CTZ seleccionada al crear/editar un CTZFormato."""
+    formato = models.ForeignKey(CTZFormato, on_delete=models.CASCADE, related_name='detalles')
+    ctz = models.ForeignKey(CTZ, on_delete=models.CASCADE)
+    cantidad = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    pu = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = 'Detalle CTZ Formato'
+        verbose_name_plural = 'Detalles CTZ Formato'
+
+    def __str__(self):
+        return f"{self.formato.partida} - {getattr(self.ctz, 'id_manual', self.ctz.pk)}: {self.cantidad} x {self.pu} = {self.total}"
+
+    def save(self, *args, **kwargs):
+        try:
+            self.total = round(float(self.cantidad or 0) * float(self.pu or 0), 2)
+        except Exception:
+            self.total = 0
+        super().save(*args, **kwargs)
+
+

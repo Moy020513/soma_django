@@ -53,12 +53,22 @@
     try{ totalEl.value = fmtNumber(total); }catch(e){}
   }
 
-  function onCTZChange(){
-    // Usamos únicamente el multi-select `ctzs`.
-    var multi = document.getElementById('id_ctzs');
-    if(multi){
-      buildCTZRowsFromSelect(multi);
-    }
+  function findCTZSelect(){
+    // Buscar de forma robusta el select asociado al campo M2M `ctzs`.
+    // Puede presentarse como:
+    // - #id_ctzs (sin filter_horizontal)
+    // - select[name="ctzs"]
+    // - #id_ctzs_from / #id_ctzs_to (filter_horizontal)
+    var sel = document.getElementById('id_ctzs');
+    if(sel) return sel;
+    sel = document.querySelector('select[name="ctzs"]');
+    if(sel) return sel;
+    // buscar selects que terminen en _ctzs_to o _ctzs_from
+    sel = document.querySelector('select[id$="_ctzs_to"]') || document.querySelector('select[id$="_ctzs_from"]');
+    if(sel) return sel;
+    // fallback: cualquier select cuyo id contenga 'ctzs'
+    sel = document.querySelector('select[id*="ctzs"]');
+    return sel;
   }
 
   function buildCTZRowsFromSelect(selectEl){
@@ -71,14 +81,27 @@
       selectEl.parentNode.insertBefore(container, selectEl.nextSibling);
     }
     // determine selected ids
-    // If the admin uses filter_horizontal the chosen items live in a separate select
-    // with suffix '_to' (e.g. id_ctzs_to). Use that select if present; otherwise
-    // fall back to the original select's selectedOptions.
-    var chosenSelect = document.getElementById(selectEl.id + '_to');
+    // Prefer the explicit '_to' select used by Django's filter_horizontal.
+    // If a _to select exists anywhere in the page for this field, use it
+    // exclusively; otherwise fall back to the provided selectEl.selectedOptions.
+    var chosenSelect = null;
+    try{
+      // First try to find any select that ends with '_ctzs_to' (robust for admin ids)
+      chosenSelect = document.querySelector('select[id$="_ctzs_to"]');
+      // If not found, and selectEl has an id, try the conventional id + '_to'
+      if(!chosenSelect && selectEl && selectEl.id){
+        chosenSelect = document.getElementById(selectEl.id + '_to');
+      }
+      // If selectEl itself *is* a _to select, respect it
+      if(!chosenSelect && selectEl && selectEl.id && selectEl.id.endsWith('_to')){
+        chosenSelect = selectEl;
+      }
+    }catch(e){ chosenSelect = null; }
     var opts = [];
-    if(chosenSelect && chosenSelect.options && chosenSelect.options.length > 0){
-      // The _to select contains exactly the chosen items; use all its options.
-      opts = Array.from(chosenSelect.options);
+    if(chosenSelect){
+      // Use only the options in the _to select. This avoids creating rows when
+      // the user merely clicks options in the "available" list on the left.
+      opts = Array.from(chosenSelect.options || []);
     } else {
       // Fallback: use only the options that are actually selected in the original select.
       opts = Array.from(selectEl.selectedOptions || []);
@@ -142,11 +165,31 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     // Inicializar comportamiento basado en el multi-select `ctzs`.
-    var multi = document.getElementById('id_ctzs');
-    if(multi){
+    var selectEl = findCTZSelect();
+    if(selectEl){
       // construir filas si ya hay opciones seleccionadas
-      buildCTZRowsFromSelect(multi);
-      multi.addEventListener('change', function(){ buildCTZRowsFromSelect(multi); });
+      buildCTZRowsFromSelect(selectEl);
+      // Intentar escuchar cambios en el select "elegidos" (_to) o en el propio select
+      var chosen = document.getElementById(selectEl.id + '_to') || selectEl;
+      try{
+        chosen.addEventListener('change', function(){ buildCTZRowsFromSelect(selectEl); });
+      }catch(e){}
+
+      // Usar MutationObserver para detectar movimientos entre columnas (filter_horizontal)
+      try{
+        var observer = new MutationObserver(function(){ buildCTZRowsFromSelect(selectEl); });
+        observer.observe(chosen, { childList: true });
+      }catch(e){}
+
+      // También reconstruir después de clicks en controles del selector (por si no se disparan events de change)
+      document.addEventListener('click', function(e){
+        var t = e.target || e.srcElement;
+        if(!t) return;
+        // detectar botones/link del widget selector (clases que usa Django admin)
+        if(t.classList && (t.classList.contains('selector-add') || t.classList.contains('selector-remove') || t.classList.contains('selector-chooser'))){
+          setTimeout(function(){ buildCTZRowsFromSelect(selectEl); }, 50);
+        }
+      }, true);
     }
   });
 

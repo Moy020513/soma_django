@@ -1,4 +1,5 @@
 from django.contrib import admin, messages
+from django.contrib import admin, messages
 from django.utils.html import format_html
 from django.urls import reverse
 from django.http import HttpResponseRedirect
@@ -11,7 +12,9 @@ from .models import Empresa, Contacto
 from .models import CTZ
 from .models import CTZItem
 from .models import CTZFormato
+from .models import CTZFormatoDetalle
 from django import forms
+from django.db.models.deletion import ProtectedError
 
 
 class CTZFormatoForm(forms.ModelForm):
@@ -27,7 +30,7 @@ class CTZFormatoForm(forms.ModelForm):
             'iva': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
         }
-from django import forms
+
 
 class CTZForm(forms.ModelForm):
     class Meta:
@@ -41,13 +44,13 @@ class CTZForm(forms.ModelForm):
             'otros_materiales': forms.NumberInput(attrs={'min': 0}),
             'porcentaje_pu': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
         }
-from django.db.models.deletion import ProtectedError
+
+
 class ContactoInline(admin.TabularInline):
     model = Contacto
     extra = 1
     fields = ('nombre', 'apellidos', 'telefono', 'correo')
     show_change_link = True
-
 
 
 @admin.register(Empresa)
@@ -150,6 +153,7 @@ class EmpresaAdmin(admin.ModelAdmin):
                 self.message_user(request, msg, level=messages.WARNING)
 
         return super().delete_view(request, object_id, extra_context=extra_context)
+
     def logo_preview(self, obj: Empresa):
         if obj.logo:
             return format_html('<img src="{}" alt="Logo" style="height:32px; width:auto; object-fit:contain; background:#fafafa; padding:2px; border:1px solid #eee; border-radius:4px;"/>', obj.logo.url)
@@ -633,8 +637,51 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         except Exception:
             pass
 
+        # Persistir detalles por CTZ: leer cantidades publicadas como ctz_qty_<id>
+        try:
+            from decimal import Decimal
+            # eliminar detalles previos
+            obj.detalles.all().delete()
+            ctz_ids = request.POST.getlist('ctzs') or []
+            detalles = []
+            for cid in ctz_ids:
+                try:
+                    c = CTZ.objects.get(pk=int(cid))
+                except Exception:
+                    continue
+                qty_raw = request.POST.get(f'ctz_qty_{cid}', '')
+                try:
+                    qty = Decimal(str(qty_raw).replace(',', '.')) if qty_raw else Decimal('0')
+                except Exception:
+                    qty = Decimal('0')
+                # Usar el total_pu del CTZ como PU por unidad
+                try:
+                    pu = Decimal(str(getattr(c, 'total_pu', 0)))
+                except Exception:
+                    pu = Decimal('0')
+                total = (qty * pu).quantize(Decimal('0.01'))
+                if qty and qty != Decimal('0'):
+                    detalles.append(CTZFormatoDetalle(formato=obj, ctz=c, cantidad=qty, pu=pu, total=total))
+            if detalles:
+                CTZFormatoDetalle.objects.bulk_create(detalles)
+        except Exception:
+            # no queremos romper el guardado por errores en persistencia de detalles
+            pass
 
+
+class CTZFormatoDetalleInline(admin.TabularInline):
+    model = CTZFormatoDetalle
+    extra = 0
+    readonly_fields = ('pu', 'total')
+    fields = ('ctz', 'cantidad', 'pu', 'total')
+    can_delete = True
+
+
+# Registrar CTZFormato en admin
 admin.site.register(CTZFormato, CTZFormatoAdmin)
+
+# Registrar inline en la clase admin ya definida
+CTZFormatoAdmin.inlines = [CTZFormatoDetalleInline]
 
 
 
