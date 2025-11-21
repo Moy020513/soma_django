@@ -46,6 +46,48 @@ class CTZForm(forms.ModelForm):
             'porcentaje_pu': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
         }
 
+    def __init__(self, *args, **kwargs):
+        # Si se pasa una instancia (change form), calcular valores iniciales
+        # para los campos proveedor/mo_soma/otros_materiales sumando los
+        # ítems relacionados y el valor base (si existe). Esto corrige el
+        # caso en el que guardamos los valores en CTZItem y pusimos a 0
+        # los campos base en la fila de CTZ; queremos que el form muestre
+        # la suma esperada al editar.
+        super().__init__(*args, **kwargs)
+        # Prefer explicit 'instance' kwarg (ModelForm convention). Do NOT
+        # interpret args[0] as instance because in Django forms args[0]
+        # is usually the POST data (QueryDict) when the form is bound.
+        instance = kwargs.get('instance')
+        if instance and getattr(instance, 'pk', None) and not self.is_bound:
+            try:
+                from django.db.models import Sum
+                # Sumar cantidades de items por tipo
+                prov_sum = instance.items.filter(tipo='proveedor').aggregate(s=Sum('cantidad')).get('s') or 0
+                mo_sum = instance.items.filter(tipo='mo_soma').aggregate(s=Sum('cantidad')).get('s') or 0
+                otros_sum = instance.items.filter(tipo='otros_materiales').aggregate(s=Sum('cantidad')).get('s') or 0
+                # Valor base guardado en la fila (puede ser 0 si usamos la estrategia de fallback)
+                base_prov = int(getattr(instance, 'proveedor', 0) or 0)
+                base_mo = int(getattr(instance, 'mo_soma', 0) or 0)
+                base_otros = int(getattr(instance, 'otros_materiales', 0) or 0)
+                # Mostrar al usuario la suma total (base + items)
+                total_prov = int(prov_sum or 0) + base_prov
+                total_mo = int(mo_sum or 0) + base_mo
+                total_otros = int(otros_sum or 0) + base_otros
+                # Set both field.initial and form.initial so ModelAdmin templates
+                # reliably render the values in the inputs.
+                if 'proveedor' in self.fields:
+                    self.fields['proveedor'].initial = total_prov
+                    self.initial['proveedor'] = total_prov
+                if 'mo_soma' in self.fields:
+                    self.fields['mo_soma'].initial = total_mo
+                    self.initial['mo_soma'] = total_mo
+                if 'otros_materiales' in self.fields:
+                    self.fields['otros_materiales'].initial = total_otros
+                    self.initial['otros_materiales'] = total_otros
+            except Exception:
+                # No romper el form por errores al calcular sumas
+                pass
+
 
 class ContactoInline(admin.TabularInline):
     model = Contacto
