@@ -591,6 +591,25 @@ class CTZFormatoAdmin(admin.ModelAdmin):
             detalles = obj.detalles.select_related('ctz').all()
             if not detalles:
                 return '—'
+            from decimal import Decimal
+
+            def _fmt_number_trim(v):
+                """Format a Decimal/number removing unnecessary trailing zeros.
+                Examples: Decimal('2.000') -> '2', Decimal('2.500') -> '2.5'
+                """
+                try:
+                    if v is None:
+                        return ''
+                    if isinstance(v, Decimal):
+                        s = format(v, 'f')
+                    else:
+                        s = str(v)
+                    # remove trailing zeros and trailing dot
+                    if '.' in s:
+                        s = s.rstrip('0').rstrip('.')
+                    return s
+                except Exception:
+                    return str(v)
             return format_html_join(
                 format_html('<br/>'),
                 '<a href="{}">{}</a> — {} — {} — PU: {} — Cant: {} — Total: {}',
@@ -600,7 +619,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     (d.concepto or '').strip(),
                     (d.unidad or '').strip(),
                     d.pu,
-                    d.cantidad,
+                    _fmt_number_trim(d.cantidad),
                     d.total
                 ) for d in detalles)
             )
@@ -653,14 +672,30 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         from django.shortcuts import get_object_or_404
         try:
             obj = get_object_or_404(CTZFormato, pk=formato_id)
+            from decimal import Decimal
+
+            def _fmt_number_trim(v):
+                try:
+                    if v is None:
+                        return ''
+                    if isinstance(v, Decimal):
+                        s = format(v, 'f')
+                    else:
+                        s = str(v)
+                    if '.' in s:
+                        s = s.rstrip('0').rstrip('.')
+                    return s
+                except Exception:
+                    return str(v)
+
             detalles = []
             for d in obj.detalles.select_related('ctz').all():
                 detalles.append({
                     'ctz_id': d.ctz.pk,
                     'ctz_label': getattr(d.ctz, 'id_manual', d.ctz.pk),
-                    'cantidad': str(d.cantidad),
-                    'pu': str(d.pu),
-                    'total': str(d.total),
+                    'cantidad': _fmt_number_trim(d.cantidad),
+                    'pu': _fmt_number_trim(d.pu),
+                    'total': _fmt_number_trim(d.total),
                     'concepto': d.concepto or '',
                     'unidad': d.unidad or '',
                 })

@@ -242,4 +242,18 @@ class CTZFormatoDetalle(models.Model):
             self.total = 0
         super().save(*args, **kwargs)
 
+    @property
+    def cantidad_display(self):
+        """Return a human-friendly representation of cantidad without
+        unnecessary trailing zeros (e.g. 2 instead of 2.000).
+        """
+        try:
+            # Use the 'f' format to get fixed-point and strip trailing zeros
+            s = format(self.cantidad, 'f')
+            if '.' in s:
+                s = s.rstrip('0').rstrip('.')
+            return s
+        except Exception:
+            return str(self.cantidad)
+
 
