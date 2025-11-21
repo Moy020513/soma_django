@@ -155,6 +155,7 @@ class ContratoAdmin(admin.ModelAdmin):
     list_display = ("numero_contrato", "empresa", 'fecha_inicio_display', 'fecha_termino_display', "cantidad_empleados", 'dias_activos', 'numeros_cotizacion', 'empleados_en_contrato')
     list_filter = ("empresa", "fecha_inicio", "fecha_termino")
     search_fields = ("numero_contrato", "empresa__nombre")
+    actions = ['export_selected_as_excel']
     # autocomplete_fields = ["empresa"]
 
     readonly_fields = ('resumen_asignaciones',)
@@ -214,8 +215,20 @@ class ContratoAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom = [
             path('assignments-info/', self.admin_site.admin_view(self.assignments_info_view), name='recursos_humanos_contrato_assignments_info'),
+            path('export-all-excel/', self.admin_site.admin_view(self.export_all_excel_view), name='recursos_humanos_contrato_export_all_excel'),
         ]
         return custom + urls
+
+    def changelist_view(self, request, extra_context=None):
+        """Inyectar URL para exportar todos en el contexto del changelist para el botón en la plantilla."""
+        if extra_context is None:
+            extra_context = {}
+        try:
+            from django.urls import reverse
+            extra_context['export_all_url'] = reverse('admin:recursos_humanos_contrato_export_all_excel')
+        except Exception:
+            extra_context['export_all_url'] = None
+        return super().changelist_view(request, extra_context=extra_context)
 
     def get_queryset(self, request):
         """Prefetch related objects to avoid N+1 in changelist when showing cotizaciones y empleados."""
@@ -352,6 +365,77 @@ class ContratoAdmin(admin.ModelAdmin):
             if fechas_completadas:
                 fecha_termino_max = max(fechas_completadas).strftime('%Y-%m-%d')
         return JsonResponse({'ok': True, 'empresa_id': empresa_id, 'empresa': empresa_name, 'total_emps': total_emps, 'total_dias': total_dias, 'fecha_inicio': fecha_min, 'fecha_termino': fecha_termino_max})
+
+    # ---- Export helpers ----
+    def _generate_workbook_bytes(self, qs):
+        """Try to build an XLSX using openpyxl; if not available, return CSV bytes as fallback."""
+        headers = [
+            'numero_contrato', 'empresa', 'fecha_inicio', 'fecha_termino', 'cantidad_empleados', 'dias_activos', 'numeros_cotizacion'
+        ]
+        # Build rows
+        rows = []
+        for obj in qs:
+            nums = ','.join([str(a.numero_cotizacion) if getattr(a, 'numero_cotizacion', None) else '' for a in obj.asignaciones_vinculadas.all()])
+            rows.append([
+                obj.numero_contrato,
+                getattr(obj.empresa, 'nombre', ''),
+                obj.fecha_inicio.strftime('%Y-%m-%d') if getattr(obj, 'fecha_inicio', None) else '',
+                obj.fecha_termino.strftime('%Y-%m-%d') if getattr(obj, 'fecha_termino', None) else '',
+                str(getattr(obj, 'cantidad_empleados', '')),
+                str(getattr(obj, 'dias_activos', '')),
+                nums,
+            ])
+
+        try:
+            import io
+            from openpyxl import Workbook
+            wb = Workbook()
+            ws = wb.active
+            ws.append(headers)
+            for r in rows:
+                ws.append(r)
+            out = io.BytesIO()
+            wb.save(out)
+            return out.getvalue(), 'xlsx'
+        except Exception:
+            # Fallback to CSV
+            import io, csv
+            out = io.StringIO()
+            writer = csv.writer(out)
+            writer.writerow(headers)
+            for r in rows:
+                writer.writerow(r)
+            return out.getvalue().encode('utf-8'), 'csv'
+
+    def export_selected_as_excel(self, request, queryset):
+        """Admin action: export selected Contrato rows to Excel/CSV."""
+        data_bytes, fmt = self._generate_workbook_bytes(queryset)
+        if fmt == 'xlsx':
+            content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ext = 'xlsx'
+        else:
+            content_type = 'text/csv; charset=utf-8'
+            ext = 'csv'
+        from django.http import HttpResponse
+        resp = HttpResponse(data_bytes, content_type=content_type)
+        resp['Content-Disposition'] = f'attachment; filename=contratos_selected.{ext}'
+        return resp
+    export_selected_as_excel.short_description = 'Exportar seleccionados a Excel/CSV'
+
+    def export_all_excel_view(self, request):
+        """View to export all Contrato rows to Excel/CSV."""
+        qs = self.get_queryset(request).all()
+        data_bytes, fmt = self._generate_workbook_bytes(qs)
+        if fmt == 'xlsx':
+            content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ext = 'xlsx'
+        else:
+            content_type = 'text/csv; charset=utf-8'
+            ext = 'csv'
+        from django.http import HttpResponse
+        resp = HttpResponse(data_bytes, content_type=content_type)
+        resp['Content-Disposition'] = f'attachment; filename=contratos_all.{ext}'
+        return resp
 
 # Admin AsignacionPorTrabajador
 @admin.register(AsignacionPorTrabajador)
