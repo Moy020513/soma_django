@@ -455,12 +455,42 @@ class CTZAdmin(admin.ModelAdmin):
                     prov_sum = sum(i.cantidad for i in new_items if i.tipo == 'proveedor')
                     mo_sum = sum(i.cantidad for i in new_items if i.tipo == 'mo_soma')
                     otros_sum = sum(i.cantidad for i in new_items if i.tipo == 'otros_materiales')
-                    base_prov = int(obj.proveedor or 0)
-                    base_mo = int(obj.mo_soma or 0)
-                    base_otros = int(obj.otros_materiales or 0)
-                    obj.pu = base_prov + prov_sum + base_mo + mo_sum + base_otros + otros_sum
-                    obj.total_pu = obj.calcular_total_pu(obj.pu)
-                    obj.save(update_fields=['pu', 'total_pu'])
+                    # If the new items were created from posted extra items, they are extras
+                    # and we must add them to the base fields. If they were created as a
+                    # fallback from the base fields (no posted extras), prov_sum already
+                    # contains the base values so we must NOT add the base again (avoid double count).
+                    has_posted_items = bool(prov_items or mo_items or otros_items)
+                    if has_posted_items:
+                        base_prov = int(obj.proveedor or 0)
+                        base_mo = int(obj.mo_soma or 0)
+                        base_otros = int(obj.otros_materiales or 0)
+                    else:
+                        base_prov = base_mo = base_otros = 0
+                    # Build the desired values without calling obj.save() which would
+                    # trigger CTZ.save and recompute pu based on current DB state
+                    new_pu = base_prov + prov_sum + base_mo + mo_sum + base_otros + otros_sum
+                    new_total = obj.calcular_total_pu(new_pu)
+                    # Prepare atomic update: set pu/total_pu and optionally zero base fields
+                    update_kwargs = {'pu': new_pu, 'total_pu': new_total}
+                    if not has_posted_items:
+                        # Clear base fields so display helpers won't sum them again
+                        if getattr(obj, 'proveedor', 0):
+                            update_kwargs['proveedor'] = 0
+                        if getattr(obj, 'mo_soma', 0):
+                            update_kwargs['mo_soma'] = 0
+                        if getattr(obj, 'otros_materiales', 0):
+                            update_kwargs['otros_materiales'] = 0
+                    # Use QuerySet.update to avoid model save() side-effects
+                    CTZ.objects.filter(pk=obj.pk).update(**update_kwargs)
+                    # Refresh object from DB so subsequent logic has current values
+                    obj.refresh_from_db()
+                except Exception:
+                    try:
+                        obj.pu = obj.calcular_pu()
+                        obj.total_pu = obj.calcular_total_pu(obj.pu)
+                        obj.save(update_fields=['pu', 'total_pu'])
+                    except Exception:
+                        pass
                 except Exception:
                     try:
                         obj.pu = obj.calcular_pu()
