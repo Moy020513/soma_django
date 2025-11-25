@@ -233,7 +233,9 @@ class GasolinaRequest(models.Model):
     vehiculo_externo = models.ForeignKey('VehiculoExterno', on_delete=models.CASCADE, null=True, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    comprobante = models.FileField(upload_to='flota/gasolina/')
+    # El comprobante ahora es opcional al crear la solicitud. Se sube
+    # tras la aprobación/revisión del admin.
+    comprobante = models.FileField(upload_to='flota/gasolina/', null=True, blank=True)
     observaciones = models.TextField(blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
 

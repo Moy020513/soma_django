@@ -101,9 +101,13 @@ def editar_empleado(request, empleado_id):
     estatus_actual = None
     periodo_actual = None
     if empleado_instance:
-        periodo_actual = empleado_instance.periodos_estatus.order_by('-fecha_inicio').first()
+        # Usar helper del modelo para obtener el periodo vigente (si lo hay).
+        periodo_actual = empleado_instance.get_periodo_actual()
         if periodo_actual:
             estatus_actual = periodo_actual.estatus
+        else:
+            # No hay periodo vigente -> mostrar "sin estatus"
+            estatus_actual = 'sin estatus'
     return render(request, 'recursos_humanos/editar_empleado.html', {
         'form': form,
         'empleado': empleado_instance,

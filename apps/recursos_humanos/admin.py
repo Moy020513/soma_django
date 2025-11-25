@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
 from django import forms
+from django.forms.widgets import DateTimeInput
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.core.exceptions import PermissionDenied
@@ -9,7 +10,7 @@ from django.contrib.admin.utils import unquote
 from django.urls import reverse
 from django.db import models as dj_models
 from django.db import transaction
-from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador
+from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador, CambioSalarioEmpleado
 from django.utils.html import format_html
 from django.utils import timezone
 from .models import Inasistencia
@@ -593,7 +594,7 @@ class EmpleadoAdmin(admin.ModelAdmin):
     form = EmpleadoForm
     save_on_top = True
     # Use model fields directly in changelist so values render reliably
-    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'salario_inicial', 'salario_actual', 'salario_fecha_ultima_modificacion', 'fecha_ingreso', 'activo']
+    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'salario_inicial', 'salario_actual', 'salario_fecha_ultima_modificacion', 'fecha_ingreso', 'activo', 'historial']
     list_filter = ['puesto', 'activo', 'fecha_ingreso', 'fecha_nacimiento']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
@@ -665,6 +666,22 @@ class EmpleadoAdmin(admin.ModelAdmin):
         return obj.usuario.get_full_name()
     nombre_completo.short_description = 'Nombre completo'
     nombre_completo.admin_order_field = 'usuario__first_name'
+
+    def historial(self, obj):
+        """Botones para acceder al historial de estatus y al historial de salario del empleado."""
+        try:
+            from django.urls import reverse
+            estatus_url = reverse('admin:recursos_humanos_periodoestatusempleado_changelist') + f'?empleado__id__exact={obj.pk}'
+            salario_url = reverse('admin:recursos_humanos_cambiosalarioempleado_changelist') + f'?empleado__id__exact={obj.pk}'
+            return format_html(
+                '<a class="button btn btn-sm btn-outline-primary" href="{}" style="margin-right:4px;">Estatus</a>'
+                '<a class="button btn btn-sm btn-outline-secondary" href="{}">Salario</a>',
+                estatus_url, salario_url
+            )
+        except Exception:
+            return ''
+    historial.short_description = 'Historial'
+    historial.allow_tags = True
 
     def salario_inicial_display(self, obj):
         try:
@@ -783,5 +800,38 @@ class InasistenciaAdmin(admin.ModelAdmin):
     list_display = ('empleado', 'fecha', 'tipo', 'fecha_creacion')
     list_filter = ('tipo', 'fecha')
     search_fields = ('empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name')
+
+
+# Registro simple para el historial de cambios de salario
+@admin.register(CambioSalarioEmpleado)
+class CambioSalarioEmpleadoAdmin(admin.ModelAdmin):
+    list_display = ('empleado', 'fecha', 'salario_anterior', 'salario_nuevo', 'observaciones')
+    list_filter = ('fecha',)
+    search_fields = ('empleado__numero_empleado', 'empleado__usuario__first_name', 'empleado__usuario__last_name')
+    raw_id_fields = ('empleado',)
+
+    # Usar un ModelForm para asegurar que el widget datetime-local muestre la fecha/hora local correctamente
+    class CambioSalarioEmpleadoForm(forms.ModelForm):
+        class Meta:
+            model = CambioSalarioEmpleado
+            fields = '__all__'
+            widgets = {
+                'fecha': DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local', 'class': 'vDateTimeField form-control form-control-sm'}),
+            }
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # Si viene una instancia con fecha (aware), convertir a hora local y formatear para datetime-local
+            try:
+                inst = kwargs.get('instance')
+                if inst and getattr(inst, 'fecha', None):
+                    from django.utils import timezone as timezone_local
+                    local = timezone_local.localtime(inst.fecha)
+                    # format as YYYY-MM-DDTHH:MM
+                    self.initial['fecha'] = local.strftime('%Y-%m-%dT%H:%M')
+            except Exception:
+                pass
+
+    form = CambioSalarioEmpleadoForm
 
 

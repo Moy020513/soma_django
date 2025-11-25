@@ -251,7 +251,8 @@ def perfil_usuario(request):
     historial_anual = []
     if empleado:
         from datetime import date, timedelta
-        periodo_actual = empleado.periodos_estatus.order_by('-fecha_inicio').first()
+        # Usar helper del modelo para determinar el periodo vigente
+        periodo_actual = empleado.get_periodo_actual()
         if periodo_actual:
             estatus_actual = periodo_actual.estatus
             inicio = periodo_actual.fecha_inicio
@@ -267,6 +268,9 @@ def perfil_usuario(request):
                     dias_en_estatus_actual = dias
                 else:
                     dias_en_estatus_actual = (fin - inicio).days + 1
+        else:
+            # Mostrar explícitamente "sin estatus" cuando no hay periodo vigente
+            estatus_actual = 'sin estatus'
         fecha_ingreso = empleado.fecha_ingreso if empleado and empleado.fecha_ingreso else None
         dias_activo = empleado.dias_trabajados() if empleado else None
         historial_anual = []
@@ -507,6 +511,14 @@ def api_conteo_notificaciones(request):
 @login_required
 def dropdown_notificaciones(request):
     """Devuelve un fragmento HTML (HTMX) con las últimas notificaciones para el dropdown rápido."""
+    # Antes de cargar las notificaciones, generar notificaciones de estatus que finalizan hoy
+    try:
+        from apps.recursos_humanos.models import notify_status_end_for_today
+        notify_status_end_for_today()
+    except Exception:
+        # No interrumpir si algo falla aquí; las notificaciones seguirán cargando
+        pass
+
     ultimas = (Notificacion.objects
                .filter(usuario=request.user)
                .order_by('-fecha_creacion')[:5])

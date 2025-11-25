@@ -258,6 +258,17 @@ class Empleado(models.Model):
             try:
                 prev = Empleado.objects.get(pk=self.pk)
                 salario_prev = prev.salario_actual
+                # Si el salario previo es nulo o cero y existe un salario_inicial
+                # preferido, usar salario_inicial como salario anterior para el primer cambio.
+                try:
+                    from decimal import Decimal
+                    if (salario_prev is None or Decimal(salario_prev) == Decimal('0')):
+                        si = getattr(prev, 'salario_inicial', None)
+                        if si is not None and Decimal(si) != Decimal('0'):
+                            salario_prev = si
+                except Exception:
+                    # Si hay algún problema con Decimal/conversiones, mantener salario_prev tal cual
+                    pass
             except Empleado.DoesNotExist:
                 salario_prev = None
 
@@ -316,6 +327,26 @@ class Empleado(models.Model):
         """Devuelve el historial completo de periodos de estatus."""
         return self.periodos_estatus.order_by('fecha_inicio')
 
+    def get_periodo_actual(self):
+        """Devuelve el periodo de estatus que cubre la fecha de hoy.
+
+        Busca un periodo cuyo rango incluya el día de hoy (fecha_inicio <= hoy <= fecha_fin)
+        o un periodo abierto (fecha_fin is None) con fecha_inicio <= hoy. Devuelve `None`
+        si no existe ningún periodo vigente.
+        """
+        try:
+            from datetime import date
+            from django.db.models import Q
+            hoy = date.today()
+            periodo = self.periodos_estatus.filter(
+                fecha_inicio__lte=hoy
+            ).filter(
+                Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=hoy)
+            ).order_by('-fecha_inicio').first()
+            return periodo
+        except Exception:
+            return None
+
     def dias_trabajados(self):
         """Suma los días en que el empleado estuvo en estatus 'Activo'."""
         from datetime import date
@@ -367,6 +398,8 @@ class PeriodoEstatusEmpleado(models.Model):
     fecha_inicio = models.DateField(verbose_name="Fecha de inicio del estatus")
     fecha_fin = models.DateField(null=True, blank=True, verbose_name="Fecha de fin del estatus")
     observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+    # Marca para indicar si ya se envió la notificación de fin de periodo
+    notificado_fin = models.BooleanField(default=False, verbose_name="Notificado fin de periodo")
 
     class Meta:
         verbose_name = "Periodo de estatus de empleado"
@@ -490,6 +523,122 @@ class Inasistencia(models.Model):
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db.models.signals import m2m_changed
+
+# Señales para notificar cuando un periodo de estatus finaliza
+from django.db.models.signals import pre_save
+import logging
+from django.urls import reverse
+from apps.notificaciones.models import Notificacion
+from apps.usuarios.models import Usuario
+
+
+@receiver(pre_save, sender=PeriodoEstatusEmpleado)
+def periodo_estatus_pre_save(sender, instance, **kwargs):
+    """Guardar el valor previo de fecha_fin en el propio instance para usarlo en post_save."""
+    try:
+        if instance.pk:
+            prev = sender.objects.get(pk=instance.pk)
+            instance._prev_fecha_fin = prev.fecha_fin
+        else:
+            instance._prev_fecha_fin = None
+    except Exception:
+        instance._prev_fecha_fin = None
+
+
+@receiver(post_save, sender=PeriodoEstatusEmpleado)
+def periodo_estatus_post_save(sender, instance, created, **kwargs):
+    """Cuando un periodo pasa a tener fecha_fin (y esa fecha es hoy o pasada), notificar administradores.
+
+    Condiciones para enviar la notificación:
+    - instance.fecha_fin is not None
+    - la fecha_fin es <= hoy
+    - y previamente (antes de guardar) la fecha_fin era None o distinta (evita duplicados en guardados repetidos)
+    """
+    try:
+        from datetime import date
+        hoy = date.today()
+        prev_fin = getattr(instance, '_prev_fecha_fin', None)
+        if instance.fecha_fin is not None:
+            # Evitar notificar si ya se marcó como notificado
+            if getattr(instance, 'notificado_fin', False):
+                return
+            # Si la fecha de fin es hoy o en el pasado y cambió respecto a la previa, notificar
+            if instance.fecha_fin <= hoy and (prev_fin is None or prev_fin != instance.fecha_fin):
+                # Buscar administradores activos
+                admins = Usuario.objects.filter(activo=True).filter(models.Q(tipo_usuario='admin') | models.Q(is_superuser=True))
+                # Ajustar título y mensaje según si la fecha_fin es hoy o ya pasó
+                from datetime import date
+                hoy = date.today()
+                if instance.fecha_fin == hoy:
+                    titulo = f"Fin de estatus hoy: {instance.get_estatus_display()} - {instance.empleado.nombre_completo}"
+                    mensaje = f"El fin del estatus '{instance.get_estatus_display()}' del empleado {instance.empleado.nombre_completo} finaliza hoy ({instance.fecha_fin.strftime('%d/%m/%Y')})."
+                else:
+                    titulo = f"Estatus finalizado: {instance.get_estatus_display()} - {instance.empleado.nombre_completo}"
+                    mensaje = f"El fin del estatus '{instance.get_estatus_display()}' del empleado {instance.empleado.nombre_completo} finalizó el {instance.fecha_fin.strftime('%d/%m/%Y')}."
+                try:
+                    # No link: prefer que el usuario vaya al detalle de la notificación
+                    url = ''
+                except Exception:
+                    url = ''
+                for admin in admins:
+                    try:
+                        Notificacion.objects.create(
+                            usuario=admin,
+                            titulo=titulo,
+                            mensaje=mensaje,
+                            tipo='info',
+                            url=''
+                        )
+                    except Exception:
+                        logging.getLogger(__name__).exception('Error creando notificación de fin de periodo')
+                # Marcar como notificado usando update para evitar disparar señales nuevamente
+                try:
+                    sender.objects.filter(pk=instance.pk).update(notificado_fin=True)
+                except Exception:
+                    logging.getLogger(__name__).exception('Error marcando notificado_fin')
+    except Exception:
+        logging.getLogger(__name__).exception('Error en handler periodo_estatus_post_save')
+
+
+def notify_status_end_for_today():
+    """Helper que crea notificaciones para todos los periodos cuya fecha_fin == hoy
+    y que no han sido notificados aún. Devuelve el número de notificaciones creadas.
+    """
+    try:
+        from datetime import date
+        hoy = date.today()
+        # Incluir periodos cuya fecha_fin es hoy o ya pasó y aún no han sido notificados
+        qs = PeriodoEstatusEmpleado.objects.filter(fecha_fin__lte=hoy, notificado_fin=False).select_related('empleado')
+        if not qs.exists():
+            return 0
+        admins = Usuario.objects.filter(activo=True).filter(models.Q(tipo_usuario='admin') | models.Q(is_superuser=True))
+        admins = list(admins)
+        if not admins:
+            return 0
+        created = 0
+        for periodo in qs:
+            # Diferenciar mensaje si finaliza hoy o ya finalizó
+            if periodo.fecha_fin == hoy:
+                titulo = f"Fin de estatus hoy: {periodo.get_estatus_display()} - {periodo.empleado.nombre_completo}"
+                mensaje = f"El fin del estatus '{periodo.get_estatus_display()}' del empleado {periodo.empleado.nombre_completo} finaliza hoy ({periodo.fecha_fin.strftime('%d/%m/%Y')})."
+            else:
+                titulo = f"Estatus finalizado: {periodo.get_estatus_display()} - {periodo.empleado.nombre_completo}"
+                mensaje = f"El fin del estatus '{periodo.get_estatus_display()}' del empleado {periodo.empleado.nombre_completo} finalizó el {periodo.fecha_fin.strftime('%d/%m/%Y')}."
+            for admin in admins:
+                try:
+                    if not Notificacion.objects.filter(usuario=admin, titulo=titulo).exists():
+                        Notificacion.objects.create(usuario=admin, titulo=titulo, mensaje=mensaje, tipo='info', url='')
+                        created += 1
+                except Exception:
+                    logging.getLogger(__name__).exception('Error creando notificación en helper')
+        try:
+            qs.update(notificado_fin=True)
+        except Exception:
+            logging.getLogger(__name__).exception('Error marcando notificado_fin en helper')
+        return created
+    except Exception:
+        logging.getLogger(__name__).exception('Error en notify_status_end_for_today')
+        return 0
 
 
 @receiver(post_save, sender=Contrato)
