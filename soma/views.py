@@ -461,12 +461,25 @@ def historial_km(request):
 @login_required
 def notificaciones_usuario(request):
     """Vista de notificaciones del usuario"""
-    notificaciones = Notificacion.objects.filter(usuario=request.user).order_by('-fecha_creacion')
-    
+    # Soportar filtrado por leídas/no leídas vía query param `f`
+    # Por defecto mostramos 'no_leida' cuando el usuario entra a la página sin query params
+    filtro = request.GET.get('f')  # valores esperados: 'leida', 'no_leida' o None
+    if not filtro:
+        filtro = 'no_leida'
+    qs = Notificacion.objects.filter(usuario=request.user)
+    if filtro == 'leida':
+        qs = qs.filter(leida=True)
+    elif filtro == 'no_leida':
+        qs = qs.filter(leida=False)
+
+    notificaciones = qs.order_by('-fecha_creacion')
+
     context = {
         'titulo': 'Mis Notificaciones',
         'notificaciones': notificaciones,
-        'total_no_leidas': notificaciones.filter(leida=False).count(),
+        'total_no_leidas': Notificacion.objects.filter(usuario=request.user, leida=False).count(),
+        'total_leidas': Notificacion.objects.filter(usuario=request.user, leida=True).count(),
+        'filtro_actual': filtro,
     }
     return render(request, 'notificaciones_usuario.html', context)
 

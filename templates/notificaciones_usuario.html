@@ -17,20 +17,32 @@
             <div class="notifications-title">
                 <h4><i class="fas fa-bell me-2" style="color: var(--soma-orange);"></i>{{ titulo }}</h4>
                 <div class="notifications-stats mt-2">
-                    {% if total_no_leidas > 0 %}
-                        <span class="badge notification-badge unread">
-                            <i class="fas fa-envelope me-1"></i>{{ total_no_leidas }} sin leer
+                    {% if filtro_actual == 'leida' %}
+                        <span class="badge notification-badge read text-success">
+                            <i class="fas fa-check-circle me-1"></i>{{ total_leidas }} leídas
                         </span>
                     {% else %}
-                        <span class="badge notification-badge read">
-                            <i class="fas fa-check-circle me-1"></i>Todas leídas
-                        </span>
+                        {% if total_no_leidas > 0 %}
+                            <span class="badge notification-badge unread text-danger">
+                                <i class="fas fa-envelope me-1"></i>{{ total_no_leidas }} sin leer
+                            </span>
+                        {% else %}
+                            <span class="badge notification-badge read" style="color:#001f3f;">
+                                <i class="fas fa-check-circle me-1"></i>Todas leídas
+                            </span>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
-            <a href="{% url 'home' %}" class="btn btn-outline-secondary back-btn">
-                <i class="fas fa-arrow-left me-2"></i>Inicio
-            </a>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="btn-group me-2" role="group" aria-label="Filtro notificaciones">
+                    <a href="/mis-notificaciones/?f=no_leida" class="btn btn-sm {% if filtro_actual == 'no_leida' or not filtro_actual %}btn-primary{% else %}btn-outline-primary{% endif %}">No leídas</a>
+                    <a href="/mis-notificaciones/?f=leida" class="btn btn-sm {% if filtro_actual == 'leida' %}btn-primary{% else %}btn-outline-primary{% endif %}">Leídas</a>
+                </div>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary back-btn">
+                    <i class="fas fa-arrow-left me-2"></i>Inicio
+                </a>
+            </div>
         </div>
     </div>
 </div>
