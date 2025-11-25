@@ -594,8 +594,8 @@ class EmpleadoAdmin(admin.ModelAdmin):
     form = EmpleadoForm
     save_on_top = True
     # Use model fields directly in changelist so values render reliably
-    list_display = ['numero_empleado', 'nombre_completo', 'fecha_nacimiento', 'puesto', 'salario_inicial', 'salario_actual', 'salario_fecha_ultima_modificacion', 'fecha_ingreso', 'activo', 'historial']
-    list_filter = ['puesto', 'activo', 'fecha_ingreso', 'fecha_nacimiento']
+    list_display = ['numero_empleado', 'nombre_completo', 'lugar_de_pertenencia', 'fecha_nacimiento', 'puesto', 'salario_inicial', 'salario_actual', 'salario_fecha_ultima_modificacion', 'fecha_ingreso', 'activo', 'historial']
+    list_filter = ['puesto', 'activo', 'fecha_ingreso', 'fecha_nacimiento', 'lugar_de_pertenencia']
     search_fields = ['numero_empleado', 'usuario__first_name', 'usuario__last_name', 'curp', 'rfc']
     readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
     # list_editable removed: do not allow inline edits from changelist

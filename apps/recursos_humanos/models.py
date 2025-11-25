@@ -181,6 +181,14 @@ class Empleado(models.Model):
     salario_actual = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Salario actual")
     # Nuevo campo: salario inicial (se guarda al registrar al empleado)
     salario_inicial = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Salario inicial", default=0)
+    # Lugar de pertenencia (ej: sede / ciudad)
+    LUGAR_PERTENENCIA_CHOICES = [
+        ('GDL', 'GDL'),
+        ('QRO', 'QRO'),
+        ('CDMX', 'CDMX'),
+        ('EDO_MEX', 'EDO MEX'),
+    ]
+    lugar_de_pertenencia = models.CharField(max_length=20, choices=LUGAR_PERTENENCIA_CHOICES, null=True, blank=True, verbose_name="Lugar de pertenencia")
     
     # Documentos
     foto = models.ImageField(upload_to='empleados/fotos/', blank=True, null=True, verbose_name="Fotografía")

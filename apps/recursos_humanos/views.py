@@ -37,6 +37,7 @@ def editar_empleado(request, empleado_id):
         'puesto': empleado_instance.puesto.pk if empleado_instance.puesto else None,
         'salario_inicial': empleado_instance.salario_inicial,
         'salario_actual': empleado_instance.salario_actual,
+        'lugar_de_pertenencia': empleado_instance.lugar_de_pertenencia,
     }
     periodo_form = NuevoPeriodoEstatusForm(initial={'empleado_instance': empleado_instance})
     if request.method == 'POST':
@@ -61,6 +62,12 @@ def editar_empleado(request, empleado_id):
             empleado_instance.telefono_personal = cd['telefono']
             empleado_instance.puesto = cd['puesto']
             empleado_instance.fecha_ingreso = cd['fecha_ingreso']
+            # Lugar de pertenencia
+            try:
+                if 'lugar_de_pertenencia' in cd:
+                    empleado_instance.lugar_de_pertenencia = cd.get('lugar_de_pertenencia') or None
+            except Exception:
+                pass
             # Actualizar salario si viene en el formulario
             try:
                 if 'salario_inicial' in cd:
@@ -239,6 +246,7 @@ def registrar_empleado(request):
                     motivo_baja='',
                     salario_inicial=(cd.get('salario_inicial') or 0),
                     salario_actual=(cd.get('salario_actual') or 0),
+                    lugar_de_pertenencia=cd.get('lugar_de_pertenencia') or None,
                     activo=True,
                 )
                 empleado.save()

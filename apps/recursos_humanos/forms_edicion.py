@@ -26,6 +26,11 @@ class EmpleadoEdicionForm(forms.Form):
     puesto = forms.ModelChoiceField(queryset=Puesto.objects.filter(activo=True), required=True, label='Puesto')
     salario_inicial = forms.DecimalField(label='Salario inicial', required=False, max_digits=10, decimal_places=2, min_value=0)
     salario_actual = forms.DecimalField(label='Salario actual', required=False, max_digits=10, decimal_places=2, min_value=0)
+    lugar_de_pertenencia = forms.ChoiceField(
+        choices=[('', '---------'), ('GDL','GDL'), ('QRO','QRO'), ('CDMX','CDMX'), ('EDO_MEX','EDO MEX')],
+        required=False,
+        label='Lugar de pertenencia'
+    )
 
     def clean_telefono(self):
         tel = self.cleaned_data['telefono']

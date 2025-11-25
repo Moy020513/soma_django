@@ -1,0 +1,111 @@
+{% load i18n %}
+
+<style>
+    /* Copiado y adaptado de admin/asignaciones change_list_results.html */
+    #result_list {
+        width: auto;
+        min-width: 1100px;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .results { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    #result_list th,
+    #result_list td {
+        border: 1px solid #b6b6b6;
+        padding: 8px 10px;
+        text-align: left;
+        line-height: 1.25;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        box-sizing: border-box;
+        vertical-align: middle;
+    }
+
+    #result_list th {
+        background: #000a46;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        font-size: 12px !important;
+        text-align: center !important;
+        height: 36px;
+        vertical-align: middle;
+        padding: 8px 10px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    /* Botones similares */
+    .btn-action { border: none; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: 500; margin-left: 6px; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; white-space: nowrap; }
+    .btn-action.update { background: #1976d2; color: #fff !important; }
+    .btn-action.delete { background: #d32f2f; color: #fff !important; }
+    .btn-action.history { background: #388e3c; color: #fff !important; }
+
+    @media (max-width: 768px) {
+        #result_list { min-width: 800px; }
+        #result_list th, #result_list td { font-size: 11px; padding: 6px; }
+    }
+</style>
+
+<form id="changelist-form" method="post" novalidate>
+    {% csrf_token %}
+    <div class="actions" style="display:none;">
+        <span class="action-counter" data-actions-icnt="0"></span>
+        <span class="all"></span>
+        <input type="checkbox" id="action-toggle" />
+    </div>
+
+    <div class="results">
+    <table id="result_list">
+        <thead>
+            <tr>
+                <th scope="col"><div class="text"><span>No. empleado</span></div></th>
+                <th scope="col"><div class="text"><span>Nombre completo</span></div></th>
+                <th scope="col"><div class="text"><span>Lugar de pertenencia</span></div></th>
+                <th scope="col"><div class="text"><span>Fecha de nacimiento</span></div></th>
+                <th scope="col"><div class="text"><span>Puesto</span></div></th>
+                <th scope="col"><div class="text"><span>Salario inicial</span></div></th>
+                <th scope="col"><div class="text"><span>Salario actual</span></div></th>
+                <th scope="col"><div class="text"><span>Última modificación salario</span></div></th>
+                <th scope="col"><div class="text"><span>Fecha de ingreso</span></div></th>
+                <th scope="col"><div class="text"><span>Activo</span></div></th>
+                <th scope="col"><div class="text"><span>Historial</span></div></th>
+                <th scope="col"><div class="text"><span>Acciones</span></div></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for obj in cl.result_list %}
+            <tr>
+                <td class="column-num">{{ obj.numero_empleado }}</td>
+                <td>{{ obj.usuario.get_full_name }}</td>
+                <td style="text-align:center">{{ obj.lugar_de_pertenencia|default:'-' }}</td>
+                <td>{{ obj.fecha_nacimiento|date:"d/m/Y" }}</td>
+                <td>{{ obj.puesto }}</td>
+                <td style="white-space:nowrap;">{% if obj.salario_inicial %}${{ obj.salario_inicial|floatformat:2 }}{% else %}$0.00{% endif %}</td>
+                <td style="white-space:nowrap;">{% if obj.salario_actual %}${{ obj.salario_actual|floatformat:2 }}{% else %}$0.00{% endif %}</td>
+                <td style="white-space:nowrap">{% if obj.historial_salario.first and obj.historial_salario.first.fecha %}{{ obj.historial_salario.first.fecha|date:"d/m/Y H:i" }}{% endif %}</td>
+                <td>{{ obj.fecha_ingreso|date:"d/m/Y" }}</td>
+                <td style="text-align:center">{% if obj.activo %}✔️{% endif %}</td>
+                <td style="text-align:center;">
+                    {# Enlace al changelist filtrado por empleado para ver periodos y cambios de salario #}
+                    {% url 'admin:recursos_humanos_periodoestatusempleado_changelist' as estatus_url_base %}
+                    {% url 'admin:recursos_humanos_cambiosalarioempleado_changelist' as salario_url_base %}
+                    <a class="btn-action history" href="{{ estatus_url_base }}?empleado__id__exact={{ obj.pk }}">Estatus</a>
+                    <a class="btn-action history" href="{{ salario_url_base }}?empleado__id__exact={{ obj.pk }}">Salario</a>
+                </td>
+                <td style="text-align:right;">
+                    {% url 'admin:recursos_humanos_empleado_change' obj.pk as change_url %}
+                    {% url 'admin:recursos_humanos_empleado_delete' obj.pk as delete_url %}
+                    <a href="{{ change_url }}" class="btn-action update">Actualizar</a>
+                    <a href="{{ delete_url }}" class="btn-action delete">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</form>
