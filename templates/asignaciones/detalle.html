@@ -2,68 +2,113 @@
 {% block title %}Asignación{% endblock %}
 {% block page_title %}Asignación{% endblock %}
 {% block content %}
-<div class="container py-3">
-  <div class="card">
-    <div class="card-header">
-      {{ asignacion.empresa.nombre }} — {{ asignacion.fecha|date:'d/m/Y' }}
-    </div>
-    <div class="card-body">
-      <div class="row mb-2">
-        <div class="col-md-6 mb-2">
-          <strong>Empleados:</strong>
-          <span class="badge bg-primary" style="font-size:15px;">
-            {% for empleado in asignacion.empleados.all %}
-              {{ empleado.nombre_completo }}{% if not forloop.last %}, {% endif %}
-            {% empty %}
-              <span class="text-muted">Sin empleados asignados</span>
-            {% endfor %}
-          </span>
-        </div>
-        <div class="col-md-6 mb-2">
-          <strong>Supervisor:</strong>
-          <span class="badge bg-secondary" style="font-size:15px;">{{ asignacion.supervisor.nombre_completo|default:'Sin asignar' }}</span>
+<div class="container-fluid px-0">
+  <div class="mx-2 mx-sm-3 my-2">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white py-2">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-1">
+          <strong class="text-truncate" style="max-width: 70%;">{{ asignacion.empresa.nombre }}</strong>
+          <small class="text-nowrap">{{ asignacion.fecha|date:'d/m/Y' }}</small>
         </div>
       </div>
+      
+      <div class="card-body p-3">
+        <!-- Empleados y Supervisor -->
+        <div class="row g-2 mb-3">
+          <div class="col-12 col-md-6">
+            <div class="d-flex flex-column gap-1">
+              <small class="text-muted fw-bold">👥 Empleados:</small>
+              <div class="d-flex flex-wrap gap-1">
+                {% for empleado in asignacion.empleados.all %}
+                  <span class="badge bg-primary" style="font-size:13px;">
+                    {{ empleado.nombre_completo }}
+                  </span>
+                {% empty %}
+                  <span class="badge bg-secondary" style="font-size:13px;">Sin empleados asignados</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-12 col-md-6">
+            <div class="d-flex flex-column gap-1">
+              <small class="text-muted fw-bold">👤 Supervisor:</small>
+              <span class="badge bg-secondary" style="font-size:13px;">
+                {{ asignacion.supervisor.nombre_completo|default:'Sin asignar' }}
+              </span>
+            </div>
+          </div>
+        </div>
 
-      <div class="mb-3">
-        <strong>Detalles:</strong>
-        <div class="border rounded p-2 bg-light">{{ asignacion.detalles|linebreaks }}</div>
-      </div>
-
-      {% if asignacion.actividades_total > 0 %}
+        <!-- Detalles -->
         <div class="mb-3">
-          <strong>Actividades asignadas <span class="badge bg-info text-dark">{{ asignacion.actividades_total }}</span>:</strong>
-          <ul class="list-group mt-2 mb-2">
-            {% for act in asignacion.actividades_detalle %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span style="font-weight:500;">{{ act.nombre }}</span>
-                <span class="badge bg-success">{{ act.porcentaje }}%</span>
-              </li>
-            {% endfor %}
-          </ul>
+          <small class="text-muted fw-bold d-block mb-1">📝 Detalles:</small>
+          <div class="border rounded p-2 bg-light small" style="word-break: break-word;">
+            {{ asignacion.detalles|linebreaks }}
+          </div>
         </div>
-      {% endif %}
 
-      {% if asignacion.archivos %}
-      <div class="mb-3">
-        <strong>Documento adjunto:</strong>
-        <div class="mt-2">
+        <!-- Actividades -->
+        {% if asignacion.actividades_total > 0 %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-muted fw-bold">
+                ✓ Actividades asignadas
+              </small>
+              <span class="badge bg-info text-dark">{{ asignacion.actividades_total }}</span>
+            </div>
+            
+            <div class="list-group">
+              {% for act in asignacion.actividades_detalle %}
+                <div class="list-group-item px-2 py-2 d-flex justify-content-between align-items-center">
+                  <span class="small fw-medium me-2" style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ act.nombre }}
+                  </span>
+                  <span class="badge bg-success flex-shrink-0">{{ act.porcentaje }}%</span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Archivo adjunto -->
+        {% if asignacion.archivos %}
+        <div class="mb-3">
+          <small class="text-muted fw-bold d-block mb-2">📎 Documento adjunto:</small>
           <a href="{{ asignacion.archivos.url }}" 
              target="_blank" 
-             class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-download me-2"></i>
-            Descargar: {{ asignacion.archivo_nombre }}
+             class="btn btn-outline-primary btn-sm w-100 w-sm-auto d-flex align-items-center justify-content-center gap-2">
+            <i class="fas fa-download flex-shrink-0"></i>
+            <span class="text-truncate">{{ asignacion.archivo_nombre }}</span>
           </a>
         </div>
-      </div>
-      {% endif %}
-      
-      <div class="mt-4">
-        <a href="/" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Volver
-        </a>
+        {% endif %}
+        
+        <!-- Botón volver -->
+        <div class="mt-3 pt-2 border-top">
+          <a href="/asignaciones/todas" class="btn btn-outline-secondary btn-sm w-100 w-sm-auto">
+            <i class="fas fa-arrow-left me-2"></i>Volver
+          </a>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Estilos adicionales -->
+<style>
+  @media (max-width: 576px) {
+    .card-header {
+      font-size: 0.9rem;
+    }
+    
+    .badge {
+      font-size: 12px !important;
+    }
+    
+    .list-group-item {
+      font-size: 0.85rem;
+    }
+  }
+</style>
 {% endblock %}

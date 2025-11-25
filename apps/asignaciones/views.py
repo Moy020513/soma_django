@@ -103,12 +103,26 @@ class AsignacionesTodasView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
+            from django.db.models import Sum, Case, When, IntegerField
+
             qs = (Asignacion.objects
                   .select_related('empresa', 'supervisor')
                   .order_by('-fecha', '-fecha_creacion'))
             # Filtros opcionales por querystring
             empleado_id = self.request.GET.get('empleado')
             fecha = self.request.GET.get('fecha')
+            # Por defecto mostrar 'completadas' si no se especifica estado
+            estado = self.request.GET.get('estado') or 'completadas'
+            # Anotar porcentaje completado sumando porcentajes de actividades completadas
+            qs = qs.annotate(
+                porcentaje_completado_sum=Sum(
+                    Case(
+                        When(actividades__completada=True, then='actividades__porcentaje'),
+                        default=0,
+                        output_field=IntegerField()
+                    )
+                )
+            )
             if empleado_id:
                 qs = qs.filter(empleados__id=empleado_id)
             if fecha:
@@ -119,7 +133,38 @@ class AsignacionesTodasView(LoginRequiredMixin, ListView):
                     qs = qs.filter(fecha=date(y, m, d))
                 except Exception:
                     pass
+            # Aplicar filtro por estado si existe
+            if estado:
+                estado = estado.lower()
+                if estado == 'completadas':
+                    qs = qs.filter(porcentaje_completado_sum__gte=100)
+                elif estado == 'en_proceso':
+                    # Al menos una actividad completada pero no 100%
+                    qs = qs.filter(porcentaje_completado_sum__gt=0, porcentaje_completado_sum__lt=100)
+                elif estado == 'programadas':
+                    qs = qs.filter(porcentaje_completado_sum__lte=0)
             return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # Por defecto seleccionar 'completadas' si no se indicó
+        estado_actual = self.request.GET.get('estado') or 'completadas'
+        ctx['estado_actual'] = estado_actual
+        # Calcular totales por categoría para mostrar leyenda
+        from django.db.models import Sum, Case, When, IntegerField
+        base_qs = Asignacion.objects.annotate(
+            porcentaje_completado_sum=Sum(
+                Case(
+                    When(actividades__completada=True, then='actividades__porcentaje'),
+                    default=0,
+                    output_field=IntegerField()
+                )
+            )
+        )
+        ctx['total_completadas'] = base_qs.filter(porcentaje_completado_sum__gte=100).distinct().count()
+        ctx['total_en_proceso'] = base_qs.filter(porcentaje_completado_sum__gt=0, porcentaje_completado_sum__lt=100).distinct().count()
+        ctx['total_programadas'] = base_qs.filter(porcentaje_completado_sum__lte=0).distinct().count()
+        return ctx
 
 
 @csrf_exempt

@@ -2,66 +2,141 @@
 {% block title %}Todas las asignaciones{% endblock %}
 {% block page_title %}Todas las asignaciones{% endblock %}
 {% block content %}
-<div class="container py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <form method="get" class="row g-2">
-      <div class="col-auto">
+<div class="container-fluid px-2 py-2">
+  <!-- Filtros en móvil -->
+  <div class="mb-2">
+    <form method="get" class="row g-1 mb-2">
+      <div class="col-6 col-sm-auto">
         <input type="date" name="fecha" value="{{ request.GET.fecha }}" class="form-control form-control-sm" />
       </div>
-      <div class="col-auto">
+      <div class="col-4 col-sm-auto">
         <input type="number" name="empleado" value="{{ request.GET.empleado }}" class="form-control form-control-sm" placeholder="ID empleado" />
       </div>
-      <div class="col-auto">
-        <button class="btn btn-sm btn-outline-primary" type="submit">Filtrar</button>
+      <div class="col-2 col-sm-auto">
+        <button class="btn btn-sm btn-outline-primary w-100" type="submit">
+          <span class="d-none d-sm-inline">Filtrar</span>
+          <span class="d-inline d-sm-none">🔍</span>
+        </button>
       </div>
     </form>
-    <a href="{% url 'asignaciones:todas' %}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+    
+    <!-- Botones de estado - Stack en móvil -->
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+      <div class="btn-group-vertical btn-group-sm d-sm-none" role="group" aria-label="Filtro por estado">
+        <a href="?estado=completadas{% if request.GET.fecha %}&amp;fecha={{ request.GET.fecha }}{% endif %}{% if request.GET.empleado %}&amp;empleado={{ request.GET.empleado }}{% endif %}" class="btn {% if estado_actual == 'completadas' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+          <div class="d-flex justify-content-center align-items-center">
+            <span>Completadas</span>
+          </div>
+        </a>
+        <a href="?estado=en_proceso{% if request.GET.fecha %}&amp;fecha={{ request.GET.fecha }}{% endif %}{% if request.GET.empleado %}&amp;empleado={{ request.GET.empleado }}{% endif %}" class="btn {% if estado_actual == 'en_proceso' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+          <div class="d-flex justify-content-center align-items-center">
+            <span>En proceso</span>
+          </div>
+        </a>
+        <a href="?estado=programadas{% if request.GET.fecha %}&amp;fecha={{ request.GET.fecha }}{% endif %}{% if request.GET.empleado %}&amp;empleado={{ request.GET.empleado }}{% endif %}" class="btn {% if estado_actual == 'programadas' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+          <div class="d-flex justify-content-center align-items-center">
+            <span>Programadas</span>
+          </div>
+        </a>
+      </div>
+      
+      <!-- Vista horizontal para tablets/desktop -->
+      <div class="btn-group d-none d-sm-flex" role="group" aria-label="Filtro por estado">
+  <a href="?estado=completadas{% if request.GET.fecha %}&amp;fecha={{ request.GET.fecha }}{% endif %}{% if request.GET.empleado %}&amp;empleado={{ request.GET.empleado }}{% endif %}" class="btn btn-sm {% if estado_actual == 'completadas' %}btn-primary{% else %}btn-outline-primary{% endif %}">Completadas</a>
+  <a href="?estado=en_proceso{% if request.GET.fecha %}&amp;fecha={{ request.GET.fecha }}{% endif %}{% if request.GET.empleado %}&amp;empleado={{ request.GET.empleado }}{% endif %}" class="btn btn-sm {% if estado_actual == 'en_proceso' %}btn-primary{% else %}btn-outline-primary{% endif %}">En proceso</a>
+  <a href="?estado=programadas{% if request.GET.fecha %}&amp;fecha={{ request.GET.fecha }}{% endif %}{% if request.GET.empleado %}&amp;empleado={{ request.GET.empleado }}{% endif %}" class="btn btn-sm {% if estado_actual == 'programadas' %}btn-primary{% else %}btn-outline-primary{% endif %}">Programadas</a>
+      </div>
+      
+      <!-- Leyenda similar a notificaciones -->
+      <div class="ms-2 d-none d-sm-flex align-items-center">
+        {% if estado_actual == 'completadas' %}
+          <span class="badge notification-badge read" style="color:#001f3f; background:#fff; border:1px solid rgba(0,0,0,0.05);">
+            <i class="fas fa-check-circle me-1"></i>{{ total_completadas }} completadas
+          </span>
+        {% elif estado_actual == 'en_proceso' %}
+          <span class="badge notification-badge" style="background:#fff; border:1px solid #ffc107; color:#856404;">
+            <i class="fas fa-clock me-1"></i>{{ total_en_proceso }} en proceso
+          </span>
+        {% elif estado_actual == 'programadas' %}
+          <span class="badge notification-badge" style="background:#fff; border:1px solid #6c757d; color:#6c757d;">
+            <i class="fas fa-calendar-alt me-1"></i>{{ total_programadas }} programadas
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- Leyenda para móvil debajo de botones -->
+      <div class="d-sm-none mt-2">
+        {% if estado_actual == 'completadas' %}
+          <span class="badge notification-badge read" style="color:#001f3f; background:#fff; border:1px solid rgba(0,0,0,0.05);">
+            <i class="fas fa-check-circle me-1"></i>{{ total_completadas }} completadas
+          </span>
+        {% elif estado_actual == 'en_proceso' %}
+          <span class="badge notification-badge" style="background:#fff; border:1px solid #ffc107; color:#856404;">
+            <i class="fas fa-clock me-1"></i>{{ total_en_proceso }} en proceso
+          </span>
+        {% elif estado_actual == 'programadas' %}
+          <span class="badge notification-badge" style="background:#fff; border:1px solid #6c757d; color:#6c757d;">
+            <i class="fas fa-calendar-alt me-1"></i>{{ total_programadas }} programadas
+          </span>
+        {% endif %}
+      </div>
+      <a href="{% url 'asignaciones:todas' %}" class="btn btn-sm btn-outline-secondary">
+        <span class="d-none d-sm-inline">Limpiar filtros</span>
+        <span class="d-inline d-sm-none">🗑️ Limpiar</span>
+      </a>
+    </div>
   </div>
 
   {% if asignaciones %}
-  <div class="list-group">
+  <div class="list-group list-group-flush">
     {% for a in asignaciones %}
-      <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between">
-          <div>
-            <strong>{{ a.empresa.nombre }}</strong>
-            <span class="text-muted">· 
+      <a href="{% url 'asignaciones:detalle' a.pk %}" class="list-group-item list-group-item-action px-2 py-2">
+        <!-- Header compacto -->
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <div class="flex-grow-1 me-2">
+            <strong class="d-block text-truncate">{{ a.empresa.nombre }}</strong>
+            <small class="text-muted d-block">
               {% for empleado in a.empleados.all %}
                 {{ empleado.nombre_completo }}{% if not forloop.last %}, {% endif %}
               {% empty %}
-                Sin empleados asignados
+                Sin empleados
               {% endfor %}
-            </span>
-            
-            <!-- Indicador de progreso (solo para admins) -->
-            {% if user.is_staff %}
-              {% if a.porcentaje_completado == 100 %}
-                <span class="badge bg-success ms-2">✅ COMPLETADA</span>
-              {% elif a.porcentaje_completado > 0 %}
-                <span class="badge bg-warning text-dark ms-2">📊 {{ a.porcentaje_completado }}%</span>
-              {% else %}
-                <span class="badge bg-secondary ms-2">⭕ 0% - Pendiente</span>
-              {% endif %}
+            </small>
+          </div>
+          <small class="text-nowrap">{{ a.fecha|date:'d/m/Y' }}</small>
+        </div>
+        
+        <!-- Badge de estado (solo admins) -->
+        {% if user.is_staff %}
+          <div class="mb-1">
+            {% if a.porcentaje_completado == 100 %}
+              <span class="badge bg-success">✅ COMPLETADA</span>
+            {% elif a.porcentaje_completado > 0 %}
+              <span class="badge bg-warning text-dark">📊 {{ a.porcentaje_completado }}%</span>
+            {% else %}
+              <span class="badge bg-secondary">⭕ Pendiente</span>
             {% endif %}
           </div>
-          <small>{{ a.fecha|date:'d/m/Y' }}</small>
-        </div>
-        <p class="mb-1">{{ a.detalles|truncatechars:160 }}</p>
+        {% endif %}
         
-        <!-- Información adicional del supervisor y progreso -->
-        <div class="d-flex justify-content-between align-items-center">
-          <small>Supervisor: {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
+        <!-- Detalles - ocultar en móvil pequeño -->
+        <p class="mb-1 small d-none d-sm-block">{{ a.detalles|truncatechars:160 }}</p>
+        <p class="mb-1 small d-sm-none">{{ a.detalles|truncatechars:80 }}</p>
+        
+        <!-- Footer con supervisor y progreso -->
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-1">
+          <small class="text-muted">👤 {{ a.supervisor.nombre_completo|default:'Sin asignar' }}</small>
           
           {% if user.is_staff and a.porcentaje_completado < 100 and a.actividades.count > 0 %}
             <small class="text-muted">
-              {{ a.actividades_completadas }}/{{ a.actividades.count }} actividades completadas
+              ✓ {{ a.actividades_completadas }}/{{ a.actividades.count }} actividades
             </small>
           {% endif %}
         </div>
         
-        <!-- Barra de progreso visual (solo para admins) -->
+        <!-- Barra de progreso (solo admins) -->
         {% if user.is_staff and a.actividades.count > 0 %}
-          <div class="progress mt-2" style="height: 6px;">
+          <div class="progress mt-2" style="height: 4px;">
             <div class="progress-bar 
               {% if a.porcentaje_completado == 100 %}bg-success
               {% elif a.porcentaje_completado > 50 %}bg-warning
@@ -80,25 +155,25 @@
   </div>
 
   {% if is_paginated %}
-  <nav aria-label="Paginación" class="mt-3">
-    <ul class="pagination pagination-sm">
+  <nav aria-label="Paginación" class="mt-2">
+    <ul class="pagination pagination-sm justify-content-center mb-0">
       {% if page_obj.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>
       {% else %}
-        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        <li class="page-item disabled"><span class="page-link">‹</span></li>
       {% endif %}
-      <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+      <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
       {% if page_obj.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>
       {% else %}
-        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        <li class="page-item disabled"><span class="page-link">›</span></li>
       {% endif %}
     </ul>
   </nav>
   {% endif %}
 
   {% else %}
-    <div class="alert alert-info">No hay asignaciones para mostrar.</div>
+    <div class="alert alert-info m-2">No hay asignaciones para mostrar.</div>
   {% endif %}
 </div>
 {% endblock %}
