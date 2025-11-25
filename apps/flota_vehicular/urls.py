@@ -13,4 +13,5 @@ urlpatterns = [
     path('transferencias/<int:pk>/responder/', views.responder_inspeccion, name='responder_inspeccion'),
     # Gasolina
     path('pedir-gasolina/', views.pedir_gasolina, name='pedir_gasolina'),
+    path('gasolina/<int:pk>/subir-comprobante/', views.subir_comprobante_gasolina, name='subir_comprobante_gasolina'),
 ]

@@ -292,12 +292,19 @@ class GasolinaRequestAdmin(admin.ModelAdmin):
         for req in queryset:
             try:
                 from apps.notificaciones.models import Notificacion
-                Notificacion.objects.create(
+                from django.urls import reverse
+                noti = Notificacion.objects.create(
                     usuario=req.empleado.usuario,
                     titulo='✅ Solicitud de gasolina aprobada',
-                    mensaje=f'Tu solicitud de gasolina del {req.fecha.date()} por ${req.precio} ha sido aprobada.',
-                    tipo='success'
+                    mensaje=f'Tu solicitud de gasolina del {req.fecha.date()} por ${req.precio} ha sido aprobada. Ahora puedes subir el comprobante para completar el proceso.',
+                    tipo='success',
+                    leida=False,
                 )
+                try:
+                    noti.url = reverse('flota:subir_comprobante_gasolina', args=[req.pk])
+                    noti.save()
+                except Exception:
+                    pass
             except Exception:
                 pass
         self.message_user(request, f'{updated} solicitudes marcadas como aprobadas.')
@@ -308,12 +315,19 @@ class GasolinaRequestAdmin(admin.ModelAdmin):
         for req in queryset:
             try:
                 from apps.notificaciones.models import Notificacion
-                Notificacion.objects.create(
+                from django.urls import reverse
+                noti = Notificacion.objects.create(
                     usuario=req.empleado.usuario,
                     titulo='❌ Solicitud de gasolina rechazada',
-                    mensaje=f'Tu solicitud de gasolina del {req.fecha.date()} por ${req.precio} ha sido rechazada.',
-                    tipo='danger'
+                    mensaje=f'Tu solicitud de gasolina del {req.fecha.date()} por ${req.precio} ha sido revisada y fue rechazada. Si corresponde, sube el comprobante o revisa las observaciones.',
+                    tipo='danger',
+                    leida=False,
                 )
+                try:
+                    noti.url = reverse('flota:subir_comprobante_gasolina', args=[req.pk])
+                    noti.save()
+                except Exception:
+                    pass
             except Exception:
                 pass
         self.message_user(request, f'{updated} solicitudes marcadas como rechazadas.')
@@ -333,14 +347,24 @@ class GasolinaRequestAdmin(admin.ModelAdmin):
         if obj and obj.estado == 'pendiente':
             obj.estado = 'revisado'
             obj.save()
+            # Asegurar que el empleado reciba una notificación (evitar duplicados si ya existe)
             try:
                 from apps.notificaciones.models import Notificacion
-                Notificacion.objects.create(
-                    usuario=obj.empleado.usuario,
-                    titulo='✅ Solicitud de gasolina aprobada',
-                    mensaje=f'Tu solicitud de gasolina del {obj.fecha.date()} por ${obj.precio} ha sido aprobada.',
-                    tipo='success'
-                )
+                from django.urls import reverse
+                url = ''
+                try:
+                    url = reverse('flota:subir_comprobante_gasolina', args=[obj.pk])
+                except Exception:
+                    url = ''
+                titulo = '✅ Solicitud de gasolina aprobada'
+                if not Notificacion.objects.filter(usuario=obj.empleado.usuario, titulo=titulo, url=url).exists():
+                    Notificacion.objects.create(
+                        usuario=obj.empleado.usuario,
+                        titulo=titulo,
+                        mensaje=f'Tu solicitud de gasolina del {obj.fecha.date()} por ${obj.precio} ha sido aprobada. Ahora puedes subir el comprobante para completar el proceso.',
+                        tipo='success',
+                        url=url
+                    )
             except Exception:
                 pass
         return redirect(request.META.get('HTTP_REFERER', '/admin/'))
@@ -352,12 +376,21 @@ class GasolinaRequestAdmin(admin.ModelAdmin):
             obj.save()
             try:
                 from apps.notificaciones.models import Notificacion
-                Notificacion.objects.create(
-                    usuario=obj.empleado.usuario,
-                    titulo='❌ Solicitud de gasolina rechazada',
-                    mensaje=f'Tu solicitud de gasolina del {obj.fecha.date()} por ${obj.precio} ha sido rechazada.',
-                    tipo='danger'
-                )
+                from django.urls import reverse
+                url = ''
+                try:
+                    url = reverse('flota:subir_comprobante_gasolina', args=[obj.pk])
+                except Exception:
+                    url = ''
+                titulo = '❌ Solicitud de gasolina rechazada'
+                if not Notificacion.objects.filter(usuario=obj.empleado.usuario, titulo=titulo, url=url).exists():
+                    Notificacion.objects.create(
+                        usuario=obj.empleado.usuario,
+                        titulo=titulo,
+                        mensaje=f'Tu solicitud de gasolina del {obj.fecha.date()} por ${obj.precio} ha sido revisada y fue rechazada. Si corresponde, sube el comprobante o revisa las observaciones.',
+                        tipo='danger',
+                        url=url
+                    )
             except Exception:
                 pass
         return redirect(request.META.get('HTTP_REFERER', '/admin/'))

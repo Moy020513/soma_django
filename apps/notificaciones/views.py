@@ -235,6 +235,35 @@ class DetalleNotificacionAdminView(LoginRequiredMixin, UserPassesTestMixin, Deta
         except Exception:
             gasolina_request = None
         context['gasolina_request'] = gasolina_request
+        # Si no se encontró mediante los métodos anteriores, intentar heurísticas: buscar monto y nombre del empleado
+        if not gasolina_request:
+            try:
+                import re
+                msg = (self.object.mensaje or '')
+                # Buscar precio en MXN dentro del mensaje
+                price_match = re.search(r"(\d+[\.,]?\d{0,2})\s*MXN", msg)
+                emp_match = re.search(r"El empleado\s+([A-Za-zÁÉÍÓÚÑáéíóúñü\s]+?)\s+ha", msg)
+                precio_val = None
+                empleado_obj = None
+                if price_match:
+                    raw = price_match.group(1).replace(',', '.')
+                    try:
+                        precio_val = float(raw)
+                    except Exception:
+                        precio_val = None
+                if emp_match:
+                    nombre_buscar = emp_match.group(1).strip()
+                    # Buscar empleado por nombre completo que contenga la cadena
+                    from apps.recursos_humanos.models import Empleado
+                    empleado_obj = Empleado.objects.filter(usuario__first_name__icontains=nombre_buscar.split()[0]).first()
+                if precio_val and empleado_obj:
+                    from apps.flota_vehicular.models import GasolinaRequest
+                    gasolina_request = GasolinaRequest.objects.filter(empleado=empleado_obj, precio=precio_val).order_by('-fecha').first()
+                    if gasolina_request:
+                        context['gasolina_request'] = gasolina_request
+            except Exception:
+                # No bloquear si la heurística falla
+                pass
         return context
 
     def get(self, request, *args, **kwargs):

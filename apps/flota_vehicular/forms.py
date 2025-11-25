@@ -145,19 +145,22 @@ class RegistroUsoForm(forms.ModelForm):
         return cleaned
 
 
-class GasolinaRequestForm(forms.ModelForm):
+class GasolinaRequestCreateForm(forms.ModelForm):
+    """Formulario para crear la solicitud de gasolina.
+
+    Nota: no incluye el campo `comprobante`. El comprobante sólo se sube
+    después de que el admin haya revisado (aprobado/rechazado) la solicitud.
+    """
     class Meta:
         from .models import GasolinaRequest
         model = GasolinaRequest
-        fields = ['precio', 'comprobante', 'observaciones']
+        fields = ['precio', 'observaciones']
         widgets = {
             'precio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
-            'comprobante': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
             'precio': 'Precio total de la gasolina (MXN)',
-            'comprobante': 'Comprobante de pago (imagen/PDF)',
             'observaciones': 'Observaciones (opcional)'
         }
 
@@ -166,3 +169,23 @@ class GasolinaRequestForm(forms.ModelForm):
         if p is None or p <= 0:
             raise forms.ValidationError('Ingresa un precio válido mayor a 0')
         return p
+
+
+class GasolinaComprobanteForm(forms.ModelForm):
+    """Formulario para subir el comprobante de una solicitud ya revisada."""
+    class Meta:
+        from .models import GasolinaRequest
+        model = GasolinaRequest
+        fields = ['comprobante']
+        widgets = {
+            'comprobante': forms.ClearableFileInput(attrs={'class': 'form-control'})
+        }
+        labels = {
+            'comprobante': 'Comprobante de pago (imagen/PDF)'
+        }
+
+    def clean_comprobante(self):
+        c = self.cleaned_data.get('comprobante')
+        if not c:
+            raise ValidationError('Debes adjuntar un comprobante.')
+        return c

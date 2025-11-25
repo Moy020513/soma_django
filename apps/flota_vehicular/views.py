@@ -6,7 +6,13 @@ from django.utils import timezone
 from django.db import transaction
 
 from .models import TransferenciaVehicular, AsignacionVehiculo, Vehiculo
-from .forms import SolicitudTransferenciaForm, InspeccionTransferenciaForm, RespuestaTransferenciaForm, GasolinaRequestForm
+from .forms import (
+    SolicitudTransferenciaForm,
+    InspeccionTransferenciaForm,
+    RespuestaTransferenciaForm,
+    GasolinaRequestCreateForm,
+    GasolinaComprobanteForm,
+)
 from .models import GasolinaRequest
 from apps.recursos_humanos.models import Empleado
 from apps.notificaciones.models import Notificacion
@@ -597,25 +603,29 @@ def pedir_gasolina(request):
         messages.info(request, 'No tienes un vehículo asignado para solicitar gasolina.')
         return redirect('perfil_usuario')
 
-    # Bloquear si ya hay una solicitud pendiente (evitar mostrar el formulario)
+    # Revisar la última solicitud del empleado para aplicar reglas de flujo
     from .models import GasolinaRequest
-    if GasolinaRequest.objects.filter(empleado=empleado, estado='pendiente').exists():
-        messages.info(request, 'Ya tienes una solicitud pendiente. Espera a que sea revisada.')
-        return redirect('mi_vehiculo')
-
-    if request.method == 'POST':
-        # Prevent new pending requests
-        from .models import GasolinaRequest
-        if GasolinaRequest.objects.filter(empleado=empleado, estado='pendiente').exists():
+    ultima = GasolinaRequest.objects.filter(empleado=empleado).order_by('-fecha').first()
+    if ultima:
+        # Si hay una solicitud pendiente, bloquear nueva solicitud
+        if ultima.estado == 'pendiente':
             messages.info(request, 'Ya tienes una solicitud pendiente. Espera a que sea revisada.')
             return redirect('mi_vehiculo')
 
-        form = GasolinaRequestForm(request.POST, request.FILES)
+        # Si la solicitud ya fue revisada (aceptada o rechazada) pero aún no tiene comprobante,
+        # no permitir crear una nueva solicitud: pedir que suban el comprobante primero.
+        if not ultima.comprobante:
+            messages.warning(request, f'Falta tu comprobante de tu solicitud de {ultima.precio} MXN. Sube el comprobante antes de crear otra solicitud.')
+            return redirect('flota:subir_comprobante_gasolina', pk=ultima.pk)
+
+    if request.method == 'POST':
+        form = GasolinaRequestCreateForm(request.POST)
         if form.is_valid():
             req = form.save(commit=False)
             req.empleado = empleado
             req.vehiculo = vehiculo
             req.vehiculo_externo = vehiculo_externo
+            # estado por defecto es 'pendiente'
             req.save()
 
             # Notificar a todos los administradores
@@ -625,35 +635,24 @@ def pedir_gasolina(request):
                     url = reverse('admin:flota_vehicular_gasolinarequest_change', args=[req.pk])
                 except Exception:
                     url = ''
-                # Incluir la URL del comprobante en el mensaje para que pueda enlazarse desde el detalle
-                mensaje = f'El empleado {empleado.usuario.get_full_name()} ha subido un comprobante de gasolina para {vehiculo or vehiculo_externo}.'
-                if req.comprobante:
-                    try:
-                        mensaje += f' Comprobante: {req.comprobante.url}'
-                    except Exception:
-                        pass
-                # Creamos la notificación y le asignamos una URL hacia el detalle admin de notificaciones
+                mensaje = f'El empleado {empleado.usuario.get_full_name()} ha solicitado gasolina para {vehiculo or vehiculo_externo} por {req.precio} MXN.'
                 noti = Notificacion.objects.create(
                     usuario=admin,
-                    titulo='📄 Solicitud de gasolina',
+                    titulo='📄 Nueva solicitud de gasolina',
                     mensaje=mensaje,
                     tipo='info',
                     url=''
                 )
                 try:
-                    # URL pública de detalle para admins que incluye referencia a la gasolina
                     noti.url = reverse('notificaciones:admin_detalle', args=[noti.pk]) + f'?gasolina_id={req.pk}'
-                    # También mantenemos la URL al change en caso de necesitarla
-                    # (guardada en mensaje y útil para backfills)
                     noti.save()
                 except Exception:
-                    # Si no podemos construir la URL pública no bloqueamos la operación
                     pass
 
             messages.success(request, 'Solicitud enviada. Los administradores serán notificados.')
             return redirect('mi_vehiculo')
     else:
-        form = GasolinaRequestForm()
+        form = GasolinaRequestCreateForm()
 
     context = {
         'form': form,
@@ -662,3 +661,98 @@ def pedir_gasolina(request):
         'titulo': 'Pedir gasolina',
     }
     return render(request, 'flota_vehicular/pedir_gasolina.html', context)
+
+
+@login_required
+def subir_comprobante_gasolina(request, pk):
+    """Permite al empleado subir el comprobante solo después de que su solicitud haya sido revisada
+    (estado 'revisado' o 'rechazado'). La opción sólo aparece/está disponible si la solicitud no tiene comprobante.
+    """
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está asociado a un empleado.')
+        return redirect('perfil_usuario')
+
+    req = get_object_or_404(GasolinaRequest, pk=pk)
+
+    # Verificar permisos
+    if req.empleado != empleado:
+        messages.error(request, 'No tienes permisos para subir comprobante a esta solicitud.')
+        return redirect('mi_vehiculo')
+
+    # Sólo permitir si ya fue revisada (aceptada/rechazada) y aún no tiene comprobante
+    if req.estado == 'pendiente':
+        messages.info(request, 'La solicitud aún está pendiente de revisión por un administrador.')
+        return redirect('mi_vehiculo')
+
+    if req.comprobante:
+        messages.info(request, 'Esta solicitud ya tiene comprobante subido.')
+        return redirect('mi_vehiculo')
+
+    if request.method == 'POST':
+        form = GasolinaComprobanteForm(request.POST, request.FILES, instance=req)
+        if form.is_valid():
+            form.save()
+            # Marcar como leída la notificación si venimos desde una notificación
+            from_notification = request.GET.get('from_notification')
+            if from_notification:
+                try:
+                    noti = Notificacion.objects.get(id=from_notification, usuario=request.user, leida=False)
+                    noti.leida = True
+                    noti.save()
+                except Notificacion.DoesNotExist:
+                    pass
+
+            # Respaldo: notificar a administradores si no lo hizo la señal (chequeo idempotente)
+            try:
+                from apps.usuarios.models import Usuario
+                admins = Usuario.objects.filter(is_staff=True)
+                for admin in admins:
+                    titulo_admin = '📥 Comprobante de gasolina subido'
+                    # Evitar duplicados buscando notificaciones que ya referencien esta gasolina_id
+                    if Notificacion.objects.filter(usuario=admin, titulo=titulo_admin, url__contains=f'gasolina_id={req.pk}').exists():
+                        continue
+                    mensaje_admin = f'El empleado {req.empleado.usuario.get_full_name()} ha subido un comprobante de gasolina para {req.vehiculo or req.vehiculo_externo} por ${req.precio}.'
+                    try:
+                        if req.comprobante:
+                            mensaje_admin += f' Comprobante: {req.comprobante.url}'
+                    except Exception:
+                        pass
+                    try:
+                        noti = Notificacion.objects.create(
+                            usuario=admin,
+                            titulo=titulo_admin,
+                            mensaje=mensaje_admin,
+                            tipo='info',
+                            url=''
+                        )
+                        try:
+                            noti.url = reverse('notificaciones:admin_detalle', args=[noti.pk]) + f'?gasolina_id={req.pk}'
+                            noti.save()
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            messages.success(request, 'Comprobante subido correctamente. Gracias.')
+            return redirect('mi_vehiculo')
+    else:
+        form = GasolinaComprobanteForm(instance=req)
+
+    # Si llegamos desde una notificación y es del usuario, marcarla como leída (GET request)
+    from_notification = request.GET.get('from_notification')
+    if from_notification and request.user.is_authenticated:
+        try:
+            noti = Notificacion.objects.get(id=from_notification, usuario=request.user, leida=False)
+            noti.leida = True
+            noti.save()
+        except Notificacion.DoesNotExist:
+            pass
+
+    context = {
+        'form': form,
+        'solicitud': req,
+        'titulo': 'Subir comprobante de gasolina',
+    }
+    return render(request, 'flota_vehicular/subir_comprobante_gasolina.html', context)

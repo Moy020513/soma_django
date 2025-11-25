@@ -1,7 +1,8 @@
 <div class="list-group list-group-flush" style="min-width:260px;">
     {% if notificaciones %}
         {% for n in notificaciones %}
-                {% if n.url and 'transferencia' in n.titulo|lower %}
+            {# Si la notificación tiene una URL, usarla (y anexar from_notification para usuarios no superuser). #}
+            {% if n.url %}
                 {% if 'inspección' in n.titulo|lower %}
                     {% if request.user.is_superuser %}
                         <a href="{{ n.url }}" class="notif-item list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.leida %}fw-bold{% endif %}" data-id="{{ n.id }}" data-unread="{% if not n.leida %}1{% else %}0{% endif %}" style="font-size:0.85rem; border-left: 3px solid #ffc107;">
