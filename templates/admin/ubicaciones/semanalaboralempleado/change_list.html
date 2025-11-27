@@ -1,0 +1,40 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block object-tools %}
+  {{ block.super }}
+  {% if export_all_url %}
+    <style>
+    /* Botón verde estilo Excel para el admin changelist (mismo estilo que Contratos REPSE) */
+    .excel-export-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #107C10; /* verde Excel */
+      color: #fff !important;
+      padding: 10px 14px;
+      border-radius: 8px;
+      text-decoration: none !important;
+      box-shadow: 0 4px 10px rgba(16,124,16,0.15);
+      font-weight: 600;
+    }
+    .excel-export-btn:hover { background: #0e6f0e; color:#fff; }
+    .excel-export-btn svg { width:18px; height:18px; display:block; }
+    </style>
+    <div class="object-tools">
+      <ul class="object-tools">
+        <li>
+          <a href="{{ export_all_url }}" class="excel-export-btn" style="background:#107C10 !important; color:#fff !important;" title="Exportar todos a Excel">
+            <!-- Inline SVG del logo de Excel (simplificado) -->
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <rect width="24" height="24" rx="3" fill="#107C10" />
+              <path d="M6 6h5v3H6zM6 10h5v8H6zM12 6h6v12h-6z" fill="#fff" opacity="0.95" />
+              <path d="M8 8.5l1.4 2L11 8.5l1.6 3L14 8.5" stroke="#107C10" stroke-width="0" fill="#107C10" />
+            </svg>
+            <span>Exportar todos (Excel)</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  {% endif %}
+{% endblock %}
