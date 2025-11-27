@@ -15,7 +15,8 @@ weasyprint==61.0
 reportlab==4.4.4
 pytz
 gunicorn==21.2.0
-pypdf==0.8.1
+pypdf
 PyPDF2
 pdfkit
 openpyxl==3.1.2
+pydyf==0.8.1
