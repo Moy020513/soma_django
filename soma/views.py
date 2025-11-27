@@ -153,6 +153,15 @@ def admin_login_anyuser(request):
     return render(request, 'admin/login.html', context)
 
 
+def disabled_password_reset(request, *args, **kwargs):
+    """
+    Punto final temporal que reemplaza las vistas de restablecimiento de
+    contraseña cuando la funcionalidad ha sido deshabilitada por petición.
+    Redirige al home para evitar exponer formularios de recuperación.
+    """
+    return redirect('home')
+
+
 @login_required
 def perfil_usuario(request):
     """Vista del perfil del usuario"""
