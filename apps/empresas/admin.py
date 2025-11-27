@@ -31,6 +31,37 @@ class CTZFormatoForm(forms.ModelForm):
             'iva': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
         }
+        labels = {
+            'partida': 'Propuesta No.'
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Si estamos editando una instancia existente, filtrar el queryset
+        # del campo 'contacto' para mostrar sólo los contactos pertenecientes
+        # a la(s) empresa(s) de las CTZ asociadas a este formato.
+        try:
+            instance = kwargs.get('instance')
+            if instance and getattr(instance, 'pk', None):
+                # Recoger empresas únicas de las CTZ relacionadas
+                empresas_qs = instance.ctzs.select_related('empresa').all()
+                empresa_ids = []
+                for c in empresas_qs:
+                    try:
+                        eid = getattr(c.empresa, 'pk', None)
+                    except Exception:
+                        eid = None
+                    if eid:
+                        empresa_ids.append(eid)
+                if empresa_ids:
+                    # Filtrar contactos sólo de esas empresas
+                    self.fields['contacto'].queryset = Contacto.objects.filter(empresa__pk__in=list(dict.fromkeys(empresa_ids)))
+                else:
+                    # Si no hay empresas asociadas, dejar queryset vacío para evitar mostrar todos los contactos
+                    self.fields['contacto'].queryset = Contacto.objects.none()
+        except Exception:
+            # No queremos romper el form por errores al filtrar el queryset
+            pass
 
 
 class CTZForm(forms.ModelForm):
@@ -1053,6 +1084,45 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                             c.drawString(x, y, f'CTZ Formato #{obj.pk}')
                     except Exception:
                         c.drawString(x, y, f'CTZ Formato #{obj.pk}')
+                    # Dibujar Propuesta No. encima de la fecha en la esquina superior derecha
+                    try:
+                        partida_text = str(getattr(obj, 'partida', '') or '')
+                        # font size for these small header items
+                        fsize = 10
+                        # column positions: value at right edge, label to the left (fixed width)
+                        value_x = width - MARGIN
+                        label_x = value_x - 110
+                        # Propuesta row
+                        try:
+                            c.setFont('Helvetica', fsize)
+                            c.drawRightString(label_x, y, 'Propuesta No.:')
+                            c.setFont('Helvetica-Bold', fsize)
+                            c.drawRightString(value_x, y, partida_text)
+                        except Exception:
+                            c.setFont('Helvetica-Bold', fsize)
+                            c.drawRightString(value_x, y, f'Propuesta No.: {partida_text}')
+                        # Fecha row (below propuesta)
+                        y_date = y - 12
+                        date_obj = getattr(obj, 'fecha_manual', None) or getattr(obj, 'fecha_creacion', None)
+                        date_text = ''
+                        if date_obj:
+                            try:
+                                date_text = date_obj.strftime('%d/%m/%Y')
+                            except Exception:
+                                date_text = str(date_obj)
+                        try:
+                            c.setFont('Helvetica', fsize)
+                            c.drawRightString(label_x, y_date, 'Fecha:')
+                            c.setFont('Helvetica-Bold', fsize)
+                            c.drawRightString(value_x, y_date, date_text)
+                        except Exception:
+                            c.setFont('Helvetica-Bold', fsize)
+                            c.drawRightString(value_x, y_date, date_text)
+                        # advance y so the content below doesn't collide
+                        y = y_date - 8
+                    except Exception:
+                        # if anything fails, leave y as-is (previous decrement will apply)
+                        pass
                     # Dibujar la fecha manual en la esquina superior derecha (fallback a fecha_creacion)
                     try:
                         # Mostrar 'Fecha:' y la fecha en la misma fila; la fecha en negritas,
@@ -1133,7 +1203,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                         c.drawString(x+340, y, 'Unidad')
                         c.drawString(x+400, y, 'PU')
                         c.drawString(x+460, y, 'Total')
-                    y -= 12
+                    y -= 10
                     c.setFont('Helvetica', 9)
                     for d in obj.detalles.select_related('ctz').all():
                         if y < 60:
@@ -1161,7 +1231,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                             c.drawRightString(x+480, y, str(d.total))
                         except Exception:
                             c.drawString(x+480, y, str(d.total))
-                        y -= 12
+                        y -= 10
 
                     # Totales
                     y -= 10

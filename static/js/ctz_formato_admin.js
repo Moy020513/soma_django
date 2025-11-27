@@ -173,26 +173,42 @@
     try{
       var contactoSelect = document.getElementById('id_contacto');
       if(contactoSelect){
+        // If the contacto select already has a selected value rendered by the server,
+        // do not overwrite it. Also skip if it already has multiple options.
+        var hasSelected = contactoSelect.value && contactoSelect.value !== '';
+        var hasMultipleOptions = contactoSelect.options && contactoSelect.options.length > 1;
         if(selected && selected.length){
           // use the first selected CTZ to fetch contacts for its empresa
           var firstId = selected[0].id;
-          fetch('/admin/empresas/ctzformato/ctz-contacts/'+firstId+'/', {credentials:'same-origin'})
-            .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
-            .then(function(data){
-              if(!data || !data.contacts) return;
-              // clear existing options
-              contactoSelect.innerHTML = '';
-              // add empty option
-              var emptyOpt = document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent = '---------'; contactoSelect.appendChild(emptyOpt);
-              data.contacts.forEach(function(c){
-                var o = document.createElement('option'); o.value = c.id; o.textContent = c.label + (c.correo ? (' - ' + c.correo) : ''); contactoSelect.appendChild(o);
-              });
-            })
-            .catch(function(e){ console && console.debug && console.debug('fetch contacts failed', e); });
-        } else {
-          // no CTZ selected: clear contacto options
-          contactoSelect.innerHTML = '';
-          var emptyOpt = document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent = '---------'; contactoSelect.appendChild(emptyOpt);
+          (function(preserveValue){
+            fetch('/admin/empresas/ctzformato/ctz-contacts/'+firstId+'/', {credentials:'same-origin'})
+              .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
+              .then(function(data){
+                if(!data || !data.contacts) return;
+                // clear existing options
+                contactoSelect.innerHTML = '';
+                // add empty option
+                var emptyOpt = document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent = '---------'; contactoSelect.appendChild(emptyOpt);
+                var foundSelected = false;
+                data.contacts.forEach(function(c){
+                  var o = document.createElement('option'); o.value = c.id; o.textContent = c.label + (c.correo ? (' - ' + c.correo) : ''); contactoSelect.appendChild(o);
+                  if(preserveValue && String(preserveValue) === String(c.id)){
+                    foundSelected = true;
+                  }
+                });
+                // preserve previous selection if it still exists in the new list
+                if(preserveValue && foundSelected){
+                  contactoSelect.value = preserveValue;
+                }
+              })
+              .catch(function(e){ console && console.debug && console.debug('fetch contacts failed', e); });
+          })(contactoSelect.value);
+        } else if(!selected || !selected.length){
+          // no CTZ selected: ensure there's at least an empty option but don't remove selected value
+          if(!hasMultipleOptions){
+            contactoSelect.innerHTML = '';
+            var emptyOpt = document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent = '---------'; contactoSelect.appendChild(emptyOpt);
+          }
         }
       }
     }catch(e){}

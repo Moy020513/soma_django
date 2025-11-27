@@ -12,12 +12,12 @@
   .pdf-container { box-sizing: border-box; width: calc(100% - 2cm); margin: 0 auto; }
    h1 { font-size: 25px; margin-bottom: 8px }
    .content-table { width: 100%; border-collapse: collapse; margin-top: 12px }
-  th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left }
+  th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left }
   /* Center all headers */
   th { background: #f6f6f6; font-weight:700; font-size:16px; text-align: center }
   /* utility class to center certain td values */
   td.center { text-align: center }
-  td { font-size:14px }
+  td { font-size:13px; line-height:1.1 }
    .right { text-align: right }
    .summary { margin-top: 12px; width: 30%; float: right; font-size:14px }
    .summary td { padding:6px 8px }
@@ -29,20 +29,26 @@
   <div class="pdf-container">
     <!-- Header: left = contacto name, right = fecha_manual (fallback a fecha_creacion) -->
     <div class="pdf-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
-      <h1>{% if contact_name %}{{ contact_name }}{% else %}Formato: {{ object.partida }}{% endif %}</h1>
-      <div class="pdf-date" style="display:flex; justify-content:flex-end; gap:8px; align-items:center; font-size:14px; color:#111;">
-        <span style="font-size:14px; color:#222;">Fecha:</span>
-        <span style="font-size:14px; font-weight:800;">
-          {% if object.fecha_manual %}
-            {{ object.fecha_manual|date:"d/m/Y" }}
-          {% else %}
-            {{ object.fecha_creacion|date:"d/m/Y" }}
-          {% endif %}
-        </span>
-      </div>
+      <h3 style="color: #0053a1ff; margin-bottom: 0;">{% if contact_name %}{{ contact_name }}{% else %}Formato: {{ object.partida }}{% endif %}</h3>
+        <div class="pdf-date" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-size:14px; color:#111;">
+          <div style="font-size:14px; color:#222;">
+            <span>Propuesta No.:</span>
+            <strong style="margin-left:6px; font-weight:800;">{{ object.partida }}</strong>
+          </div>
+          <div style="font-size:14px; color:#222;">
+            <span>Fecha:</span>
+            <strong style="margin-left:6px; font-weight:800;">
+              {% if object.fecha_manual %}
+                {{ object.fecha_manual|date:"d/m/Y" }}
+              {% else %}
+                {{ object.fecha_creacion|date:"d/m/Y" }}
+              {% endif %}
+            </strong>
+          </div>
+        </div>
     </div>
     {% if empresa_name %}
-      <div class="empresa-name" style="font-size:14px; font-weight:700; color:#111; margin-bottom:6px;">{{ empresa_name }}</div>
+      <div class="empresa-name" style="font-size:15px; font-weight:700; color: gray; margin-bottom:26px;">{{ empresa_name }}</div>
     {% endif %}
     <div style="margin-top:8px; font-size:14px; color:#222;">
       En atención a su requerimiento, me permito enviarle la propuesta solicitada respecto a:
