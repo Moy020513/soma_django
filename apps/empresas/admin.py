@@ -1087,21 +1087,11 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     # Dibujar Propuesta No. encima de la fecha en la esquina superior derecha
                     try:
                         partida_text = str(getattr(obj, 'partida', '') or '')
-                        # font size for these small header items
+                        # line for propuesta (top)
                         fsize = 10
-                        # column positions: value at right edge, label to the left (fixed width)
-                        value_x = width - MARGIN
-                        label_x = value_x - 110
-                        # Propuesta row
-                        try:
-                            c.setFont('Helvetica', fsize)
-                            c.drawRightString(label_x, y, 'Propuesta No.:')
-                            c.setFont('Helvetica-Bold', fsize)
-                            c.drawRightString(value_x, y, partida_text)
-                        except Exception:
-                            c.setFont('Helvetica-Bold', fsize)
-                            c.drawRightString(value_x, y, f'Propuesta No.: {partida_text}')
-                        # Fecha row (below propuesta)
+                        c.setFont('Helvetica-Bold', fsize)
+                        c.drawRightString(width - MARGIN, y, f'Propuesta No.: {partida_text}')
+                        # line for fecha (below propuesta)
                         y_date = y - 12
                         date_obj = getattr(obj, 'fecha_manual', None) or getattr(obj, 'fecha_creacion', None)
                         date_text = ''
@@ -1110,14 +1100,24 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                                 date_text = date_obj.strftime('%d/%m/%Y')
                             except Exception:
                                 date_text = str(date_obj)
+                        # Draw fecha label and date (date bold)
                         try:
+                            # draw date text right-aligned
+                            c.setFont('Helvetica-Bold', fsize)
+                            c.drawRightString(width - MARGIN, y_date, date_text)
+                            # draw label to the left of the date
+                            try:
+                                from reportlab.pdfbase import pdfmetrics
+                                width_date = pdfmetrics.stringWidth(date_text, 'Helvetica-Bold', fsize) if date_text else 0
+                            except Exception:
+                                width_date = 0
                             c.setFont('Helvetica', fsize)
+                            label_x = width - MARGIN - width_date - 6
                             c.drawRightString(label_x, y_date, 'Fecha:')
-                            c.setFont('Helvetica-Bold', fsize)
-                            c.drawRightString(value_x, y_date, date_text)
                         except Exception:
-                            c.setFont('Helvetica-Bold', fsize)
-                            c.drawRightString(value_x, y_date, date_text)
+                            # fallback: draw date alone
+                            c.setFont('Helvetica', fsize)
+                            c.drawRightString(width - MARGIN, y_date, date_text)
                         # advance y so the content below doesn't collide
                         y = y_date - 8
                     except Exception:
@@ -1261,10 +1261,25 @@ class CTZFormatoAdmin(admin.ModelAdmin):
             # Nombre completo del url name en el namespace admin:
             # admin:<app_label>_<model_name>_export_pdf
             url = reverse('admin:%s_%s_export_pdf' % (self.opts.app_label, self.opts.model_name), args=(obj.pk,))
-            return format_html('<a class="button" href="{}">Exportar PDF</a>', url)
+            # small inline SVG icon for PDF (document with PDF text)
+            # Usar una imagen SVG externa para evitar problemas de estilos
+            # del admin que afectan al SVG inline. El archivo se espera en
+            # static/img/pdf-icon.svg (tal como indicó el usuario).
+            try:
+                from django.templatetags.static import static
+                img_url = static('img/pdf-icon.svg')
+            except Exception:
+                img_url = '/static/img/pdf-icon.svg'
+
+            # Construir el <img> con tamaño controlado y centrarlo en la celda.
+            return format_html(
+                '<div style="text-align:center; width:100%;"><a href="{}" title="Exportar PDF" style="display:inline-flex;align-items:center;justify-content:center;height:40px;width:40px;margin:0 auto;"><img src="{}" alt="PDF" style="width:32px;height:32px;object-fit:contain;"/></a></div>',
+                url,
+                img_url,
+            )
         except Exception:
             return ''
-    export_pdf_link.short_description = 'Acciones'
+    export_pdf_link.short_description = 'Exportar'
 
     def save_model(self, request, obj, form, change):
         """Calcular subtotal/iva/total a partir de las CTZs seleccionadas y las cantidades
