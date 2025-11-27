@@ -175,6 +175,10 @@ class CTZFormato(models.Model):
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='TOTAL')
     # Fecha manual editable por el usuario (puede dejarse en blanco)
     fecha_manual = models.DateField(blank=True, null=True, verbose_name='Fecha')
+    # Texto libre para la redacción propuesta (aprox. media cuartilla). Opcional.
+    propuesta_redaccion = models.TextField(blank=True, null=True, verbose_name='Propuesta Redacción')
+    # Notas u observaciones adicionales sobre la propuesta. Opcional.
+    notas_observaciones = models.TextField(blank=True, null=True, verbose_name='Notas / Observaciones')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     # Contacto relacionado para este formato (opcional). Se ofrece en el admin para

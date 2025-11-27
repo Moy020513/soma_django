@@ -24,12 +24,18 @@ class CTZFormatoForm(forms.ModelForm):
         # Excluir campos legacy `ctz`, `cantidad`, `unidad` y `pu` del formulario principal.
         # El admin mostrará únicamente el M2M `ctzs`, los campos descriptivos y los totales
         # (subtotal/iva/total) que son actualizados por el JS en base a las entradas por-CTZ.
-        fields = ('ctzs', 'partida', 'concepto', 'contacto', 'fecha_manual', 'subtotal', 'iva', 'total')
+        # Añadimos 'propuesta_redaccion' y 'notas_observaciones' como textareas opcionales.
+        fields = ('ctzs', 'partida', 'concepto', 'propuesta_redaccion', 'notas_observaciones', 'contacto', 'fecha_manual', 'subtotal', 'iva', 'total')
         widgets = {
             # Renderizar subtotal/iva/total como inputs readonly para permitir que el JS los actualice.
             'subtotal': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'iva': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
+            # Hacer que 'concepto' y 'propuesta_redaccion' tengan la misma altura
+            # que 'notas_observaciones' para consistencia visual en el admin.
+            'concepto': forms.Textarea(attrs={'rows': 6}),
+            'propuesta_redaccion': forms.Textarea(attrs={'rows': 6}),
+            'notas_observaciones': forms.Textarea(attrs={'rows': 6}),
         }
         labels = {
             'partida': 'Propuesta No.'
@@ -686,7 +692,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
     # Usamos el ModelForm para renderizar subtotal/iva/total como inputs readonly
     # Usar solo el campo M2M `ctzs` (ya no usamos el dropdown single `ctz` en el formulario)
     # Mantener sólo los campos necesarios en el formulario principal.
-    fields = ('ctzs', 'partida', 'concepto', 'contacto', 'fecha_manual', 'subtotal', 'iva', 'total')
+    fields = ('ctzs', 'partida', 'concepto', 'propuesta_redaccion', 'notas_observaciones', 'contacto', 'fecha_manual', 'subtotal', 'iva', 'total')
 
     def ctzs_breakdown(self, obj):
         """Devuelve una representación HTML con cada CTZ ligada a este formato y sus valores (PU, Cantidad, Total)."""
@@ -1185,11 +1191,11 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                         pass
                     y -= 20
 
-                    # Encabezado tabla simple (orden: CTZ, Concepto, Cantidad, Unidad, PU, Total)
+                    # Encabezado tabla simple (orden: Partida, Concepto, Cantidad, Unidad, PU, Total)
                     c.setFont('Helvetica-Bold', 9)
                     # Center headers using approx center positions per column
                     try:
-                        c.drawCentredString(x+20, y, 'CTZ')
+                        c.drawCentredString(x+20, y, 'Partida')
                         c.drawCentredString(x+170, y, 'Concepto')
                         c.drawCentredString(x+300, y, 'Cantidad')
                         c.drawCentredString(x+360, y, 'Unidad')
@@ -1197,7 +1203,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                         c.drawCentredString(x+480, y, 'Total')
                     except Exception:
                         # Fallback to drawString if centering methods fail
-                        c.drawString(x, y, 'CTZ')
+                        c.drawString(x, y, 'Partida')
                         c.drawString(x+80, y, 'Concepto')
                         c.drawString(x+300, y, 'Cantidad')
                         c.drawString(x+340, y, 'Unidad')
@@ -1205,11 +1211,16 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                         c.drawString(x+460, y, 'Total')
                     y -= 10
                     c.setFont('Helvetica', 9)
-                    for d in obj.detalles.select_related('ctz').all():
+                    for idx, d in enumerate(obj.detalles.select_related('ctz').all(), start=1):
                         if y < 60:
                             c.showPage()
                             y = height - 40
-                        c.drawString(x, y, str(getattr(d.ctz, 'id_manual', d.ctz.pk)))
+                        # Partida: numeración por fila: 1.00, 2.00, ...
+                        try:
+                            partida_label = f"{idx:.2f}"
+                        except Exception:
+                            partida_label = str(idx)
+                        c.drawString(x, y, partida_label)
                         c.drawString(x+80, y, (d.concepto or '')[:30])
                         # cantidad (centered)
                         try:
