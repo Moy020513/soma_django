@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
 from django.utils.translation import gettext as _
+from django.conf import settings
 from django.template.response import TemplateResponse
 import json
 from django.contrib.admin.options import IS_POPUP_VAR, TO_FIELD_VAR
@@ -1014,7 +1015,20 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                 return HttpResponse(hint, content_type='text/html', status=501)
 
             try:
-                pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+                # Construir base_url para que WeasyPrint pueda resolver archivos estáticos
+                # En producción preferimos usar el path de archivos estáticos (STATIC_ROOT)
+                # para que WeasyPrint los lea desde el filesystem. Si no existe
+                # STATIC_ROOT, usamos la URL absoluta de STATIC_URL como fallback
+                try:
+                    if getattr(settings, 'STATIC_ROOT', None):
+                        base_url = request.build_absolute_uri(settings.STATIC_URL)
+                    else:
+                        # request.build_absolute_uri acceptará algo como 'https://domain/static/'
+                        base_url = request.build_absolute_uri(getattr(settings, 'STATIC_URL', '/'))
+                except Exception:
+                    base_url = request.build_absolute_uri('/')
+
+                pdf = HTML(string=html, base_url=base_url).write_pdf()
                 try:
                     pdf = _merge_with_membrete(pdf)
                 except Exception:
