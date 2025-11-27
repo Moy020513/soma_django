@@ -11,11 +11,11 @@ django-filter==23.3
 django-import-export==3.3.0
 django-htmx==1.26.0
 whitenoise==6.11.0
-weasyprint==59.0
+weasyprint==61.0
 reportlab==4.4.4
 pytz
 gunicorn==21.2.0
-pypdf
+pypdf==0.8.1
 PyPDF2
 pdfkit
 openpyxl==3.1.2
