@@ -24,7 +24,7 @@ class CTZFormatoForm(forms.ModelForm):
         # Excluir campos legacy `ctz`, `cantidad`, `unidad` y `pu` del formulario principal.
         # El admin mostrará únicamente el M2M `ctzs`, los campos descriptivos y los totales
         # (subtotal/iva/total) que son actualizados por el JS en base a las entradas por-CTZ.
-        fields = ('ctzs', 'partida', 'concepto', 'subtotal', 'iva', 'total')
+        fields = ('ctzs', 'partida', 'concepto', 'contacto', 'fecha_manual', 'subtotal', 'iva', 'total')
         widgets = {
             # Renderizar subtotal/iva/total como inputs readonly para permitir que el JS los actualice.
             'subtotal': forms.NumberInput(attrs={'readonly': 'readonly'}),
@@ -655,7 +655,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
     # Usamos el ModelForm para renderizar subtotal/iva/total como inputs readonly
     # Usar solo el campo M2M `ctzs` (ya no usamos el dropdown single `ctz` en el formulario)
     # Mantener sólo los campos necesarios en el formulario principal.
-    fields = ('ctzs', 'partida', 'concepto', 'subtotal', 'iva', 'total')
+    fields = ('ctzs', 'partida', 'concepto', 'contacto', 'fecha_manual', 'subtotal', 'iva', 'total')
 
     def ctzs_breakdown(self, obj):
         """Devuelve una representación HTML con cada CTZ ligada a este formato y sus valores (PU, Cantidad, Total)."""
@@ -724,6 +724,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         my_urls = [
             path('ctz-total-pu/<int:ctz_id>/', self.admin_site.admin_view(self.ctz_total_pu_view), name=f'{self.opts.app_label}_{self.opts.model_name}_ctz_total_pu'),
             path('ctz-detalles/<int:formato_id>/', self.admin_site.admin_view(self.ctz_detalles_view), name=f'{self.opts.app_label}_{self.opts.model_name}_ctz_detalles'),
+            path('ctz-contacts/<int:ctz_id>/', self.admin_site.admin_view(self.ctz_contacts_view), name=f'{self.opts.app_label}_{self.opts.model_name}_ctz_contacts'),
             path('export-pdf/<int:pk>/', self.admin_site.admin_view(self.export_pdf_view), name=f'{self.opts.app_label}_{self.opts.model_name}_export_pdf'),
         ]
         return my_urls + urls
@@ -775,6 +776,22 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         except Exception:
             return JsonResponse({'error': 'not found'}, status=404)
 
+    def ctz_contacts_view(self, request, ctz_id):
+        """Devuelve JSON con la lista de contactos de la empresa asociada a la CTZ solicitada."""
+        from django.http import JsonResponse
+        from django.shortcuts import get_object_or_404
+        try:
+            ctz = get_object_or_404(CTZ, pk=ctz_id)
+            empresa = getattr(ctz, 'empresa', None)
+            if not empresa:
+                return JsonResponse({'contacts': []})
+            contacts = []
+            for c in empresa.contactos.all():
+                contacts.append({'id': c.pk, 'label': str(c.nombre_completo), 'telefono': c.telefono or '', 'correo': c.correo or ''})
+            return JsonResponse({'contacts': contacts})
+        except Exception:
+            return JsonResponse({'error': 'not found'}, status=404)
+
     def export_pdf_view(self, request, pk):
         from django.http import HttpResponse
         from django.shortcuts import get_object_or_404
@@ -782,7 +799,54 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         from django.contrib.staticfiles import finders
         try:
             obj = get_object_or_404(CTZFormato, pk=pk)
-            html = render_to_string('admin/empresas/ctzformato/pdf.html', {'object': obj})
+            # Determinar nombre de la(s) empresa(s) de las CTZ seleccionadas.
+            empresa_name = ''
+            try:
+                # Intentar extraer nombres únicos de las CTZ relacionadas (detalles)
+                detalles_qs = obj.detalles.select_related('ctz__empresa').all()
+                nombres = []
+                for d in detalles_qs:
+                    try:
+                        nom = getattr(d.ctz.empresa, 'nombre', None)
+                    except Exception:
+                        nom = None
+                    if nom:
+                        nombres.append(str(nom))
+                # Si no hay detalles, intentar desde la relación M2M `ctzs`
+                if not nombres:
+                    for c in obj.ctzs.select_related('empresa').all():
+                        try:
+                            nom = getattr(c.empresa, 'nombre', None)
+                        except Exception:
+                            nom = None
+                        if nom:
+                            nombres.append(str(nom))
+                # Unificar y presentar: si todos son iguales, mostrar uno; si hay varios, separarlos por coma.
+                nombres_unicas = list(dict.fromkeys(nombres))
+                if nombres_unicas:
+                    if len(nombres_unicas) == 1:
+                        empresa_name = nombres_unicas[0]
+                    else:
+                        empresa_name = ', '.join(nombres_unicas)
+            except Exception:
+                empresa_name = ''
+
+            # Determinar nombre del contacto (si existe) para mostrar en el encabezado
+            contact_name = ''
+            try:
+                if getattr(obj, 'contacto', None):
+                    try:
+                        contact_name = str(obj.contacto.nombre_completo)
+                    except Exception:
+                        # fallback a nombre + apellidos
+                        try:
+                            contact_name = f"{getattr(obj.contacto, 'nombre', '')} {getattr(obj.contacto, 'apellidos', '')}".strip()
+                        except Exception:
+                            contact_name = str(obj.contacto) if obj.contacto else ''
+            except Exception:
+                contact_name = ''
+
+            html = render_to_string('admin/empresas/ctzformato/pdf.html', {'object': obj, 'empresa_name': empresa_name, 'contact_name': contact_name})
             # Helper: if there's a membretado PDF in static/pdf/membretado.pdf,
             # try to merge it as background onto each page of the generated PDF.
             def _merge_with_membrete(pdf_bytes: bytes) -> bytes:
@@ -975,22 +1039,100 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     x = MARGIN
                     y = height - MARGIN
                     c.setFont('Helvetica-Bold', 14)
-                    c.drawString(x, y, f'CTZ Formato #{obj.pk}')
-                    y -= 24
-                    c.setFont('Helvetica', 10)
-                    c.drawString(x, y, f'Partida: {obj.partida}')
-                    y -= 14
-                    c.drawString(x, y, f'Concepto: {obj.concepto or ""}')
+                    # Mostrar nombre del contacto en lugar de la leyenda 'CTZ Formato'
+                    try:
+                        contact_name = ''
+                        if getattr(obj, 'contacto', None):
+                            try:
+                                contact_name = str(obj.contacto.nombre_completo)
+                            except Exception:
+                                contact_name = f"{getattr(obj.contacto, 'nombre', '')} {getattr(obj.contacto, 'apellidos', '')}".strip()
+                        if contact_name:
+                            c.drawString(x, y, contact_name)
+                        else:
+                            c.drawString(x, y, f'CTZ Formato #{obj.pk}')
+                    except Exception:
+                        c.drawString(x, y, f'CTZ Formato #{obj.pk}')
+                    # Dibujar la fecha manual en la esquina superior derecha (fallback a fecha_creacion)
+                    try:
+                        # Mostrar 'Fecha:' y la fecha en la misma fila; la fecha en negritas,
+                        # ambos con el mismo tamaño de letra.
+                        date_obj = getattr(obj, 'fecha_manual', None) or getattr(obj, 'fecha_creacion', None)
+                        date_text = ''
+                        if date_obj:
+                            try:
+                                date_text = date_obj.strftime('%d/%m/%Y')
+                            except Exception:
+                                date_text = str(date_obj)
+                        # Font size to use for both label and date
+                        fsize = 10
+                        gap = 6
+                        # Compute width of date in bold to position label to its left
+                        try:
+                            from reportlab.pdfbase import pdfmetrics
+                            width_date = pdfmetrics.stringWidth(date_text, 'Helvetica-Bold', fsize) if date_text else 0
+                        except Exception:
+                            width_date = 0
+                        # Draw date on the right in bold
+                        try:
+                            c.setFont('Helvetica-Bold', fsize)
+                            c.drawRightString(width - MARGIN, y, date_text)
+                        except Exception:
+                            c.setFont('Helvetica', fsize)
+                            c.drawRightString(width - MARGIN, y, date_text)
+                        # Draw label to the left of the date with the same font size but normal weight
+                        try:
+                            c.setFont('Helvetica', fsize)
+                            label_x = width - MARGIN - width_date - gap
+                            c.drawRightString(label_x, y, 'Fecha:')
+                        except Exception:
+                            # ignore label drawing errors
+                            pass
+                    except Exception:
+                        # No bloquear si hay problemas con la fecha
+                        pass
+                    # Dejar espacio vertical antes del resto del contenido
+                    y -= 20
+                    # Escribir la frase solicitada y el concepto en negritas en la misma línea
+                    try:
+                        sentence = 'En atención a su requerimiento, me permito enviarle la propuesta solicitada respecto a: '
+                        fsize = 10
+                        c.setFont('Helvetica', fsize)
+                        c.drawString(x, y, sentence)
+                        try:
+                            from reportlab.pdfbase import pdfmetrics
+                            sent_width = pdfmetrics.stringWidth(sentence, 'Helvetica', fsize)
+                        except Exception:
+                            sent_width = 0
+                        # dibujar concepto en negritas justo después
+                        try:
+                            c.setFont('Helvetica-Bold', fsize)
+                            c.drawString(x + sent_width, y, str(obj.concepto or ''))
+                        except Exception:
+                            c.setFont('Helvetica', fsize)
+                            c.drawString(x + sent_width, y, str(obj.concepto or ''))
+                    except Exception:
+                        pass
                     y -= 20
 
-                    # Encabezado tabla simple
+                    # Encabezado tabla simple (orden: CTZ, Concepto, Cantidad, Unidad, PU, Total)
                     c.setFont('Helvetica-Bold', 9)
-                    c.drawString(x, y, 'CTZ')
-                    c.drawString(x+80, y, 'Concepto')
-                    c.drawString(x+300, y, 'Unidad')
-                    c.drawString(x+360, y, 'PU')
-                    c.drawString(x+420, y, 'Cant')
-                    c.drawString(x+470, y, 'Total')
+                    # Center headers using approx center positions per column
+                    try:
+                        c.drawCentredString(x+20, y, 'CTZ')
+                        c.drawCentredString(x+170, y, 'Concepto')
+                        c.drawCentredString(x+300, y, 'Cantidad')
+                        c.drawCentredString(x+360, y, 'Unidad')
+                        c.drawCentredString(x+420, y, 'PU')
+                        c.drawCentredString(x+480, y, 'Total')
+                    except Exception:
+                        # Fallback to drawString if centering methods fail
+                        c.drawString(x, y, 'CTZ')
+                        c.drawString(x+80, y, 'Concepto')
+                        c.drawString(x+300, y, 'Cantidad')
+                        c.drawString(x+340, y, 'Unidad')
+                        c.drawString(x+400, y, 'PU')
+                        c.drawString(x+460, y, 'Total')
                     y -= 12
                     c.setFont('Helvetica', 9)
                     for d in obj.detalles.select_related('ctz').all():
@@ -999,16 +1141,32 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                             y = height - 40
                         c.drawString(x, y, str(getattr(d.ctz, 'id_manual', d.ctz.pk)))
                         c.drawString(x+80, y, (d.concepto or '')[:30])
-                        c.drawString(x+300, y, (d.unidad or '')[:10])
-                        c.drawRightString(x+400, y, str(d.pu))
-                        c.drawRightString(x+460, y, str(d.cantidad))
-                        c.drawRightString(x+520, y, str(d.total))
+                        # cantidad (centered)
+                        try:
+                            c.drawCentredString(x+300, y, str(d.cantidad))
+                        except Exception:
+                            c.drawString(x+300, y, str(d.cantidad))
+                        # unidad (centered)
+                        try:
+                            c.drawCentredString(x+360, y, (d.unidad or '')[:10])
+                        except Exception:
+                            c.drawString(x+340, y, (d.unidad or '')[:10])
+                        # pu
+                        try:
+                            c.drawRightString(x+400, y, str(d.pu))
+                        except Exception:
+                            c.drawString(x+400, y, str(d.pu))
+                        # total
+                        try:
+                            c.drawRightString(x+480, y, str(d.total))
+                        except Exception:
+                            c.drawString(x+480, y, str(d.total))
                         y -= 12
 
                     # Totales
                     y -= 10
                     c.setFont('Helvetica-Bold', 10)
-                    c.drawRightString(x+520, y, f'Total: {obj.total}')
+                    c.drawRightString(x+480, y, f'Total: {obj.total}')
                     c.showPage()
                     c.save()
                     buffer.seek(0)

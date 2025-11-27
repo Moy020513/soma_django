@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.core.validators import RegexValidator
+from django.db.models import SET_NULL
 
 
 class Empresa(models.Model):
@@ -172,8 +173,13 @@ class CTZFormato(models.Model):
     subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Subtotal')
     iva = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='IVA')
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='TOTAL')
+    # Fecha manual editable por el usuario (puede dejarse en blanco)
+    fecha_manual = models.DateField(blank=True, null=True, verbose_name='Fecha')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    # Contacto relacionado para este formato (opcional). Se ofrece en el admin para
+    # seleccionar un contacto perteneciente a la empresa asociada a las CTZs seleccionadas.
+    contacto = models.ForeignKey(Contacto, on_delete=SET_NULL, blank=True, null=True, related_name='formatos', verbose_name='Contacto')
 
     class Meta:
         verbose_name = 'CTZ Formato'

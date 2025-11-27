@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>CTZ Formato {{ object.pk }}</title>
+  <title>{% if contact_name %}{{ contact_name }}{% else %}CTZ Formato {{ object.pk }}{% endif %}</title>
   <style>
    /* Page margins: 1.0cm on every side (reducido). Use the container width
      to ensure symmetric left/right margins across renderers. */
@@ -12,9 +12,12 @@
   .pdf-container { box-sizing: border-box; width: calc(100% - 2cm); margin: 0 auto; }
    h1 { font-size: 25px; margin-bottom: 8px }
    .content-table { width: 100%; border-collapse: collapse; margin-top: 12px }
-   th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left }
-   th { background: #f6f6f6; font-weight:700; font-size:16px }
-   td { font-size:14px }
+  th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left }
+  /* Center all headers */
+  th { background: #f6f6f6; font-weight:700; font-size:16px; text-align: center }
+  /* utility class to center certain td values */
+  td.center { text-align: center }
+  td { font-size:14px }
    .right { text-align: right }
    .summary { margin-top: 12px; width: 30%; float: right; font-size:14px }
    .summary td { padding:6px 8px }
@@ -24,18 +27,36 @@
 </head>
 <body>
   <div class="pdf-container">
-    <h1>Formato: {{ object.partida }}</h1>
-    <div><strong>Concepto general:</strong> {{ object.concepto }}</div>
-    <div><strong>Fecha:</strong> {{ object.fecha_creacion }}</div>
+    <!-- Header: left = contacto name, right = fecha_manual (fallback a fecha_creacion) -->
+    <div class="pdf-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <h1>{% if contact_name %}{{ contact_name }}{% else %}Formato: {{ object.partida }}{% endif %}</h1>
+      <div class="pdf-date" style="display:flex; justify-content:flex-end; gap:8px; align-items:center; font-size:14px; color:#111;">
+        <span style="font-size:14px; color:#222;">Fecha:</span>
+        <span style="font-size:14px; font-weight:800;">
+          {% if object.fecha_manual %}
+            {{ object.fecha_manual|date:"d/m/Y" }}
+          {% else %}
+            {{ object.fecha_creacion|date:"d/m/Y" }}
+          {% endif %}
+        </span>
+      </div>
+    </div>
+    {% if empresa_name %}
+      <div class="empresa-name" style="font-size:14px; font-weight:700; color:#111; margin-bottom:6px;">{{ empresa_name }}</div>
+    {% endif %}
+    <div style="margin-top:8px; font-size:14px; color:#222;">
+      En atención a su requerimiento, me permito enviarle la propuesta solicitada respecto a:
+      <strong style="font-weight:800;"> {{ object.concepto }}</strong>
+    </div>
 
   <table class="content-table">
     <thead>
       <tr>
         <th>CTZ</th>
         <th>Concepto</th>
+        <th>Cantidad</th>
         <th>Unidad</th>
         <th class="right">PU</th>
-        <th class="right">Cantidad</th>
         <th class="right">Total</th>
       </tr>
     </thead>
@@ -45,9 +66,9 @@
         <tr>
           <td>{{ d.ctz.id_manual|default:d.ctz.pk }}</td>
           <td>{{ d.concepto }}</td>
-          <td>{{ d.unidad }}</td>
+          <td class="center">{{ d.cantidad|trim_number }}</td>
+          <td class="center">{{ d.unidad }}</td>
           <td class="right">{{ d.pu|money }}</td>
-          <td class="right">{{ d.cantidad|trim_number }}</td>
           <td class="right">{{ d.total|money }}</td>
         </tr>
       {% empty %}

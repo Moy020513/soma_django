@@ -169,6 +169,33 @@
     });
     // finally recompute totals
     computeAndSetTotals();
+    // Populate contacto select based on the first selected CTZ (if any)
+    try{
+      var contactoSelect = document.getElementById('id_contacto');
+      if(contactoSelect){
+        if(selected && selected.length){
+          // use the first selected CTZ to fetch contacts for its empresa
+          var firstId = selected[0].id;
+          fetch('/admin/empresas/ctzformato/ctz-contacts/'+firstId+'/', {credentials:'same-origin'})
+            .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
+            .then(function(data){
+              if(!data || !data.contacts) return;
+              // clear existing options
+              contactoSelect.innerHTML = '';
+              // add empty option
+              var emptyOpt = document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent = '---------'; contactoSelect.appendChild(emptyOpt);
+              data.contacts.forEach(function(c){
+                var o = document.createElement('option'); o.value = c.id; o.textContent = c.label + (c.correo ? (' - ' + c.correo) : ''); contactoSelect.appendChild(o);
+              });
+            })
+            .catch(function(e){ console && console.debug && console.debug('fetch contacts failed', e); });
+        } else {
+          // no CTZ selected: clear contacto options
+          contactoSelect.innerHTML = '';
+          var emptyOpt = document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent = '---------'; contactoSelect.appendChild(emptyOpt);
+        }
+      }
+    }catch(e){}
   }
 
   document.addEventListener('DOMContentLoaded', function(){
@@ -206,6 +233,22 @@
                   }
                 });
                 computeAndSetTotals();
+                // Also, if the form has a contacto select and the formato has contacto saved,
+                // leave it (we assume server rendered the selected option). Otherwise, populate
+                // contactos for the first detalle's CTZ so the user can choose.
+                try{
+                  var chosenOpts = Array.from(document.querySelectorAll('.ctz-row')).map(function(r){ return r.getAttribute('data-ctz-id'); });
+                  if(chosenOpts && chosenOpts.length){
+                    var contactoSelect = document.getElementById('id_contacto');
+                    if(contactoSelect && contactoSelect.options.length <= 1){
+                      // populate based on first chosen
+                      fetch('/admin/empresas/ctzformato/ctz-contacts/'+chosenOpts[0]+'/', {credentials:'same-origin'})
+                        .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
+                        .then(function(data){ if(!data || !data.contacts) return; contactoSelect.innerHTML=''; var emptyOpt=document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent='---------'; contactoSelect.appendChild(emptyOpt); data.contacts.forEach(function(c){ var o=document.createElement('option'); o.value=c.id; o.textContent=c.label + (c.correo ? (' - ' + c.correo) : ''); contactoSelect.appendChild(o); }); })
+                        .catch(function(e){console && console.debug && console.debug('fetch contacts failed', e);});
+                    }
+                  }
+                }catch(e){}
               })
               .catch(function(e){ console && console.debug && console.debug('fetch detalles failed', e); });
           }, 60);
