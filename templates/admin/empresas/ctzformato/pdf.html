@@ -8,21 +8,64 @@
      to ensure symmetric left/right margins across renderers. */
   @page { margin: 1.0cm }
   /* aumentar tamaño global de fuente para el PDF */
-  body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 16px; color: #222; margin: 0 }
-  .pdf-container { box-sizing: border-box; width: calc(100% - 2cm); margin: 0 auto; }
+  body { 
+    font-family: "DejaVu Sans", Arial, sans-serif; 
+    font-size: 16px; 
+    color: #222; 
+    margin: 0;
+    line-height: 1.4;
+  }
+  .pdf-container { 
+    box-sizing: border-box; 
+    width: calc(100% - 2cm); 
+    margin: 0 auto; 
+  }
    h1 { font-size: 25px; margin-bottom: 8px }
-   .content-table { width: 100%; border-collapse: collapse; margin-top: 12px }
-  th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left }
+   .content-table { 
+     width: 100%; 
+     border-collapse: collapse; 
+     margin-top: 12px;
+     table-layout: fixed; /* ← AGREGADO para consistencia */
+   }
+   
+   /* CORREGIDO: Anchos de columna ajustados para que quepan los headers */
+   .content-table col:nth-child(1) { width: 12%; }  /* Partida */
+   .content-table col:nth-child(2) { width: 36%; }  /* Concepto */
+   .content-table col:nth-child(3) { width: 12%; }  /* Cantidad */
+   .content-table col:nth-child(4) { width: 12%; }  /* Unidad */
+   .content-table col:nth-child(5) { width: 14%; }  /* PU */
+   .content-table col:nth-child(6) { width: 14%; }  /* Total */
+   
+  th, td { 
+    border: 1px solid #ddd; 
+    padding: 4px 6px; 
+    text-align: left;
+    word-wrap: break-word; /* ← AGREGADO para texto largo */
+  }
   /* Center all headers */
-  th { background: #f6f6f6; font-weight:700; font-size:16px; text-align: center }
+  th { 
+    background: #f6f6f6; 
+    font-weight:700; 
+    font-size: 14px; /* ← REDUCIDO ligeramente para mejor ajuste */
+    text-align: center;
+    white-space: nowrap; /* ← EVITA que se rompan los headers */
+  }
   /* utility class to center certain td values */
   td.center { text-align: center }
   td { font-size:13px; line-height:1.1 }
    .right { text-align: right }
-   .summary { margin-top: 12px; width: 30%; float: right; font-size:14px }
+   .summary { 
+     margin-top: 12px; 
+     width: 30%; 
+     float: right; 
+     font-size:14px 
+   }
    .summary td { padding:6px 8px }
    .summary .total-label { font-weight:800; font-size:20px }
    .summary .total-value { font-weight:800; font-size:20px }
+   
+   /* AGREGADO: Clearfix para el float */
+   .clear-both { clear: both; }
   </style>
 </head>
 <body>
@@ -62,6 +105,14 @@
     {% endif %}
 
   <table class="content-table">
+    <colgroup>
+      <col>
+      <col>
+      <col>
+      <col>
+      <col>
+      <col>
+    </colgroup>
     <thead>
       <tr>
         <th>Partida</th>
