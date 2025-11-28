@@ -4,193 +4,346 @@
   <meta charset="utf-8">
   <title>{% if contact_name %}{{ contact_name }}{% else %}CTZ Formato {{ object.pk }}{% endif %}</title>
   <style>
-   /* Page margins: 1.0cm on every side (reducido). Use the container width
-     to ensure symmetric left/right margins across renderers. */
-  @page { margin: 1.0cm }
-  /* aumentar tamaño global de fuente para el PDF */
-  body { 
-    font-family: "DejaVu Sans", Arial, sans-serif; 
-    font-size: 16px; 
-    color: #222; 
-    margin: 0;
-    line-height: 1.4;
-  }
-  .pdf-container { 
-    box-sizing: border-box; 
-    width: calc(100% - 2cm); 
-    margin: 0 auto; 
-  }
-   h1 { font-size: 25px; margin-bottom: 8px }
+   @page { 
+     size: letter;
+     margin: 2.0cm;
+   }
+   
+   * {
+     box-sizing: border-box;
+   }
+   
+   body { 
+     font-family: "DejaVu Sans", Arial, sans-serif; 
+     font-size: 16px;
+     color: #222; 
+     margin: 0;
+     padding: 0;
+     line-height: 1.4;
+   }
+   
+   .pdf-container { 
+     width: 100%;
+     max-width: 100%;
+     margin: 0;
+     padding: 0;
+   }
+   
+   /* HEADER - Usar tabla en lugar de flex/float para evitar encimamiento */
+   .pdf-header {
+     width: 100%;
+     margin-bottom: 30px;
+   }
+   
+   .pdf-header table {
+     width: 100%;
+     border-collapse: collapse;
+     border: none;
+   }
+   
+   .pdf-header td {
+     border: none;
+     padding: 0;
+     vertical-align: top;
+   }
+   
+   .pdf-header .left-cell {
+     width: 55%;
+     text-align: left;
+     padding-top: 80px;
+   }
+   
+   .pdf-header .right-cell {
+     width: 45%;
+     text-align: right;
+     vertical-align: top;
+     padding: 0;
+     margin: 0;
+   }
+   
+   .pdf-header h4 {
+     color: #0053a1ff;
+     margin: 0;
+     padding: 0;
+     font-size: 14px;
+     line-height: 1.3;
+   }
+   
+   .pdf-date-row {
+     font-size: 14px;
+     color: #222;
+     margin: 0 0 2px 0;
+     padding: 0;
+     line-height: 1.2;
+     text-align: right;
+   }
+   
+   .empresa-name {
+     font-size: 15px;
+     font-weight: 700;
+     color: gray;
+     margin: 8px 0 20px 0;
+     clear: both;
+   }
+   
+   .intro-text {
+     margin-top: 4px;
+     font-size: 14px;
+     color: #222;
+     line-height: 1.5;
+     margin-bottom: 8px;
+   }
+   
+   .propuesta-redaccion {
+     margin-top: 12px;
+     font-size: 13px;
+     line-height: 1.35;
+     border-left: 4px solid #e0e0e0;
+     padding-left: 10px;
+     margin-bottom: 12px;
+   }
+   
+   h1 { 
+     font-size: 25px;
+     margin-bottom: 8px;
+     line-height: 1.3;
+   }
+   
    .content-table { 
      width: 100%; 
      border-collapse: collapse; 
      margin-top: 12px;
-     table-layout: fixed; /* ← AGREGADO para consistencia */
+     table-layout: fixed;
    }
    
-   /* CORREGIDO: Anchos de columna ajustados para que quepan los headers */
-   .content-table col:nth-child(1) { width: 12%; }  /* Partida */
-   .content-table col:nth-child(2) { width: 36%; }  /* Concepto */
-   .content-table col:nth-child(3) { width: 12%; }  /* Cantidad */
-   .content-table col:nth-child(4) { width: 12%; }  /* Unidad */
-   .content-table col:nth-child(5) { width: 14%; }  /* PU */
-   .content-table col:nth-child(6) { width: 14%; }  /* Total */
+   .content-table col:nth-child(1) { width: 12%; }
+   .content-table col:nth-child(2) { width: 36%; }
+   .content-table col:nth-child(3) { width: 12%; }
+   .content-table col:nth-child(4) { width: 12%; }
+   .content-table col:nth-child(5) { width: 14%; }
+   .content-table col:nth-child(6) { width: 14%; }
    
-  th, td { 
-    border: 1px solid #ddd; 
-    padding: 4px 6px; 
-    text-align: left;
-    word-wrap: break-word; /* ← AGREGADO para texto largo */
-  }
-  /* Center all headers */
-  th { 
-    background: #f6f6f6; 
-    font-weight:700; 
-    font-size: 14px; /* ← REDUCIDO ligeramente para mejor ajuste */
-    text-align: center;
-    white-space: nowrap; /* ← EVITA que se rompan los headers */
-  }
-  /* utility class to center certain td values */
-  td.center { text-align: center }
-  td { font-size:13px; line-height:1.1 }
-   .right { text-align: right }
+   th, td { 
+     border: 1px solid #ddd; 
+     padding: 2px 4px;
+     text-align: left;
+     word-wrap: break-word;
+     overflow-wrap: break-word;
+   }
+   
+   th { 
+     background: #f6f6f6; 
+     font-weight: 700; 
+     font-size: 12px;
+     text-align: center;
+     white-space: nowrap;
+     vertical-align: middle;
+   }
+   
+   td.center { 
+     text-align: center;
+   }
+   
+   td { 
+     font-size: 11px;
+     line-height: 1.1;
+   }
+   
+   .right { text-align: right; }
+   
    .summary { 
-     margin-top: 12px; 
-     width: 30%; 
-     float: right; 
-     font-size:14px 
+     margin-top: 12px;
+     width: 30%;
+     float: right;
+     font-size: 14px;
    }
-   .summary td { padding:6px 8px }
-   .summary .total-label { font-weight:800; font-size:20px }
-   .summary .total-value { font-weight:800; font-size:20px }
    
-   /* AGREGADO: Clearfix para el float */
-   .clear-both { clear: both; }
+   .summary td { 
+     padding: 2px 4px;
+   }
+   
+   .summary .total-label { 
+     font-weight: 800;
+     font-size: 20px;
+   }
+   
+   .summary .total-value { 
+     font-weight: 800;
+     font-size: 20px;
+   }
+   
+   .clear-both { 
+     clear: both;
+   }
+   
+   .bar {
+     height: 18px;
+     background: #e0e0e0;
+     margin-top: 18px;
+     clear: both;
+   }
+   
+   .terms {
+     margin-top: 12px;
+     font-size: 9.5px;
+     line-height: 1.3;
+   }
+   
+   .terms h2 {
+     font-size: 12px;
+     margin-bottom: 8px;
+   }
+   
+   .terms p {
+     margin: 4px 0;
+   }
+   
+   .signature {
+     margin-top: 28px;
+     text-align: right;
+   }
+   
+   .notes {
+     margin-top: 14px;
+     font-size: 12px;
+     color: #333;
+     background: #fafafa;
+     padding: 10px;
+     border: 1px solid #eee;
+     clear: both;
+   }
+   .intro-text {
+    font-size: 12px;
+   }
   </style>
 </head>
 <body>
   <div class="pdf-container">
-    <!-- Header: left = contacto name, right = fecha_manual (fallback a fecha_creacion) -->
-    <div class="pdf-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
-      <h3 style="color: #0053a1ff; margin-bottom: 0;">{% if contact_name %}{{ contact_name }}{% else %}Formato: {{ object.partida }}{% endif %}</h3>
-        <div class="pdf-date" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-size:14px; color:#111;">
-          <div style="font-size:14px; color:#222;">
-            <span>Propuesta No.:</span>
-            <strong style="margin-left:6px; font-weight:800;">{{ object.partida }}</strong>
-          </div>
-          <div style="font-size:14px; color:#222;">
-            <span>Fecha:</span>
-            <strong style="margin-left:6px; font-weight:800;">
-              {% if object.fecha_manual %}
-                {{ object.fecha_manual|date:"d/m/Y" }}
-              {% else %}
-                {{ object.fecha_creacion|date:"d/m/Y" }}
-              {% endif %}
-            </strong>
-          </div>
-        </div>
+    <!-- Header usando tabla para evitar encimamiento -->
+    <div class="pdf-header">
+      <table>
+        <tr>
+          <td class="left-cell">
+            <h4>{% if contact_name %}{{ contact_name }}{% else %}Formato: {{ object.partida }}{% endif %}</h4>
+            {% if empresa_name %}
+              <div style="font-size:12px; font-weight:700; color: gray; margin-top:4px;">{{ empresa_name }}</div>
+            {% endif %}
+          </td>
+          <td class="right-cell">
+            <div class="pdf-date-row">
+              <span>Propuesta No.:</span>
+              <strong style="margin-left:6px; font-weight:800;">{{ object.partida }}</strong>
+            </div>
+            <div class="pdf-date-row">
+              <span>Fecha:</span>
+              <strong style="margin-left:6px; font-weight:800;">
+                {% if object.fecha_manual %}
+                  {{ object.fecha_manual|date:"d/m/Y" }}
+                {% else %}
+                  {{ object.fecha_creacion|date:"d/m/Y" }}
+                {% endif %}
+              </strong>
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
-    {% if empresa_name %}
-      <div class="empresa-name" style="font-size:15px; font-weight:700; color: gray; margin-bottom:26px;">{{ empresa_name }}</div>
-    {% endif %}
-    <div style="margin-top:8px; font-size:14px; color:#222;">
+
+    <div class="intro-text">
       En atención a su requerimiento, me permito enviarle la propuesta solicitada respecto a:
-      <strong style="font-weight:800;"> {{ object.concepto }}</strong>
+      <strong style="font-weight:800;">{{ object.concepto }}</strong>
     </div>
 
     {% if object.propuesta_redaccion %}
-      <div style="margin-top:12px; font-size:13px; line-height:1.35; border-left:4px solid #e0e0e0; padding-left:10px;">
+      <div class="propuesta-redaccion">
         {{ object.propuesta_redaccion|linebreaks }}
       </div>
     {% endif %}
 
-  <table class="content-table">
-    <colgroup>
-      <col>
-      <col>
-      <col>
-      <col>
-      <col>
-      <col>
-    </colgroup>
-    <thead>
-      <tr>
-        <th>Partida</th>
-        <th>Concepto</th>
-        <th>Cantidad</th>
-        <th>Unidad</th>
-        <th class="right">PU</th>
-        <th class="right">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% load ctz_filters %}
-      {% for d in object.detalles.all %}
+    <table class="content-table">
+      <colgroup>
+        <col>
+        <col>
+        <col>
+        <col>
+        <col>
+        <col>
+      </colgroup>
+      <thead>
         <tr>
-          {# Usar el número de fila como Partida: 1.00, 2.00, ... #}
-          <td class="center">{{ forloop.counter|floatformat:2 }}</td>
-          <td>{{ d.concepto }}</td>
-          <td class="center">{{ d.cantidad|trim_number }}</td>
-          <td class="center">{{ d.unidad }}</td>
-          <td class="right">{{ d.pu|money }}</td>
-          <td class="right">{{ d.total|money }}</td>
+          <th>Partida</th>
+          <th>Concepto</th>
+          <th>Cantidad</th>
+          <th>Unidad</th>
+          <th class="right">PU</th>
+          <th class="right">Total</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="6">No hay detalles registrados.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  {% load ctz_filters %}
-  <div class="summary">
-    <table style="width:100%; border-collapse:collapse;">
-      <tr>
-        <td style="width:60%; text-align:left; font-weight:700;">SUB TOTAL</td>
-        <td style="width:40%; text-align:right; font-weight:700;">{{ object.subtotal|money }}</td>
-      </tr>
-      <tr>
-        <td style="text-align:left; font-weight:700;">IVA</td>
-        <td style="text-align:right; font-weight:700;">{{ object.iva|money }}</td>
-      </tr>
-      <tr>
-        <td style="text-align:left; font-weight:800; font-size:18px;">TOTAL</td>
-        <td style="text-align:right; font-weight:800; font-size:18px;">{{ object.total|money }}</td>
-      </tr>
+      </thead>
+      <tbody>
+        {% load ctz_filters %}
+        {% for d in object.detalles.all %}
+          <tr>
+            <td class="center">{{ forloop.counter|floatformat:2 }}</td>
+            <td>{{ d.concepto }}</td>
+            <td class="center">{{ d.cantidad|trim_number }}</td>
+            <td class="center">{{ d.unidad }}</td>
+            <td class="right">{{ d.pu|money }}</td>
+            <td class="right">{{ d.total|money }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6">No hay detalles registrados.</td></tr>
+        {% endfor %}
+      </tbody>
     </table>
-  </div>
-  <div style="clear: both"></div>
+
+    {% load ctz_filters %}
+    <div class="summary">
+      <table style="width:100%; border-collapse:collapse;">
+        <tr>
+          <td style="width:auto; text-align:left; font-weight:600;">SUB TOTAL</td>
+          <td style="width:40%; text-align:right; font-weight:600;">{{ object.subtotal|money }}</td>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-weight:600;">IVA</td>
+          <td style="text-align:right; font-weight:600;">{{ object.iva|money }}</td>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-weight:700; font-size:15px;">TOTAL</td>
+          <td style="text-align:right; font-weight:700; font-size:15px;">{{ object.total|money }}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <div class="clear-both"></div>
+
     {% if object.notas_observaciones %}
-      <div style="margin-top:14px; font-size:12px; color:#333; background:#fafafa; padding:10px; border:1px solid #eee;">
+      <div class="notes">
         <strong>Notas / Observaciones:</strong>
         <div style="margin-top:8px;">{{ object.notas_observaciones|linebreaks }}</div>
       </div>
     {% endif %}
 
-  <div class="bar" style="height:18px; background:#e0e0e0; margin-top:18px;"></div>
+    <div class="bar"></div>
 
-  <div class="terms" style="margin-top:12px; font-size:10.5px; line-height:1.3;">
-    <h3 style="font-size:12px; margin-bottom:8px;">CONDICIONES DE COMPRA</h3>
-    <p>* Propuesta válida por 20 días a partir de la fecha del presente.</p>
-    <p>* El costo se expresa en peso mexicano a excepción que se especifique otro tipo de moneda.</p>
-    <p>* Se considera que el área de trabajo cuenta con los servicios necesarios para desempeñar los trabajos, tales cómo energía eléctrica, agua, etc. En caso de no contar
-    con estos servicios, se cotizará de manera adicional el suministro o abastecimiento de los mismos.</p>
-    <p>* La presente contempla que los trabajos se realizarán en días y horarios hábiles (Salvo que se indique lo contrario), en caso de requerirse trabajos nocturnos o en fin
-    de semana, la presente deberá ajustarse.</p>
-    <p>* Para la realización de estos trabajos no se contempla el movimiento de maquinaria, equipo o mobiliario (Salvo que se indique lo contrario)</p>
-    <p>* Todo trabajo que no se encuentre dentro del presente será considerado cómo adicional, quedando fuera del costo y tiempo programado de ejecución del
-    presente.</p>
-    <p>* Todo el personal se encuentra cubierto de acuerdo con lo establecido por la ley.</p>
-    <p>* Todos los trabajos de SOMA están 100% garantizados.</p>
+    <div class="terms">
+      <h2>CONDICIONES DE COMPRA</h2>
+      <p>* Propuesta válida por 20 días a partir de la fecha del presente.</p>
+      <p>* El costo se expresa en peso mexicano a excepción que se especifique otro tipo de moneda.</p>
+      <p>* Se considera que el área de trabajo cuenta con los servicios necesarios para desempeñar los trabajos, tales cómo energía eléctrica, agua, etc. En caso de no contar con estos servicios, se cotizará de manera adicional el suministro o abastecimiento de los mismos.</p>
+      <p>* La presente contempla que los trabajos se realizarán en días y horarios hábiles (Salvo que se indique lo contrario), en caso de requerirse trabajos nocturnos o en fin de semana, la presente deberá ajustarse.</p>
+      <p>* Para la realización de estos trabajos no se contempla el movimiento de maquinaria, equipo o mobiliario (Salvo que se indique lo contrario)</p>
+      <p>* Todo trabajo que no se encuentre dentro del presente será considerado cómo adicional, quedando fuera del costo y tiempo programado de ejecución del presente.</p>
+      <p>* Todo el personal se encuentra cubierto de acuerdo con lo establecido por la ley.</p>
+      <p>* Todos los trabajos de SOMA están 100% garantizados.</p>
 
-    <p style="text-align:center; font-weight:700; margin-top:12px;">Quedamos a sus órdenes para cualquier duda o aclaración.<br/>Saludos Cordiales</p>
+      <p style="text-align:center; font-weight:700; margin-top:12px;">Quedamos a sus órdenes para cualquier duda o aclaración.<br/>Saludos Cordiales</p>
 
-    <div style="margin-top:28px; text-align:right;">
-      <div style="font-size:12px; color:#2b4f9d; margin-right:27px;">Atentamente:</div>
-      <div style="font-size:14px; color:#2b4f9d; font-weight:700">Guadalupe Flores Díaz</div>
-      <div style="font-size:12px; color:#444; margin-right:20px;">Gerente General</div>
+      <div class="signature">
+        <div style="font-size:12px; color:#2b4f9d; margin-right:27px;">Atentamente:</div>
+        <div style="font-size:14px; color:#2b4f9d; font-weight:700">Guadalupe Flores Díaz</div>
+        <div style="font-size:12px; color:#444; margin-right:20px;">Gerente General</div>
+      </div>
     </div>
   </div>
-</div>
-
 </body>
 </html>

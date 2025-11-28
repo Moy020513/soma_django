@@ -894,7 +894,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     import io
                     # We'll shift the content down to avoid overlapping the membretado header.
                     # Aumentado para dejar más espacio entre el encabezado membretado y el contenido.
-                    SHIFT = 160  # points to move content down; adjust if needed
+                    SHIFT = 20  # points to move content down; adjust if needed
                     # Try modern pypdf first
                     try:
                         from pypdf import PdfReader, PdfWriter
@@ -1014,7 +1014,13 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                 return HttpResponse(hint, content_type='text/html', status=501)
 
             try:
-                pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+                pdf = HTML(
+                    string=html, 
+                    base_url=request.build_absolute_uri('/')
+                ).write_pdf(
+                    presentational_hints=True,
+                    optimize_size=('fonts',)
+                )
                 try:
                     pdf = _merge_with_membrete(pdf)
                 except Exception:
