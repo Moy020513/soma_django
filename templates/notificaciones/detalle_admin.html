@@ -30,6 +30,22 @@
                     {% if gasolina_request.comprobante %}
                         <p><strong>Comprobante:</strong> <a href="{{ gasolina_request.comprobante.url }}" target="_blank">Descargar comprobante</a></p>
                     {% endif %}
+                    {% if gasolina_request.comprobantes.exists %}
+                        <p><strong>Historial de comprobantes:</strong></p>
+                        <ul>
+                            {% for comp in gasolina_request.comprobantes.all %}
+                                <li>
+                                    {% if comp.archivo %}
+                                        <strong>Comprobante {{ forloop.counter }}:</strong>
+                                        <a href="{{ comp.archivo.url }}" target="_blank">{{ comp.filename }}</a>
+                                        &nbsp;<small class="text-muted">({{ comp.uploaded_at|date:'d/m/Y H:i' }})</small>
+                                    {% else %}
+                                        <strong>Comprobante {{ forloop.counter }}:</strong> <em>Archivo no disponible</em>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                     <p><strong>Estado:</strong> {{ gasolina_request.get_estado_display }}</p>
                     {% if gasolina_restante is not None %}
                         {% if gasolina_restante|floatformat:2 != "0.00" %}
@@ -62,17 +78,60 @@
                     {% if gasolina_request.comprobante and gasolina_request.estado != 'pendiente' %}
                         <hr>
                         <h6>Revisión del comprobante</h6>
-                        <form method="post" action="{% url 'admin:flota_vehicular_gasolinarequest_comprobar' gasolina_request.pk %}">
+                        <form id="comprobar-form" method="post" action="{% url 'admin:flota_vehicular_gasolinarequest_comprobar' gasolina_request.pk %}" data-precio="{{ gasolina_request.precio }}">
                             {% csrf_token %}
                             <div class="mb-2">
                                 <label for="monto_comprobado">Monto comprobado (MXN)</label>
                                 <input class="form-control" type="text" name="monto_comprobado" id="monto_comprobado" placeholder="Ej. 150.00">
                             </div>
+                            <input type="hidden" name="accion" id="accion_input" value="">
                             <div class="d-flex gap-2">
-                                <button name="accion" value="cubre_todo" class="btn btn-success" type="submit">Cubre todo</button>
-                                <button name="accion" value="parcial" class="btn btn-warning" type="submit">Comprobar parcial</button>
+                                <button id="btn-cubre-todo" class="btn btn-success" type="button">Cubre todo</button>
+                                <button id="btn-parcial" class="btn btn-warning" type="button">Comprobar parcial</button>
                             </div>
                         </form>
+                        <script>
+                            (function(){
+                                const form = document.getElementById('comprobar-form');
+                                const btnCubre = document.getElementById('btn-cubre-todo');
+                                const btnParcial = document.getElementById('btn-parcial');
+                                const montoInput = document.getElementById('monto_comprobado');
+                                const accionInput = document.getElementById('accion_input');
+                                const precioRaw = form.getAttribute('data-precio') || '0';
+                                const precio = parseFloat(precioRaw);
+
+                                function parseNumber(v){
+                                    if(!v) return NaN;
+                                    // quitar comas y espacios
+                                    v = String(v).replace(/,/g,'').trim();
+                                    return parseFloat(v);
+                                }
+
+                                btnCubre.addEventListener('click', function(e){
+                                    const confirmed = window.confirm('¿Estás seguro que el comprobante cubre el monto solicitado?');
+                                    if(!confirmed) return;
+                                    accionInput.value = 'cubre_todo';
+                                    form.submit();
+                                });
+
+                                btnParcial.addEventListener('click', function(e){
+                                    const montoVal = parseNumber(montoInput.value);
+                                    if (isNaN(montoVal)){
+                                        alert('Ingresa un monto válido para comprobar (Ej. 150.00)');
+                                        montoInput.focus();
+                                        return;
+                                    }
+                                    const restante = Math.max(0, (precio - montoVal));
+                                    const formattedMonto = montoVal.toFixed(2);
+                                    const formattedRest = restante.toFixed(2);
+                                    const msg = `¿Estás seguro que el comprobante cubre parcialmente por $${formattedMonto}? Restarían por comprobar $${formattedRest}.`;
+                                    const confirmed = window.confirm(msg);
+                                    if(!confirmed) return;
+                                    accionInput.value = 'parcial';
+                                    form.submit();
+                                });
+                            })();
+                        </script>
                     {% endif %}
                 {% endif %}
             {% elif notificacion.respuestas.exists %}

@@ -4,9 +4,10 @@ from .models import (
     RegistroUso, TenenciaVehicular, VerificacionVehicular
 )
 from .models import VehiculoExterno, AsignacionVehiculoExterno
-from .models import GasolinaRequest
+from .models import GasolinaRequest, GasolinaComprobante
 from django.utils.html import format_html
 from django.shortcuts import redirect
+from django.utils.html import format_html
 
 
 @admin.register(Vehiculo)
@@ -231,6 +232,32 @@ class VerificacionVehicularAdmin(admin.ModelAdmin):
     documento_link.short_description = 'Documento'
     documento_link.allow_tags = True
 
+
+class GasolinaComprobanteInline(admin.TabularInline):
+    model = GasolinaComprobante
+    readonly_fields = ['archivo_link', 'uploaded_at']
+    fields = ['archivo_link', 'uploaded_at', 'notas']
+    extra = 0
+
+    def archivo_link(self, obj):
+        if obj and obj.archivo:
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.archivo.url, obj.archivo.name.split('/')[-1])
+        return ''
+    archivo_link.short_description = 'Archivo'
+
+
+@admin.register(GasolinaComprobante)
+class GasolinaComprobanteAdmin(admin.ModelAdmin):
+    list_display = ['gasolina_request', 'archivo_link', 'uploaded_at']
+    readonly_fields = ['archivo_link', 'uploaded_at']
+    search_fields = ['gasolina_request__empleado__usuario__username']
+
+    def archivo_link(self, obj):
+        if obj and obj.archivo:
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.archivo.url, obj.archivo.name.split('/')[-1])
+        return ''
+    archivo_link.short_description = 'Archivo'
+
 @admin.register(AsignacionVehiculoExterno)
 class AsignacionVehiculoExternoAdmin(admin.ModelAdmin):
     list_display = ['vehiculo_externo', 'empleado', 'fecha_asignacion', 'fecha_finalizacion', 'estado']
@@ -275,6 +302,9 @@ class GasolinaRequestAdmin(admin.ModelAdmin):
     readonly_fields = ['fecha', 'comprobante_link']
     actions = ['aprobar_solicitudes', 'rechazar_solicitudes']
     change_form_template = 'admin/flota_vehicular/gasolinarequest_change_form.html'
+
+    inlines = [GasolinaComprobanteInline]
+
 
     def get_vehiculo_display(self, obj):
         return obj.vehiculo or obj.vehiculo_externo

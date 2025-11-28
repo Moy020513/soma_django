@@ -263,3 +263,44 @@ class GasolinaRequest(models.Model):
             return restante
         except Exception:
             return self.precio
+
+
+class GasolinaComprobante(models.Model):
+    """Historial de comprobantes subidos para una solicitud de gasolina.
+
+    Cada vez que el empleado sube un comprobante se crea una instancia en este modelo.
+    Esto permite mantener un historial y mostrar los comprobantes anteriores en el admin
+    y en las notificaciones sin depender de parsing de mensajes.
+    """
+    gasolina_request = models.ForeignKey(GasolinaRequest, on_delete=models.CASCADE, related_name='comprobantes')
+    archivo = models.FileField(upload_to='flota/gasolina/historial/')
+    # Nombre original del archivo tal como lo subió el usuario (p.ej. 'CHIDO.jpeg')
+    original_name = models.CharField(max_length=255, null=True, blank=True)
+    notas = models.TextField(blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Comprobante Gasolina'
+        verbose_name_plural = 'Comprobantes Gasolina'
+        ordering = ['uploaded_at']
+
+    def __str__(self):
+        return f"Comprobante {self.gasolina_request_id} - {self.archivo.name.split('/')[-1]}"
+
+    @property
+    def url(self):
+        try:
+            return self.archivo.url
+        except Exception:
+            return ''
+
+    @property
+    def filename(self):
+        try:
+            # Preferir el nombre original subido por el usuario si está disponible
+            if self.original_name:
+                return self.original_name
+            # sino, devolver sólo el nombre del archivo sin la ruta
+            return self.archivo.name.split('/')[-1]
+        except Exception:
+            return ''

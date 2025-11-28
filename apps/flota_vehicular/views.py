@@ -13,7 +13,7 @@ from .forms import (
     GasolinaRequestCreateForm,
     GasolinaComprobanteForm,
 )
-from .models import GasolinaRequest
+from .models import GasolinaRequest, GasolinaComprobante
 from apps.recursos_humanos.models import Empleado
 from apps.notificaciones.models import Notificacion
 from apps.usuarios.models import Usuario
@@ -730,6 +730,15 @@ def subir_comprobante_gasolina(request, pk):
     if request.method == 'POST':
         form = GasolinaComprobanteForm(request.POST, request.FILES, instance=req)
         if form.is_valid():
+            # Capturar el nombre original del archivo subido (si viene en FILES)
+            uploaded = request.FILES.get('comprobante')
+            original_name = None
+            try:
+                if uploaded:
+                    original_name = uploaded.name
+            except Exception:
+                original_name = None
+
             form.save()
             # Marcar como leída la notificación si venimos desde una notificación
             from_notification = request.GET.get('from_notification')
@@ -741,6 +750,14 @@ def subir_comprobante_gasolina(request, pk):
                 except Notificacion.DoesNotExist:
                     pass
 
+            # Guardar el comprobante en el historial
+            try:
+                # Crear registro en el historial de comprobantes, guardando el nombre original
+                GasolinaComprobante.objects.create(gasolina_request=req, archivo=req.comprobante, original_name=original_name)
+            except Exception:
+                # No bloquear el flujo si falla crear el historial
+                pass
+
             # Respaldo: notificar a administradores si no lo hizo la señal (chequeo idempotente)
             try:
                 import logging
@@ -751,10 +768,23 @@ def subir_comprobante_gasolina(request, pk):
                     titulo_admin = '📥 Comprobante de gasolina subido'
                     mensaje_admin = f'El empleado {req.empleado.usuario.get_full_name()} ha subido un comprobante de gasolina para {req.vehiculo or req.vehiculo_externo} por ${req.precio}.'
                     try:
-                        if req.comprobante:
-                            mensaje_admin += f' Comprobante: {req.comprobante.url}'
+                        # Construir una lista numerada de comprobantes usando sólo el nombre de archivo
+                        import os
+                        comprobantes = list(req.comprobantes.order_by('uploaded_at'))
+                        if comprobantes:
+                            # Crear líneas como: "Comprobante 1: nombre.jpg" usando el nombre original si está disponible
+                            lines = []
+                            for idx, c in enumerate(comprobantes, start=1):
+                                try:
+                                    # usar la propiedad filename definida en el modelo (preferirá original_name)
+                                    fname = getattr(c, 'filename', None) or ''
+                                except Exception:
+                                    fname = ''
+                                lines.append(f'Comprobante {idx}: {fname}')
+                            # Añadir al mensaje en líneas separadas; no incluimos rutas completas
+                            mensaje_admin += '\n\n' + '\n'.join(lines)
                     except Exception:
-                        # No bloquear la creación de la notificación por error al acceder al URL
+                        # No bloquear la creación de la notificación por fallos en la búsqueda
                         pass
                     try:
                         noti = Notificacion.objects.create(
