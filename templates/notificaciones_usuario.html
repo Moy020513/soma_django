@@ -102,9 +102,15 @@
                                             {% if request.user.is_superuser %}
                                                 {# Admin: no mostrar acciones adicionales #}
                                             {% else %}
-                                                <a href="{{ notificacion.url }}?from_notification={{ notificacion.id }}" class="btn btn-sm btn-primary action-link">
-                                                    <i class="fas fa-reply me-1"></i>Responder
-                                                </a>
+                                                {% if '?' in notificacion.url %}
+                                                    <a href="{{ notificacion.url }}&from_notification={{ notificacion.id }}" class="btn btn-sm btn-primary action-link">
+                                                        <i class="fas fa-reply me-1"></i>Responder
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{{ notificacion.url }}?from_notification={{ notificacion.id }}" class="btn btn-sm btn-primary action-link">
+                                                        <i class="fas fa-reply me-1"></i>Responder
+                                                    </a>
+                                                {% endif %}
                                                 <a href="{% url 'notificaciones:detalle_usuario' notificacion.id %}" class="btn btn-sm btn-outline-secondary action-link">
                                                     <i class="fas fa-external-link-alt me-1"></i>Ver más
                                                 </a>

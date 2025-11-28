@@ -339,6 +339,7 @@ class GasolinaRequestAdmin(admin.ModelAdmin):
         custom = [
             path('<path:object_id>/aprobar/', self.admin_site.admin_view(self.aprobar_view), name='flota_vehicular_gasolinarequest_aprobar'),
             path('<path:object_id>/rechazar/', self.admin_site.admin_view(self.rechazar_view), name='flota_vehicular_gasolinarequest_rechazar'),
+            path('<path:object_id>/comprobar/', self.admin_site.admin_view(self.comprobar_view), name='flota_vehicular_gasolinarequest_comprobar'),
         ]
         return custom + urls
 
@@ -393,4 +394,92 @@ class GasolinaRequestAdmin(admin.ModelAdmin):
                     )
             except Exception:
                 pass
+        return redirect(request.META.get('HTTP_REFERER', '/admin/'))
+
+    def comprobar_view(self, request, object_id):
+        """Vista admin para que el admin registre si el comprobante cubre todo o parte del monto."""
+        obj = self.get_object(request, object_id)
+        if not obj:
+            return redirect(request.META.get('HTTP_REFERER', '/admin/'))
+
+        # Solo procesar POST
+        if request.method == 'POST':
+            from decimal import Decimal, InvalidOperation
+            try:
+                accion = request.POST.get('accion')
+                monto_str = request.POST.get('monto_comprobado')
+                monto = None
+                if monto_str:
+                    monto = Decimal(monto_str.replace(',', '').strip())
+                # Si se indica que cubre todo o monto == precio
+                if accion == 'cubre_todo' or (monto is not None and monto >= obj.precio):
+                    obj.monto_comprobado = obj.precio
+                    obj.estado = 'comprobado'
+                    obj.save()
+
+                    # Notificar al empleado que todo fue comprobado
+                    try:
+                        from apps.notificaciones.models import Notificacion
+                        from django.urls import reverse
+                        titulo = '✅ Comprobante comprobado (completo)'
+                        mensaje = f'Se ha comprobado el comprobante de tu solicitud del {obj.fecha.date()} por ${obj.precio}. El comprobante cubre el monto solicitado. Ya puedes realizar una nueva solicitud si lo deseas.'
+                        # Para el caso completo, queremos enviar al usuario al detalle de la
+                        # notificación (no a subir comprobante). Creamos la notificación y
+                        # luego la actualizamos para apuntar a su propia pantalla de detalle
+                        # con el parametro gasolina_id para que el detalle muestre el request.
+                        try:
+                            noti = Notificacion.objects.create(
+                                usuario=obj.empleado.usuario,
+                                titulo=titulo,
+                                mensaje=mensaje,
+                                tipo='success',
+                                url=''
+                            )
+                            try:
+                                noti.url = reverse('notificaciones:detalle_usuario', args=[noti.pk]) + f'?gasolina_id={obj.pk}'
+                                noti.save()
+                            except Exception:
+                                # No bloquear si no se puede construir la URL
+                                pass
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+
+                else:
+                    # Parcial
+                    if monto is None:
+                        # Si no se entregó monto válido, redirigir sin cambios
+                        return redirect(request.META.get('HTTP_REFERER', '/admin/'))
+                    # Limitar monto a no mayor que el precio
+                    if monto > obj.precio:
+                        monto = obj.precio
+                    obj.monto_comprobado = monto
+                    obj.estado = 'parcial'
+                    obj.save()
+
+                    # Notificar al empleado del monto comprobado y lo que falta
+                    try:
+                        from apps.notificaciones.models import Notificacion
+                        from django.urls import reverse
+                        titulo = 'ℹ️ Comprobante parcialmente comprobado'
+                        faltante = obj.precio - monto
+                        mensaje = f'Se ha comprobado ${monto} de tu solicitud del {obj.fecha.date()} por ${obj.precio}. Falta por comprobar ${faltante}. Por favor sube el comprobante adicional o consulta con administración.'
+                        try:
+                            base_url = reverse('flota:subir_comprobante_gasolina', args=[obj.pk])
+                        except Exception:
+                            base_url = ''
+                        noti = Notificacion.objects.create(
+                            usuario=obj.empleado.usuario,
+                            titulo=titulo,
+                            mensaje=mensaje,
+                            tipo='warning',
+                            url=base_url
+                        )
+                    except Exception:
+                        pass
+            except Exception:
+                # No bloquear al admin si hubo error parseando monto
+                pass
+
         return redirect(request.META.get('HTTP_REFERER', '/admin/'))

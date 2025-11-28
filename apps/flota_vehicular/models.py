@@ -226,6 +226,8 @@ class GasolinaRequest(models.Model):
         ('pendiente', 'Pendiente'),
         ('revisado', 'Revisado'),
         ('rechazado', 'Rechazado'),
+        ('parcial', 'Parcialmente comprobado'),
+        ('comprobado', 'Comprobante completo'),
     ]
 
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
@@ -237,6 +239,8 @@ class GasolinaRequest(models.Model):
     # tras la aprobación/revisión del admin.
     comprobante = models.FileField(upload_to='flota/gasolina/', null=True, blank=True)
     observaciones = models.TextField(blank=True)
+    # Monto que el admin ha comprobado del precio solicitado (puede ser parcial)
+    monto_comprobado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
 
     class Meta:
@@ -247,3 +251,15 @@ class GasolinaRequest(models.Model):
     def __str__(self):
         v = self.vehiculo or self.vehiculo_externo
         return f"Solicitud Gasolina {v} - {self.empleado} ({self.fecha.date()})"
+
+    def monto_restante(self):
+        """Retorna cuánto falta por comprobar (precio - monto_comprobado). Si no hay monto_comprobado devuelve el precio."""
+        try:
+            if self.monto_comprobado is None:
+                return self.precio
+            restante = self.precio - self.monto_comprobado
+            if restante < 0:
+                return 0
+            return restante
+        except Exception:
+            return self.precio

@@ -18,6 +18,7 @@ from apps.recursos_humanos.models import Empleado
 from apps.notificaciones.models import Notificacion
 from apps.usuarios.models import Usuario
 from django.urls import reverse
+from django.db.models import Q
 
 
 @login_required
@@ -606,17 +607,48 @@ def pedir_gasolina(request):
     # Revisar la última solicitud del empleado para aplicar reglas de flujo
     from .models import GasolinaRequest
     ultima = GasolinaRequest.objects.filter(empleado=empleado).order_by('-fecha').first()
+    # Además revisar si existe alguna solicitud con comprobante subido que aún no ha sido validada
+    try:
+        pendiente_validacion = GasolinaRequest.objects.filter(
+            empleado=empleado
+        ).filter(
+            Q(comprobante__isnull=False) & Q(monto_comprobado__isnull=True) | Q(estado='parcial')
+        ).exists()
+    except Exception:
+        pendiente_validacion = False
+    if pendiente_validacion:
+        messages.info(request, 'Tienes una solicitud con comprobante subido pendiente de validación por administración. Espera a que se confirme (completo o parcial).')
+        return redirect('mi_vehiculo')
     if ultima:
         # Si hay una solicitud pendiente, bloquear nueva solicitud
         if ultima.estado == 'pendiente':
             messages.info(request, 'Ya tienes una solicitud pendiente. Espera a que sea revisada.')
             return redirect('mi_vehiculo')
 
-        # Si la solicitud ya fue revisada (aceptada o rechazada) pero aún no tiene comprobante,
-        # no permitir crear una nueva solicitud: pedir que suban el comprobante primero.
+        # Si la solicitud aún no tiene comprobante, pedir subir comprobante antes de crear otra solicitud.
         if not ultima.comprobante:
             messages.warning(request, f'Falta tu comprobante de tu solicitud de {ultima.precio} MXN. Sube el comprobante antes de crear otra solicitud.')
             return redirect('flota:subir_comprobante_gasolina', pk=ultima.pk)
+
+        # Si ya subiste el comprobante pero aún no ha sido validado por admin (monto_comprobado es None),
+        # bloquear nueva solicitud hasta la validación.
+        try:
+            if ultima.comprobante and (ultima.monto_comprobado is None):
+                messages.info(request, 'Has subido el comprobante y está pendiente de validación por administración. Espera a que se confirme (completo o parcial).')
+                return redirect('mi_vehiculo')
+        except Exception:
+            # Si hay algún problema con el campo previsto, no bloquear la creación (fallo seguro)
+            pass
+
+        # Si ya se comprobó parcialmente, indicar al usuario cuánto falta y dirigir a subir comprobante
+        try:
+            if ultima.monto_comprobado is not None and ultima.monto_comprobado < ultima.precio:
+                restante = ultima.precio - ultima.monto_comprobado
+                messages.info(request, f'Tienes un monto pendiente de comprobación por ${restante}. Sube el comprobante adicional para completar la solicitud.')
+                return redirect('flota:subir_comprobante_gasolina', pk=ultima.pk)
+        except Exception:
+            # Si hay algún problema con el campo previsto, no bloquear la creación (fallo seguro)
+            pass
 
     if request.method == 'POST':
         form = GasolinaRequestCreateForm(request.POST)
@@ -680,12 +712,18 @@ def subir_comprobante_gasolina(request, pk):
         messages.error(request, 'No tienes permisos para subir comprobante a esta solicitud.')
         return redirect('mi_vehiculo')
 
-    # Sólo permitir si ya fue revisada (aceptada/rechazada) y aún no tiene comprobante
+    # Sólo permitir si ya fue revisada (aceptada/rechazada) o si está en estado 'parcial'.
     if req.estado == 'pendiente':
         messages.info(request, 'La solicitud aún está pendiente de revisión por un administrador.')
         return redirect('mi_vehiculo')
 
-    if req.comprobante:
+    # Si ya fue completamente comprobada, no permitir más uploads
+    if req.estado == 'comprobado':
+        messages.info(request, 'La solicitud ya fue completamente comprobada. No es posible subir más comprobantes.')
+        return redirect('mi_vehiculo')
+
+    # Si ya hay un comprobante y la solicitud NO está en estado 'parcial', bloquear la subida (evitar sobrescribir accidentalmente)
+    if req.comprobante and req.estado != 'parcial':
         messages.info(request, 'Esta solicitud ya tiene comprobante subido.')
         return redirect('mi_vehiculo')
 
@@ -705,18 +743,18 @@ def subir_comprobante_gasolina(request, pk):
 
             # Respaldo: notificar a administradores si no lo hizo la señal (chequeo idempotente)
             try:
+                import logging
+                logger = logging.getLogger(__name__)
                 from apps.usuarios.models import Usuario
                 admins = Usuario.objects.filter(is_staff=True)
                 for admin in admins:
                     titulo_admin = '📥 Comprobante de gasolina subido'
-                    # Evitar duplicados buscando notificaciones que ya referencien esta gasolina_id
-                    if Notificacion.objects.filter(usuario=admin, titulo=titulo_admin, url__contains=f'gasolina_id={req.pk}').exists():
-                        continue
                     mensaje_admin = f'El empleado {req.empleado.usuario.get_full_name()} ha subido un comprobante de gasolina para {req.vehiculo or req.vehiculo_externo} por ${req.precio}.'
                     try:
                         if req.comprobante:
                             mensaje_admin += f' Comprobante: {req.comprobante.url}'
                     except Exception:
+                        # No bloquear la creación de la notificación por error al acceder al URL
                         pass
                     try:
                         noti = Notificacion.objects.create(
@@ -729,10 +767,14 @@ def subir_comprobante_gasolina(request, pk):
                         try:
                             noti.url = reverse('notificaciones:admin_detalle', args=[noti.pk]) + f'?gasolina_id={req.pk}'
                             noti.save()
-                        except Exception:
-                            pass
-                    except Exception:
-                        pass
+                        except Exception as e:
+                            logger.exception('Error construyendo URL de notificación admin: %s', e)
+                    except Exception as e:
+                        logger.exception('Error creando notificación para admin %s: %s', admin, e)
+            except Exception as e:
+                # Registrar fallo general para no silenciar errores
+                import logging
+                logging.getLogger(__name__).exception('Error en notificación admins tras subir comprobante: %s', e)
             except Exception:
                 pass
             messages.success(request, 'Comprobante subido correctamente. Gracias.')
@@ -748,6 +790,16 @@ def subir_comprobante_gasolina(request, pk):
             noti.leida = True
             noti.save()
         except Notificacion.DoesNotExist:
+            pass
+
+    # Si venimos desde una notificación y la solicitud está parcialmente comprobada,
+    # mostrar un flash con cuánto se comprobó y cuánto falta.
+    if request.method == 'GET' and from_notification:
+        try:
+            if req.monto_comprobado is not None and req.monto_comprobado < req.precio:
+                restante = req.precio - req.monto_comprobado
+                messages.info(request, f'Comprobante parcial: se ha comprobado ${req.monto_comprobado}. Falta por comprobar ${restante}.')
+        except Exception:
             pass
 
     context = {

@@ -235,6 +235,21 @@ class DetalleNotificacionAdminView(LoginRequiredMixin, UserPassesTestMixin, Deta
         except Exception:
             gasolina_request = None
         context['gasolina_request'] = gasolina_request
+        # Si hay una solicitud de gasolina y tiene monto_comprobado parcial, calcular restante
+        try:
+            if gasolina_request and gasolina_request.monto_comprobado is not None:
+                try:
+                    restante = gasolina_request.precio - gasolina_request.monto_comprobado
+                    if restante < 0:
+                        restante = 0
+                except Exception:
+                    restante = None
+                context['gasolina_restante'] = restante
+                context['gasolina_monto_comprobado'] = gasolina_request.monto_comprobado
+        except Exception:
+            # No bloquear si falla el cálculo
+            context['gasolina_restante'] = None
+            context['gasolina_monto_comprobado'] = None
         # Si no se encontró mediante los métodos anteriores, intentar heurísticas: buscar monto y nombre del empleado
         if not gasolina_request:
             try:
