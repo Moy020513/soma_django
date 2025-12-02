@@ -168,12 +168,17 @@ class TenenciaVehicular(models.Model):
     ]
     
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name='tenencias')
-    año_fiscal = models.IntegerField()
+    # Mapea a la columna existente 'año' en la base de datos para mantener compatibilidad
+    año_fiscal = models.IntegerField(db_column='año')
     fecha_vencimiento = models.DateField()
     fecha_pago = models.DateField(null=True, blank=True)
+    # Campo legacy 'pagada' presente en la base de datos en algunas instalaciones.
+    # Mapeamoslo aquí para asegurar compatibilidad y evitar errores de integridad.
+    pagada = models.BooleanField(default=False, db_column='pagada')
     # monto y folio eliminados
     estado = models.CharField(max_length=20, choices=ESTADOS_TENENCIA, default='pendiente')
-    # comprobante_pago eliminado
+    # comprobante_pago: archivo adjunto del pago/recibo de tenencia
+    comprobante = models.FileField(upload_to='vehiculos/tenencia/', null=True, blank=True, verbose_name='Comprobante de tenencia')
     observaciones = models.TextField(blank=True)
     
     class Meta:

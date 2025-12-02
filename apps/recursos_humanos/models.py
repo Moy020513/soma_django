@@ -102,6 +102,7 @@ class Empleado(models.Model):
         hoy = date.today()
         # Calcular años completos de servicio
         anios = hoy.year - self.fecha_ingreso.year - ((hoy.month, hoy.day) < (self.fecha_ingreso.month, self.fecha_ingreso.day))
+        # determinar la asignación anual según años completos
         if anios < 1:
             dias = 0
         elif anios == 1:
@@ -128,6 +129,40 @@ class Empleado(models.Model):
             dias = 30
         usados = self.dias_vacaciones()
         return max(0, dias - usados)
+
+    def dias_vacaciones_entitlement(self):
+        """Devuelve el total de días de vacaciones que le corresponden al empleado según años completos de servicio.
+
+        Este método refleja la tabla usada en `dias_vacaciones_disponibles` y devuelve el valor 'dias' (sin restar lo usado).
+        """
+        from datetime import date
+        if not self.fecha_ingreso:
+            return 0
+        hoy = date.today()
+        anios = hoy.year - self.fecha_ingreso.year - ((hoy.month, hoy.day) < (self.fecha_ingreso.month, self.fecha_ingreso.day))
+        if anios < 1:
+            return 0
+        if anios == 1:
+            return 12
+        if anios == 2:
+            return 14
+        if anios == 3:
+            return 16
+        if anios == 4:
+            return 18
+        if anios == 5:
+            return 20
+        if 6 <= anios <= 10:
+            return 22
+        if 11 <= anios <= 15:
+            return 24
+        if 16 <= anios <= 20:
+            return 26
+        if 21 <= anios <= 25:
+            return 28
+        if 26 <= anios <= 30:
+            return 30
+        return 30
     """Modelo para representar empleados"""
     
     ESTADOS_CIVILES = [
@@ -357,12 +392,17 @@ class Empleado(models.Model):
 
     def dias_trabajados(self):
         """Suma los días en que el empleado estuvo en estatus 'Activo'."""
-        from datetime import date
-        total = 0
+        from datetime import date, timedelta
+        # Contar días únicos para evitar duplicados cuando existen periodos solapados
+        dias_unicos = set()
         for periodo in self.periodos_estatus.filter(estatus="activo"):
             fin = periodo.fecha_fin or date.today()
-            total += (fin - periodo.fecha_inicio).days + 1
-        return total
+            inicio = periodo.fecha_inicio
+            if inicio and inicio <= fin:
+                delta = (fin - inicio).days + 1
+                for i in range(delta):
+                    dias_unicos.add(inicio + timedelta(days=i))
+        return len(dias_unicos)
 
     def dias_vacaciones(self):
         """Suma los días en que el empleado estuvo en 'Vacaciones', sin contar domingos."""

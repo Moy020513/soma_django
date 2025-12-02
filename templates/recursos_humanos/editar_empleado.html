@@ -152,8 +152,9 @@
                     var calculo = document.getElementById('vacaciones-calculo');
                     var fechaInicio = document.getElementById('id_fecha_inicio');
                     var fechaFin = document.getElementById('id_fecha_fin');
-                    var disponibles = {{ disponibles }};
-                    var cumpleAnio = disponibles > 0;
+                    var disponibles = {{ disponibles|default:0 }};
+                    var total_vac = {{ periodo_form.initial.empleado_instance.dias_vacaciones_entitlement|default:0 }};
+                    var cumpleAnio = disponibles > 0 || total_vac > 0;
                     function diasParaAnio() {
                       {% if periodo_form.initial.empleado_instance and periodo_form.initial.empleado_instance.fecha_ingreso %}
                         var fechaIngreso = new Date("{{ periodo_form.initial.empleado_instance.fecha_ingreso|date:'Y-m-d' }}");
@@ -198,7 +199,7 @@
                           if (fechaInicio) fechaInicio.disabled = true;
                           if (fechaFin) fechaFin.disabled = true;
                         } else {
-                          aviso.innerHTML = 'Tienes <strong>' + disponibles + '</strong> días de vacaciones disponibles.';
+                          aviso.innerHTML = 'Tienes <strong>' + disponibles + '</strong> días de vacaciones disponibles de <strong>' + total_vac + '</strong>.';
                           aviso.style.display = 'block';
                           if (fechaInicio) fechaInicio.disabled = false;
                           if (fechaFin) fechaFin.disabled = false;

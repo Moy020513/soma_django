@@ -325,6 +325,7 @@ def perfil_usuario(request):
         'dias_activo': dias_activo,
         'historial_anual': historial_anual,
         'dias_vacaciones_disponibles': empleado.dias_vacaciones_disponibles() if empleado else None,
+        'dias_vacaciones_entitlement': empleado.dias_vacaciones_entitlement() if empleado else None,
         'dias_faltan_para_vacaciones': empleado.dias_faltan_para_vacaciones if empleado else None,
     }
     return render(request, 'perfil_usuario.html', context)

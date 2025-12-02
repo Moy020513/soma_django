@@ -150,7 +150,13 @@
                     Días de vacaciones disponibles:
                 </span>
                 <span class="info-value">
-                    {% if dias_vacaciones_disponibles is not None %}{{ dias_vacaciones_disponibles }}{% else %}No disponible{% endif %}
+                    {% if dias_vacaciones_disponibles is not None and dias_vacaciones_entitlement is not None %}
+                        {{ dias_vacaciones_disponibles }}/{{ dias_vacaciones_entitlement }}
+                    {% elif dias_vacaciones_disponibles is not None %}
+                        {{ dias_vacaciones_disponibles }}
+                    {% else %}
+                        No disponible
+                    {% endif %}
                 </span>
             </div>
 

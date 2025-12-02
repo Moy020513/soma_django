@@ -160,7 +160,7 @@ class RegistroUsoAdmin(admin.ModelAdmin):
 
 @admin.register(TenenciaVehicular)
 class TenenciaVehicularAdmin(admin.ModelAdmin):
-    list_display = ['vehiculo', 'año_fiscal', 'fecha_vencimiento', 'estado', 'fecha_pago']
+    list_display = ['vehiculo', 'año_fiscal', 'fecha_vencimiento', 'estado', 'fecha_pago', 'comprobante_link']
     list_filter = ['estado', 'año_fiscal', 'fecha_vencimiento']
     search_fields = ['vehiculo__placas', 'vehiculo__marca']
     date_hierarchy = 'fecha_vencimiento'
@@ -173,10 +173,11 @@ class TenenciaVehicularAdmin(admin.ModelAdmin):
             'fields': ('fecha_vencimiento', 'fecha_pago')
         }),
         ('Observaciones', {
-            'fields': ('observaciones',),
+            'fields': ('observaciones', 'comprobante'),
             'classes': ('collapse',)
         }),
     )
+    readonly_fields = ['comprobante_link']
     actions = ['marcar_como_pagada', 'marcar_como_vencida']
     def marcar_como_pagada(self, request, queryset):
         from django.utils import timezone
@@ -190,6 +191,12 @@ class TenenciaVehicularAdmin(admin.ModelAdmin):
         updated = queryset.exclude(estado='vigente').update(estado='vencida')
         self.message_user(request, f'{updated} tenencias marcadas como vencidas.')
     marcar_como_vencida.short_description = "Marcar como vencidas"
+
+    def comprobante_link(self, obj):
+        if getattr(obj, 'comprobante', None):
+            return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>', obj.comprobante.url, obj.comprobante.name.split('/')[-1])
+        return ''
+    comprobante_link.short_description = 'Comprobante'
 
 
 @admin.register(VerificacionVehicular)
