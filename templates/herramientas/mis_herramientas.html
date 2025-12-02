@@ -139,6 +139,15 @@
                                            title="Solicitar transferencia">
                                             <i class="fas fa-exchange-alt"></i>
                                         </a>
+                                        {% if asignacion.herramienta.tipo == 'MAQ' %}
+                                        <a href="{% url 'herramientas:pedir_combustible' %}?h={{ asignacion.herramienta.id }}" 
+                                           class="btn btn-outline-warning btn-sm"
+                                           data-bs-toggle="tooltip"
+                                           data-bs-placement="top"
+                                           title="Solicitar combustible">
+                                            <i class="fas fa-gas-pump"></i>
+                                        </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

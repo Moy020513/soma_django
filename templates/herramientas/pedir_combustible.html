@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-gas-pump me-2"></i>{{ titulo }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Solicita combustible indicando el monto. Los administradores revisarán tu solicitud y, si la aceptan o rechazan, deberás subir el comprobante desde la notificación o desde la sección correspondiente.</p>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.precio.label_tag }}
+                        {{ form.precio }}
+                        {% if form.precio.errors %}
+                            <div class="text-danger small">{{ form.precio.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% if form.comprobante %}
+                    <div class="mb-3">
+                        {{ form.comprobante.label_tag }}
+                        {{ form.comprobante }}
+                        {% if form.comprobante.errors %}
+                            <div class="text-danger small">{{ form.comprobante.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        {{ form.observaciones.label_tag }}
+                        {{ form.observaciones }}
+                        {% if form.observaciones.errors %}
+                            <div class="text-danger small">{{ form.observaciones.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" type="submit"><i class="fas fa-upload me-2"></i> Enviar solicitud</button>
+                        <a href="{% url 'herramientas:mis_herramientas' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

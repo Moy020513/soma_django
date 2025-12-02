@@ -6,11 +6,14 @@ from django.utils import timezone
 from django.db import transaction
 from apps.recursos_humanos.models import Empleado
 from .models import Herramienta, AsignacionHerramienta, TransferenciaHerramienta
+from .models import CombustibleRequest, CombustibleComprobante
 from apps.notificaciones.models import Notificacion
 from django.contrib.auth import get_user_model
 from django.http import HttpResponseForbidden
 from .forms import SolicitudTransferenciaHerramientaForm, RespuestaTransferenciaHerramientaForm
+from .forms import CombustibleRequestCreateForm, CombustibleComprobanteForm
 from django import forms
+from django.urls import reverse
 
 # Helper de notificaciones para administradores (fuera de la clase para evitar problemas de indentación)
 def _notificar_admins(titulo: str, mensaje: str, url: str = '', exclude_ids=None):
@@ -115,6 +118,201 @@ def detalle_herramienta(request, herramienta_id):
         'herramienta': asignacion.herramienta,
         'asignacion': asignacion,
     })
+
+
+@login_required
+def pedir_combustible(request):
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está vinculado a un empleado.')
+        return redirect('perfil_usuario')
+
+    # Si viene ?h=<id> preseleccionar herramienta
+    pre_h = request.GET.get('h')
+    herramienta_obj = None
+    try:
+        if pre_h:
+            herramienta_obj = Herramienta.objects.get(pk=int(pre_h))
+    except Exception:
+        herramienta_obj = None
+
+    # Verificar que la herramienta (si está seleccionada) esté asignada al empleado
+    if herramienta_obj:
+        if not AsignacionHerramienta.objects.filter(herramienta=herramienta_obj, empleado=empleado, fecha_devolucion__isnull=True).exists():
+            messages.error(request, 'No puedes solicitar combustible para una herramienta que no te pertenece.')
+            return redirect('herramientas:mis_herramientas')
+
+    # Revisar última solicitud del empleado
+    ultima = CombustibleRequest.objects.filter(empleado=empleado).order_by('-fecha').first()
+    try:
+        pendiente_validacion = CombustibleRequest.objects.filter(empleado=empleado).filter(
+            Q(comprobante__isnull=False) & Q(monto_comprobado__isnull=True) | Q(estado='parcial')
+        ).exists()
+    except Exception:
+        pendiente_validacion = False
+    if pendiente_validacion:
+        messages.info(request, 'Tienes una solicitud con comprobante subido pendiente de validación por administración. Espera a que se confirme (completo o parcial).')
+        return redirect('herramientas:mis_herramientas')
+    if ultima:
+        if ultima.estado == 'pendiente':
+            messages.info(request, 'Ya tienes una solicitud pendiente. Espera a que sea revisada.')
+            return redirect('herramientas:mis_herramientas')
+        if not ultima.comprobante:
+            messages.warning(request, f'Falta tu comprobante de tu solicitud de {ultima.precio} MXN. Sube el comprobante antes de crear otra solicitud.')
+            return redirect('herramientas:subir_comprobante_combustible', pk=ultima.pk)
+        try:
+            if ultima.comprobante and (ultima.monto_comprobado is None):
+                messages.info(request, 'Has subido el comprobante y está pendiente de validación por administración. Espera a que se confirme (completo o parcial).')
+                return redirect('herramientas:mis_herramientas')
+        except Exception:
+            pass
+        try:
+            if ultima.monto_comprobado is not None and ultima.monto_comprobado < ultima.precio:
+                restante = ultima.precio - ultima.monto_comprobado
+                messages.info(request, f'Tienes un monto pendiente de comprobación por ${restante}. Sube el comprobante adicional para completar la solicitud.')
+                return redirect('herramientas:subir_comprobante_combustible', pk=ultima.pk)
+        except Exception:
+            pass
+
+    if request.method == 'POST':
+        form = CombustibleRequestCreateForm(request.POST)
+        if form.is_valid():
+            req = form.save(commit=False)
+            req.empleado = empleado
+            req.herramienta = herramienta_obj
+            req.save()
+
+            # Notificar admins
+            User = get_user_model()
+            admins = User.objects.filter(is_staff=True)
+            for admin in admins:
+                try:
+                    mensaje = f'El empleado {empleado.usuario.get_full_name()} ha solicitado combustible para {herramienta_obj} por {req.precio} MXN.'
+                except Exception:
+                    mensaje = f'El empleado {empleado.usuario.get_full_name()} ha solicitado combustible.'
+                try:
+                    noti = Notificacion.objects.create(usuario=admin, titulo='📄 Nueva solicitud de combustible', mensaje=mensaje, tipo='info', url='')
+                    try:
+                        noti.url = reverse('notificaciones:admin_detalle', args=[noti.pk]) + f'?combustible_id={req.pk}'
+                        noti.save()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+
+            messages.success(request, 'Solicitud enviada. Los administradores serán notificados.')
+            return redirect('herramientas:mis_herramientas')
+    else:
+        form = CombustibleRequestCreateForm()
+
+    context = {
+        'form': form,
+        'herramienta': herramienta_obj,
+        'empleado': empleado,
+        'titulo': 'Pedir combustible',
+    }
+    return render(request, 'herramientas/pedir_combustible.html', context)
+
+
+@login_required
+def subir_comprobante_combustible(request, pk):
+    empleado = Empleado.objects.filter(usuario=request.user).first()
+    if not empleado:
+        messages.error(request, 'Tu usuario no está vinculado a un empleado.')
+        return redirect('perfil_usuario')
+
+    req = get_object_or_404(CombustibleRequest, pk=pk)
+    if req.empleado != empleado:
+        messages.error(request, 'No tienes permisos para subir comprobante a esta solicitud.')
+        return redirect('herramientas:mis_herramientas')
+    if req.estado == 'pendiente':
+        messages.info(request, 'La solicitud aún está pendiente de revisión por un administrador.')
+        return redirect('herramientas:mis_herramientas')
+    if req.estado == 'comprobado':
+        messages.info(request, 'La solicitud ya fue completamente comprobada. No es posible subir más comprobantes.')
+        return redirect('herramientas:mis_herramientas')
+    if req.comprobante and req.estado != 'parcial':
+        messages.info(request, 'Esta solicitud ya tiene comprobante subido.')
+        return redirect('herramientas:mis_herramientas')
+
+    if request.method == 'POST':
+        form = CombustibleComprobanteForm(request.POST, request.FILES, instance=req)
+        if form.is_valid():
+            uploaded = request.FILES.get('comprobante')
+            original_name = None
+            try:
+                if uploaded:
+                    original_name = uploaded.name
+            except Exception:
+                original_name = None
+            form.save()
+            try:
+                CombustibleComprobante.objects.create(combustible_request=req, archivo=req.comprobante, original_name=original_name)
+            except Exception:
+                pass
+
+            # Notificar admins
+            try:
+                User = get_user_model()
+                admins = User.objects.filter(is_staff=True)
+                for admin in admins:
+                    titulo_admin = '📥 Comprobante de combustible subido'
+                    mensaje_admin = f'El empleado {req.empleado.usuario.get_full_name()} ha subido un comprobante de combustible para {req.herramienta} por ${req.precio}.'
+                    try:
+                        comprobantes = list(req.comprobantes.order_by('uploaded_at'))
+                        if comprobantes:
+                            lines = []
+                            for idx, c in enumerate(comprobantes, start=1):
+                                try:
+                                    fname = getattr(c, 'filename', '')
+                                except Exception:
+                                    fname = ''
+                                lines.append(f'Comprobante {idx}: {fname}')
+                            mensaje_admin += '\n\n' + '\n'.join(lines)
+                    except Exception:
+                        pass
+                    try:
+                        noti = Notificacion.objects.create(usuario=admin, titulo=titulo_admin, mensaje=mensaje_admin, tipo='info', url='')
+                        try:
+                            noti.url = reverse('notificaciones:admin_detalle', args=[noti.pk]) + f'?combustible_id={req.pk}'
+                            noti.save()
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+            messages.success(request, 'Comprobante subido correctamente. Gracias.')
+            return redirect('herramientas:mis_herramientas')
+    else:
+        form = CombustibleComprobanteForm(instance=req)
+
+    # Si venimos desde notificación marcarla leída
+    from_notification = request.GET.get('from_notification')
+    if from_notification and request.user.is_authenticated:
+        try:
+            noti = Notificacion.objects.get(id=from_notification, usuario=request.user, leida=False)
+            noti.leida = True
+            noti.save()
+        except Notificacion.DoesNotExist:
+            pass
+
+    # Mensaje informativo si parcial y venimos desde notificación
+    if request.method == 'GET' and from_notification:
+        try:
+            if req.monto_comprobado is not None and req.monto_comprobado < req.precio:
+                restante = req.precio - req.monto_comprobado
+                messages.info(request, f'Comprobante parcial: se ha comprobado ${req.monto_comprobado}. Falta por comprobar ${restante}.')
+        except Exception:
+            pass
+
+    context = {
+        'form': form,
+        'solicitud': req,
+        'titulo': 'Subir comprobante de combustible',
+    }
+    return render(request, 'herramientas/subir_comprobante_combustible.html', context)
 
 
 @login_required

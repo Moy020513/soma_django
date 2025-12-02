@@ -59,6 +59,8 @@ class ModificarRespuestaUsuarioView(LoginRequiredMixin, UserPassesTestMixin, Upd
 from .models import Notificacion, RespuestaNotificacion
 from django.views.generic import DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import redirect
+from django.urls import reverse
 # Vista para detalle de notificación de usuario/empleado
 class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
     model = Notificacion
@@ -77,9 +79,24 @@ class DetalleNotificacionUsuarioView(LoginRequiredMixin, DetailView):
             return redirect(self.object.url)
         # Si el usuario es admin, redirigir al detalle admin (muestra más acciones)
         if request.user.is_superuser:
-            from django.shortcuts import redirect
-            from django.urls import reverse
             return redirect(reverse('notificaciones:admin_detalle', args=[self.object.pk]))
+
+        # Para usuarios normales: si la notificación incluye gasolina_id o combustible_id
+        # redirigir directamente a la vista de subir comprobante correspondiente
+        gasolina_id = request.GET.get('gasolina_id')
+        if gasolina_id:
+            try:
+                gid = int(gasolina_id)
+                return redirect(reverse('flota:subir_comprobante_gasolina', args=[gid]) + f'?from_notification={self.object.pk}')
+            except Exception:
+                pass
+        combustible_id = request.GET.get('combustible_id')
+        if combustible_id:
+            try:
+                cid = int(combustible_id)
+                return redirect(reverse('herramientas:subir_comprobante_combustible', args=[cid]) + f'?from_notification={self.object.pk}')
+            except Exception:
+                pass
         # Marcar como leída si no lo está
         if not self.object.leida:
             self.object.leida = True
@@ -279,6 +296,88 @@ class DetalleNotificacionAdminView(LoginRequiredMixin, UserPassesTestMixin, Deta
             except Exception:
                 # No bloquear si la heurística falla
                 pass
+        # Si no se resolvió gasolina, intentar heurística similar para combustible
+        if not gasolina_request:
+            try:
+                import re
+                msg = (self.object.mensaje or '')
+                price_match = re.search(r"(\d+[\.,]?\d{0,2})\s*MXN", msg)
+                emp_match = re.search(r"El empleado\s+([A-Za-zÁÉÍÓÚÑáéíóúñü\s]+?)\s+ha", msg)
+                precio_val = None
+                empleado_obj = None
+                if price_match:
+                    raw = price_match.group(1).replace(',', '.')
+                    try:
+                        precio_val = float(raw)
+                    except Exception:
+                        precio_val = None
+                if emp_match:
+                    nombre_buscar = emp_match.group(1).strip()
+                    from apps.recursos_humanos.models import Empleado
+                    empleado_obj = Empleado.objects.filter(usuario__first_name__icontains=nombre_buscar.split()[0]).first()
+                if precio_val and empleado_obj:
+                    from apps.herramientas.models import CombustibleRequest
+                    combustible_request = CombustibleRequest.objects.filter(empleado=empleado_obj, precio=precio_val).order_by('-fecha').first()
+                    if combustible_request:
+                        context['combustible_request'] = combustible_request
+            except Exception:
+                pass
+        # Intentar resolver solicitudes de combustible (herramientas) de forma análoga a las de gasolina
+        combustible_request = None
+        try:
+            combustible_id = self.request.GET.get('combustible_id')
+            if combustible_id:
+                try:
+                    cid = int(combustible_id)
+                except Exception:
+                    cid = None
+            else:
+                url = self.object.url or ''
+                import re
+                m = re.search(r'herramientas_combustiblerequest_change.*?(\d+)', url)
+                if not m:
+                    m2 = re.search(r'/admin/.*/herramientas/combustiblerequest/(\d+)/', url)
+                    if m2:
+                        cid = int(m2.group(1))
+                    else:
+                        cid = None
+                else:
+                    cid = int(m.group(1))
+
+            if cid:
+                from apps.herramientas.models import CombustibleRequest
+                try:
+                    combustible_request = CombustibleRequest.objects.get(pk=cid)
+                except CombustibleRequest.DoesNotExist:
+                    combustible_request = None
+            # Si no encontramos aún, intentar resolver por nombre de archivo en el mensaje
+            if not combustible_request:
+                try:
+                    import re
+                    mfile = re.search(r'Comprobante:\s*(/media/[^"]+)', (self.object.mensaje or ''))
+                    if mfile:
+                        path = mfile.group(1)
+                        fname = path.split('/')[-1]
+                        from apps.herramientas.models import CombustibleRequest
+                        combustible_request = CombustibleRequest.objects.filter(comprobantes__archivo__endswith=fname).order_by('-fecha').first()
+                except Exception:
+                    combustible_request = None
+        except Exception:
+            combustible_request = None
+        context['combustible_request'] = combustible_request
+        try:
+            if combustible_request and combustible_request.monto_comprobado is not None:
+                try:
+                    restante_c = combustible_request.precio - combustible_request.monto_comprobado
+                    if restante_c < 0:
+                        restante_c = 0
+                except Exception:
+                    restante_c = None
+                context['combustible_restante'] = restante_c
+                context['combustible_monto_comprobado'] = combustible_request.monto_comprobado
+        except Exception:
+            context['combustible_restante'] = None
+            context['combustible_monto_comprobado'] = None
         return context
 
     def get(self, request, *args, **kwargs):

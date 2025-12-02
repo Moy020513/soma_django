@@ -140,3 +140,66 @@ class TransferenciaHerramienta(models.Model):
 
     def __str__(self):
         return f"Transferencia {self.herramienta.codigo} - {self.empleado_origen} → {self.empleado_destino}"
+
+
+class CombustibleRequest(models.Model):
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('revisado', 'Revisado'),
+        ('rechazado', 'Rechazado'),
+        ('parcial', 'Parcialmente comprobado'),
+        ('comprobado', 'Comprobante completo'),
+    ]
+
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
+    herramienta = models.ForeignKey(Herramienta, on_delete=models.CASCADE)
+    fecha = models.DateTimeField(auto_now_add=True)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    comprobante = models.FileField(upload_to='herramientas/combustible/', null=True, blank=True)
+    observaciones = models.TextField(blank=True)
+    monto_comprobado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+
+    class Meta:
+        verbose_name = 'Solicitud de Combustible'
+        verbose_name_plural = 'Solicitudes de Combustible'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Solicitud Combustible {self.herramienta} - {self.empleado} ({self.fecha.date()})"
+
+    def monto_restante(self):
+        try:
+            if self.monto_comprobado is None:
+                return self.precio
+            restante = self.precio - self.monto_comprobado
+            if restante < 0:
+                return 0
+            return restante
+        except Exception:
+            return self.precio
+
+
+class CombustibleComprobante(models.Model):
+    combustible_request = models.ForeignKey(CombustibleRequest, on_delete=models.CASCADE, related_name='comprobantes')
+    archivo = models.FileField(upload_to='herramientas/combustible/historial/')
+    original_name = models.CharField(max_length=255, null=True, blank=True)
+    notas = models.TextField(blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Comprobante Combustible'
+        verbose_name_plural = 'Comprobantes Combustible'
+        ordering = ['uploaded_at']
+
+    def __str__(self):
+        return f"Comprobante Combustible {self.combustible_request_id} - {self.archivo.name.split('/')[-1]}"
+
+    @property
+    def filename(self):
+        try:
+            if self.original_name:
+                return self.original_name
+            return self.archivo.name.split('/')[-1]
+        except Exception:
+            return ''

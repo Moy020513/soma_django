@@ -134,7 +134,121 @@
                         </script>
                     {% endif %}
                 {% endif %}
-            {% elif notificacion.respuestas.exists %}
+                {% elif combustible_request %}
+                <hr>
+                <h6>Solicitud de Combustible relacionada:</h6>
+                <div class="mb-3">
+                    <p><strong>Solicitante:</strong> {{ combustible_request.empleado.usuario.get_full_name }}</p>
+                    <p><strong>Herramienta:</strong> {{ combustible_request.herramienta }}</p>
+                    <p><strong>Precio:</strong> ${{ combustible_request.precio }}</p>
+                    <p><strong>Fecha:</strong> {{ combustible_request.fecha|date:'d/m/Y H:i' }}</p>
+                    {% if combustible_request.comprobante %}
+                        <p><strong>Comprobante:</strong> <a href="{{ combustible_request.comprobante.url }}" target="_blank">Descargar comprobante</a></p>
+                    {% endif %}
+                    {% if combustible_request.comprobantes.exists %}
+                        <p><strong>Historial de comprobantes:</strong></p>
+                        <ul>
+                            {% for comp in combustible_request.comprobantes.all %}
+                                <li>
+                                    {% if comp.archivo %}
+                                        <strong>Comprobante {{ forloop.counter }}:</strong>
+                                        <a href="{{ comp.archivo.url }}" target="_blank">{{ comp.filename }}</a>
+                                        &nbsp;<small class="text-muted">({{ comp.uploaded_at|date:'d/m/Y H:i' }})</small>
+                                    {% else %}
+                                        <strong>Comprobante {{ forloop.counter }}:</strong> <em>Archivo no disponible</em>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    <p><strong>Estado:</strong> {{ combustible_request.get_estado_display }}</p>
+                    {% if combustible_restante is not None %}
+                        {% if combustible_restante|floatformat:2 != "0.00" %}
+                            <div class="alert alert-warning mt-3">
+                                <strong>Resta por comprobar:</strong> ${{ combustible_restante|floatformat:2 }}
+                                {% if combustible_monto_comprobado %}
+                                    &nbsp;·&nbsp;<strong>Comprobado:</strong> ${{ combustible_monto_comprobado|floatformat:2 }}
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-success mt-3">El comprobante cubre el monto solicitado.</div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% if request.user.is_superuser %}
+                    <div class="mt-3 d-flex gap-2">
+                        {% if combustible_request.estado == 'pendiente' %}
+                            <form method="post" action="{% url 'admin:herramientas_combustiblerequest_aprobar' combustible_request.pk %}">
+                                {% csrf_token %}
+                                <button class="btn btn-success" type="submit">Aceptar solicitud</button>
+                            </form>
+                            <form method="post" action="{% url 'admin:herramientas_combustiblerequest_rechazar' combustible_request.pk %}">
+                                {% csrf_token %}
+                                <button class="btn btn-danger" type="submit">Rechazar solicitud</button>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-secondary">Esta solicitud ya fue procesada (estado: {{ combustible_request.get_estado_display }}).</div>
+                        {% endif %}
+                    </div>
+                    {% if combustible_request.comprobante and combustible_request.estado != 'pendiente' %}
+                        <hr>
+                        <h6>Revisión del comprobante</h6>
+                        <form id="comprobar-form-c" method="post" action="{% url 'admin:herramientas_combustiblerequest_comprobar' combustible_request.pk %}" data-precio="{{ combustible_request.precio }}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label for="monto_comprobado_c">Monto comprobado (MXN)</label>
+                                <input class="form-control" type="text" name="monto_comprobado" id="monto_comprobado_c" placeholder="Ej. 150.00">
+                            </div>
+                            <input type="hidden" name="accion" id="accion_input_c" value="">
+                            <div class="d-flex gap-2">
+                                <button id="btn-cubre-todo-c" class="btn btn-success" type="button">Cubre todo</button>
+                                <button id="btn-parcial-c" class="btn btn-warning" type="button">Comprobar parcial</button>
+                            </div>
+                        </form>
+                        <script>
+                            (function(){
+                                const form = document.getElementById('comprobar-form-c');
+                                const btnCubre = document.getElementById('btn-cubre-todo-c');
+                                const btnParcial = document.getElementById('btn-parcial-c');
+                                const montoInput = document.getElementById('monto_comprobado_c');
+                                const accionInput = document.getElementById('accion_input_c');
+                                const precioRaw = form.getAttribute('data-precio') || '0';
+                                const precio = parseFloat(precioRaw);
+
+                                function parseNumber(v){
+                                    if(!v) return NaN;
+                                    v = String(v).replace(/,/g,'').trim();
+                                    return parseFloat(v);
+                                }
+
+                                btnCubre.addEventListener('click', function(e){
+                                    const confirmed = window.confirm('¿Estás seguro que el comprobante cubre el monto solicitado?');
+                                    if(!confirmed) return;
+                                    accionInput.value = 'cubre_todo';
+                                    form.submit();
+                                });
+
+                                btnParcial.addEventListener('click', function(e){
+                                    const montoVal = parseNumber(montoInput.value);
+                                    if (isNaN(montoVal)){
+                                        alert('Ingresa un monto válido para comprobar (Ej. 150.00)');
+                                        montoInput.focus();
+                                        return;
+                                    }
+                                    const restante = Math.max(0, (precio - montoVal));
+                                    const formattedMonto = montoVal.toFixed(2);
+                                    const formattedRest = restante.toFixed(2);
+                                    const msg = `¿Estás seguro que el comprobante cubre parcialmente por $${formattedMonto}? Restarían por comprobar $${formattedRest}.`;
+                                    const confirmed = window.confirm(msg);
+                                    if(!confirmed) return;
+                                    accionInput.value = 'parcial';
+                                    form.submit();
+                                });
+                            })();
+                        </script>
+                    {% endif %}
+                {% endif %}
+                {% elif notificacion.respuestas.exists %}
                 <hr>
                 <h6>Respuestas asociadas:</h6>
                 {% for respuesta in notificacion.respuestas.all %}

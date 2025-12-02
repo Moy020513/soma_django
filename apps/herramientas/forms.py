@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import TransferenciaHerramienta, Herramienta, AsignacionHerramienta
+from .models import TransferenciaHerramienta, Herramienta, AsignacionHerramienta, CombustibleRequest, CombustibleComprobante
 from apps.recursos_humanos.models import Empleado
 
 
@@ -76,3 +76,43 @@ class RespuestaTransferenciaHerramientaForm(forms.Form):
     ]
     respuesta = forms.ChoiceField(choices=RESPUESTAS, widget=forms.RadioSelect, label='Respuesta')
     observaciones = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Observaciones (opcional)'}), required=False)
+
+
+class CombustibleRequestCreateForm(forms.ModelForm):
+    class Meta:
+        model = CombustibleRequest
+        fields = ['precio', 'observaciones']
+        widgets = {
+            'precio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'precio': 'Monto solicitado (MXN)',
+            'observaciones': 'Observaciones (opcional)'
+        }
+
+    def clean_precio(self):
+        p = self.cleaned_data.get('precio')
+        if p is None or p <= 0:
+            raise forms.ValidationError('Ingresa un precio válido mayor a 0')
+        return p
+
+
+class CombustibleComprobanteForm(forms.ModelForm):
+    class Meta:
+        # El formulario para subir comprobante debe apuntar a CombustibleRequest
+        # para establecer `comprobante` en la solicitud (igual que en gasolina).
+        model = CombustibleRequest
+        fields = ['comprobante']
+        widgets = {
+            'comprobante': forms.ClearableFileInput(attrs={'class': 'form-control'})
+        }
+        labels = {
+            'comprobante': 'Comprobante de pago (imagen/PDF)'
+        }
+
+    def clean_comprobante(self):
+        c = self.cleaned_data.get('comprobante')
+        if not c:
+            raise forms.ValidationError('Debes adjuntar un comprobante.')
+        return c
