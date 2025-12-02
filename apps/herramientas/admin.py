@@ -4,14 +4,18 @@ from .models import Herramienta, AsignacionHerramienta, TransferenciaHerramienta
 
 @admin.register(Herramienta)
 class HerramientaAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'categoria', 'marca', 'codigo', 'estado']
-    list_filter = ['categoria', 'estado']
+    list_display = ['nombre', 'categoria', 'tipo', 'marca', 'codigo', 'estado']
+    list_filter = ['categoria', 'tipo', 'estado']
     search_fields = ['nombre', 'marca', 'codigo']
     # list_editable removed: do not allow inline edits from changelist
 
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'categoria', 'lugar_pertenencia', 'marca', 'codigo')
+            'fields': ('nombre', 'categoria', 'lugar_pertenencia', 'tipo', 'marca', 'codigo')
+        }),
+        ('Consumo', {
+            'fields': ('uso_energia',),
+            'classes': ('collapse',)
         }),
         ('Estado', {
             'fields': ('estado',)
@@ -19,6 +23,9 @@ class HerramientaAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ('codigo',)
+
+    class Media:
+        js = ('js/herramienta_tipo.js',)
 
     def save_model(self, request, obj, form, change):
         # Asegura generación del código si no existe

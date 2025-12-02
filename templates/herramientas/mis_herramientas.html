@@ -45,9 +45,15 @@
                                 <th scope="col" class="fw-semibold">
                                     <i class="fas fa-tags me-2" style="color: #ff6600;"></i>Categoría
                                 </th>
+                                    <th scope="col" class="fw-semibold">
+                                        <i class="fas fa-list me-2" style="color: #ff6600;"></i>Tipo
+                                    </th>
                                 <th scope="col" class="fw-semibold">
                                     <i class="fas fa-industry me-2" style="color: #ff6600;"></i>Marca
                                 </th>
+                                    <th scope="col" class="fw-semibold">
+                                        <i class="fas fa-gas-pump me-2" style="color: #ff6600;"></i>Uso energía
+                                    </th>
                                 <th scope="col" class="fw-semibold">
                                     <i class="fas fa-calendar-alt me-2" style="color: #ff6600;"></i>Asignada
                                 </th>
@@ -80,6 +86,9 @@
                                 <td>
                                     <span class="text-muted">{{ asignacion.herramienta.get_categoria_display }}</span>
                                 </td>
+                                    <td>
+                                        <span class="text-muted">{{ asignacion.herramienta.get_tipo_display }}</span>
+                                    </td>
                                 <td>
                                     {% if asignacion.herramienta.marca %}
                                         <span class="text-dark">{{ asignacion.herramienta.marca }}</span>
@@ -87,6 +96,13 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
+                                    <td>
+                                        {% if asignacion.herramienta.uso_energia %}
+                                            <span class="text-muted">{{ asignacion.herramienta.get_uso_energia_display }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                 <td>
                                     <small class="text-muted">{{ asignacion.fecha_asignacion|date:"d/m/Y" }}</small>
                                 </td>

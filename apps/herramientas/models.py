@@ -29,9 +29,23 @@ class Herramienta(models.Model):
     ]
 
     nombre = models.CharField(max_length=200)
+    TIPOS = [
+        ('MAQ', 'Maquinaria'),
+        ('EQU', 'Equipo'),
+        ('HER', 'Herramienta'),
+    ]
+    USO_ENERGIA_CHOICES = [
+        ('gasolina', 'Gasolina'),
+        ('diesel', 'Diésel'),
+        ('luz', 'Luz (eléctrico)'),
+        ('gas', 'Gas'),
+        ('otro', 'Otro'),
+    ]
+    tipo = models.CharField(max_length=10, choices=TIPOS, default='HER', verbose_name='Tipo')
     categoria = models.CharField(max_length=3, choices=CATEGORIAS)
     lugar_pertenencia = models.CharField(max_length=4, choices=LUGARES, verbose_name='Lugar de pertenencia')
     marca = models.CharField(max_length=100, blank=True)
+    uso_energia = models.CharField(max_length=20, choices=USO_ENERGIA_CHOICES, null=True, blank=True, verbose_name='Uso combustible/energía', help_text='Habilitado solo si Tipo = Maquinaria')
     codigo = models.CharField(max_length=20, unique=True, blank=True, help_text="Se genera automáticamente según la categoría")
     estado = models.CharField(max_length=20, choices=ESTADOS_HERRAMIENTA, default='disponible')
 
