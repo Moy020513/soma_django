@@ -306,6 +306,13 @@ def perfil_usuario(request):
                 max_dias = 366 if calendar.isleap(anio) else 365
                 dias = min(len(dias_unicos), max_dias)
                 historial_anual.append({'anio': anio, 'dias': dias})
+    # Obtener inasistencias del empleado
+    inasistencias_empleado = []
+    total_inasistencias = 0
+    if empleado:
+        inasistencias_empleado = empleado.inasistencias.filter(tipo="inasistencia").order_by('-fecha')[:10]
+        total_inasistencias = empleado.inasistencias.filter(tipo="inasistencia").count()
+    
     context = {
         'titulo': 'Mi Perfil',
         'usuario': request.user,
@@ -327,6 +334,8 @@ def perfil_usuario(request):
         'dias_vacaciones_disponibles': empleado.dias_vacaciones_disponibles() if empleado else None,
         'dias_vacaciones_entitlement': empleado.dias_vacaciones_entitlement() if empleado else None,
         'dias_faltan_para_vacaciones': empleado.dias_faltan_para_vacaciones if empleado else None,
+        'inasistencias': inasistencias_empleado,
+        'total_inasistencias': total_inasistencias,
     }
     return render(request, 'perfil_usuario.html', context)
 

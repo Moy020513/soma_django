@@ -391,7 +391,7 @@ class Empleado(models.Model):
             return None
 
     def dias_trabajados(self):
-        """Suma los días en que el empleado estuvo en estatus 'Activo'."""
+        """Suma los días en que el empleado estuvo en estatus 'Activo', restando las inasistencias."""
         from datetime import date, timedelta
         # Contar días únicos para evitar duplicados cuando existen periodos solapados
         dias_unicos = set()
@@ -402,7 +402,17 @@ class Empleado(models.Model):
                 delta = (fin - inicio).days + 1
                 for i in range(delta):
                     dias_unicos.add(inicio + timedelta(days=i))
-        return len(dias_unicos)
+        
+        # Restar las inasistencias que ocurrieron en días activos
+        inasistencias_fechas = set(
+            self.inasistencias.filter(tipo="inasistencia")
+            .values_list('fecha', flat=True)
+        )
+        
+        # Solo restar inasistencias que ocurrieron en días activos
+        dias_inasistencia = dias_unicos.intersection(inasistencias_fechas)
+        
+        return len(dias_unicos) - len(dias_inasistencia)
 
     def dias_vacaciones(self):
         """Suma los días en que el empleado estuvo en 'Vacaciones', sin contar domingos."""

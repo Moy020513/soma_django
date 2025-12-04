@@ -163,7 +163,7 @@
             <div class="info-item">
                 <span class="info-label">
                     <i class="fas fa-hourglass-end" style="color: var(--soma-blue, #004e89);"></i>
-                    Días para solicitar vacaciones:
+                    Días restantes para solicitar vacaciones:
                 </span>
                 <span class="info-value">
                     {% if dias_faltan_para_vacaciones is not None and dias_faltan_para_vacaciones > 0 %}
@@ -202,6 +202,30 @@
                 {% else %}
                     <span class="badge bg-secondary">Sin registro</span>
                 {% endif %}
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">
+                    <i class="fas fa-calendar-times" style="color: var(--soma-blue, #004e89);"></i>
+                    Inasistencias:
+                </span>
+                <span class="info-value">
+                    {% if total_inasistencias > 0 %}
+                        <strong>{{ total_inasistencias }}</strong> inasistencia{{ total_inasistencias|pluralize }}
+                        {% if inasistencias %}
+                            <div class="mt-2">
+                                <small>
+                                    <i class="fas fa-list"></i> <strong>Últimas inasistencias:</strong><br>
+                                    {% for inasistencia in inasistencias %}
+                                        <i class="fas fa-calendar-day"></i> {{ inasistencia.fecha|date:"d/m/Y" }}{% if inasistencia.observaciones %} - {{ inasistencia.observaciones|truncatewords:5 }}{% endif %}<br>
+                                    {% endfor %}
+                                </small>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-success">Sin inasistencias</span>
+                    {% endif %}
+                </span>
             </div>
 
             {% if historial_anual and historial_anual|length > 0 %}
