@@ -753,3 +753,34 @@ def contrato_asignaciones_m2m_changed(sender, instance, action, **kwargs):
         pass
 
 
+@receiver(post_save, sender=Inasistencia)
+def eliminar_registros_ubicacion_en_inasistencia(sender, instance, created, **kwargs):
+    """Cuando se crea o actualiza una inasistencia, eliminar los registros de ubicación 
+    (entrada/salida) del empleado para esa fecha.
+    """
+    try:
+        # Solo eliminar si es una inasistencia (no permiso ni retardo)
+        if instance.tipo == 'inasistencia':
+            # Importar el modelo RegistroUbicacion
+            from apps.ubicaciones.models import RegistroUbicacion
+            
+            # Eliminar registros de entrada y salida del empleado en esa fecha
+            registros_eliminados = RegistroUbicacion.objects.filter(
+                empleado=instance.empleado,
+                fecha=instance.fecha
+            ).delete()
+            
+            # Log opcional para debugging
+            if registros_eliminados[0] > 0:
+                logging.getLogger(__name__).info(
+                    f"Se eliminaron {registros_eliminados[0]} registro(s) de ubicación "
+                    f"del empleado {instance.empleado} en la fecha {instance.fecha} "
+                    f"debido a la inasistencia."
+                )
+    except Exception as e:
+        logging.getLogger(__name__).exception(
+            f'Error eliminando registros de ubicación para inasistencia: {e}'
+        )
+
+
+

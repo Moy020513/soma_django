@@ -98,6 +98,14 @@
                    
                 </div>
                 <div class="card-body">
+                    {% if tiene_inasistencia_hoy %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Inasistencia Registrada</strong>
+                        <p class="mb-0">No puedes registrar entrada o salida hoy porque tienes una inasistencia registrada para esta fecha.</p>
+                    </div>
+                    {% endif %}
+                    
                     <div class="row">
                          <!-- Contador para próxima posibilidad de registrar entrada (se muestra por encima del botón) -->
                             <div id="countdownEntrada" class="mb-2 text-muted small"
@@ -107,7 +115,8 @@
                             
                             <button id="btnRegistrarEntrada" 
                                     class="btn btn-success btn-lg btn-block mb-3"
-                                    onclick="confirmarRegistro('entrada')">
+                                    onclick="confirmarRegistro('entrada')"
+                                    {% if tiene_inasistencia_hoy %}disabled{% endif %}>
                                 <i class="fas fa-sign-in-alt"></i>
                                 <strong>ENTRADA</strong>
                                 <small class="d-block">Registrar llegada</small>
@@ -116,7 +125,8 @@
                         <div class="col-md-6">
                             <button id="btnRegistrarSalida" 
                                     class="btn btn-danger btn-lg btn-block mb-3"
-                                    onclick="confirmarRegistro('salida')">
+                                    onclick="confirmarRegistro('salida')"
+                                    {% if tiene_inasistencia_hoy %}disabled{% endif %}>
                                 <i class="fas fa-sign-out-alt"></i>
                                 <strong>SALIDA</strong>
                                 <small class="d-block">Registrar salida</small>

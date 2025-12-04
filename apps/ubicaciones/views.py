@@ -41,6 +41,14 @@ class RegistrarUbicacionView(EmpleadoRequiredMixin, TemplateView):
         empleado = self.request.user.empleado
         hoy = timezone.now().date()
         
+        # Verificar si hay una inasistencia registrada para hoy
+        from apps.recursos_humanos.models import Inasistencia
+        tiene_inasistencia_hoy = Inasistencia.objects.filter(
+            empleado=empleado,
+            fecha=hoy,
+            tipo='inasistencia'
+        ).exists()
+        
         # Verificar si ya registró entrada y salida hoy
         ya_registro_entrada = RegistroUbicacion.ya_registro_hoy(empleado, 'entrada')
         ya_registro_salida = RegistroUbicacion.ya_registro_hoy(empleado, 'salida')
@@ -58,6 +66,7 @@ class RegistrarUbicacionView(EmpleadoRequiredMixin, TemplateView):
         
         context.update({
             'empleado': empleado,
+            'tiene_inasistencia_hoy': tiene_inasistencia_hoy,
             'ya_registro_entrada': ya_registro_entrada,
             'ya_registro_salida': ya_registro_salida,
             'registros_hoy': registros_hoy,
@@ -107,6 +116,21 @@ class RegistrarUbicacionAPIView(EmpleadoRequiredMixin, View):
                 }
             
             empleado = request.user.empleado
+            
+            # Verificar si hay inasistencia registrada para hoy
+            from apps.recursos_humanos.models import Inasistencia
+            hoy = timezone.now().date()
+            tiene_inasistencia = Inasistencia.objects.filter(
+                empleado=empleado,
+                fecha=hoy,
+                tipo='inasistencia'
+            ).exists()
+            
+            if tiene_inasistencia:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'No puedes registrar entrada o salida porque tienes una inasistencia registrada para hoy.'
+                }, status=400)
             
             # Validar datos requeridos
             required_fields = ['latitud', 'longitud', 'tipo']
