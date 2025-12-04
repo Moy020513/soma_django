@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from django.contrib.admin.utils import unquote
 from django.urls import reverse
 from django.db import models as dj_models
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from .models import Puesto, Empleado, PeriodoEstatusEmpleado, Contrato, AsignacionPorTrabajador, CambioSalarioEmpleado
 from django.utils.html import format_html
 from django.utils import timezone
@@ -724,51 +724,180 @@ class EmpleadoAdmin(admin.ModelAdmin):
         return ''
     salario_fecha_ultima_modificacion.short_description = 'Última modificación salario'
 
-    def delete_view(self, request, object_id, extra_context=None):
-        """Vista de borrado personalizada que evita construir URLs con reverse
-        que están causando NoReverseMatch en la plantilla de confirmación.
+    def _build_employee_related_items(self, obj):
+        """Helper para construir lista de relaciones que referencian a un empleado.
+        Usado en delete_view para mostrar qué registros impiden la eliminación.
+        Consolida múltiples FKs del mismo modelo en una sola entrada.
         """
+        related_items = []
+        try:
+            from django.apps import apps as django_apps
+            EmpleadoModel = self.model
+            model_keys = {}  # {(modelo, model_name): {fields: [], queryset: set(pks)}}
+            
+            for Model in django_apps.get_models():
+                try:
+                    for f in Model._meta.get_fields():
+                        # Solo FK (many_to_one)
+                        if getattr(f, 'many_to_one', False):
+                            remote = getattr(getattr(f, 'remote_field', None), 'model', None)
+                            if remote == EmpleadoModel:
+                                # Descartar FK auto-referenciales (jefe_directo, supervisor, etc)
+                                if Model == EmpleadoModel and f.name in ('jefe_directo',):
+                                    continue
+                                
+                                # Usar ID explícitamente para el filtro
+                                filter_key = f"{f.name}_id"
+                                qs = Model.objects.filter(**{filter_key: obj.pk})
+                                pks = set(qs.values_list('pk', flat=True))
+                                
+                                if pks:
+                                    model_opts = Model._meta
+                                    model_key = (Model.__name__, model_opts.app_label, model_opts.model_name)
+                                    
+                                    if model_key not in model_keys:
+                                        model_keys[model_key] = {
+                                            'model_label': model_opts.verbose_name.title(),
+                                            'app_label': model_opts.app_label,
+                                            'model_name': model_opts.model_name,
+                                            'fields': [],
+                                            'pks': set(),
+                                        }
+                                    
+                                    model_keys[model_key]['fields'].append(f.name)
+                                    model_keys[model_key]['pks'].update(pks)
+                except Exception:
+                    continue
+            
+            # Convertir a lista de related_items
+            for model_key, info in model_keys.items():
+                try:
+                    Model = django_apps.get_model(info['app_label'], info['model_name'])
+                    # Usar los PKs consolidados para obtener el queryset correcto
+                    qs = Model.objects.filter(pk__in=info['pks']).order_by('-pk')
+                    cnt = len(info['pks'])
+                    
+                    try:
+                        url_name = f"admin:{info['app_label']}_{info['model_name']}_changelist"
+                        # Construir URL con los filtros de FK (ambos si hay múltiples)
+                        if len(info['fields']) == 1:
+                            filter_parts = f"{info['fields'][0]}__id__exact={obj.pk}"
+                        else:
+                            # Para múltiples fields, usar OR mediante la URL (Q objects no funcionan en URL)
+                            # Mejor: crear URL con pk__in manualmente
+                            filter_parts = f"pk__in={','.join(map(str, info['pks']))}"
+                        url = reverse(url_name) + f'?{filter_parts}'
+                    except Exception:
+                        url = None
+                    
+                    # Etiqueta que muestre todos los campos FK relacionados
+                    if len(info['fields']) == 1:
+                        label_text = f"{info['model_label']} ({info['fields'][0]})"
+                    else:
+                        fields_str = ', '.join(info['fields'])
+                        label_text = f"{info['model_label']} ({fields_str})"
+                    
+                    related_items.append({
+                        'label': label_text,
+                        'count': cnt,
+                        'url': url,
+                        'qs': qs[:10],
+                    })
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return related_items
+
+    def delete_view(self, request, object_id, extra_context=None):
+        """Vista de borrado personalizada para mostrar relaciones con mejor UX."""
+        from django.contrib.admin.utils import unquote
+        from django.core.exceptions import PermissionDenied
+        from django.db import transaction
+        from django.db.models.deletion import ProtectedError
+        from django.db import IntegrityError
+        from django.shortcuts import redirect
+        from django.utils.translation import gettext as _
+        from django.contrib.messages import error as msg_error, success as msg_success
+        from django.template.response import TemplateResponse
+        from urllib.parse import unquote as url_unquote
+        
         opts = self.model._meta
-        obj = self.get_object(request, unquote(object_id))
+        obj = self.get_object(request, url_unquote(object_id))
+        
         if not self.has_delete_permission(request, obj):
             raise PermissionDenied
 
         if obj is None:
-            # Si no existe, volver al changelist
             return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
 
         if request.method == "POST":
-            # Si el POST contiene 'force', primero eliminar relaciones protegidas y luego el objeto
+            # Manejar el force delete
             if request.POST.get('force') == '1':
-                # eliminar AsignacionPorTrabajador relacionados (si existen)
                 try:
-                    with transaction.atomic():
-                        AsignacionPorTrabajador.objects.filter(empleado=obj).delete()
-                        # proceder a eliminar el empleado
-                        self.log_deletion(request, obj, str(obj))
-                        obj_display = str(obj)
-                        obj.delete()
-                except Exception:
-                    messages.error(request, _("Ocurrió un error al eliminar los registros relacionados."))
+                    from django.apps import apps as django_apps
+                    from django.db import connection
+                    EmpleadoModel = self.model
+                    obj_display = str(obj)
+                    
+                    # Eliminar todos los registros relacionados
+                    # Hacer múltiples pasadas para manejar FK con CASCADE
+                    for iteration in range(3):  # Hasta 3 intentos
+                        deleted_any = False
+                        for Model in django_apps.get_models():
+                            try:
+                                for f in Model._meta.get_fields():
+                                    if getattr(f, 'many_to_one', False):
+                                        remote = getattr(getattr(f, 'remote_field', None), 'model', None)
+                                        if remote == EmpleadoModel:
+                                            if Model == EmpleadoModel and f.name in ('jefe_directo',):
+                                                continue
+                                            filter_key = f"{f.name}_id"
+                                            qs = Model.objects.filter(**{filter_key: obj.pk})
+                                            if qs.exists():
+                                                qs.delete()
+                                                deleted_any = True
+                            except Exception:
+                                pass
+                        
+                        if not deleted_any:
+                            break
+                    
+                    # Eliminar registros de tablas legacy que no están mapeadas en modelos
+                    try:
+                        cursor = connection.cursor()
+                        cursor.execute(
+                            "DELETE FROM recursos_humanos_estatusempleado WHERE empleado_id = %s",
+                            [obj.pk]
+                        )
+                    except Exception:
+                        pass
+                    
+                    # Ahora intentar eliminar el empleado
+                    self.log_deletion(request, obj, obj_display)
+                    obj.delete()
+                except Exception as e:
+                    msg_error(request, _("Ocurrió un error al eliminar los registros relacionados."))
                     return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
-                messages.success(request, _(f'Se eliminó "{obj_display}" y sus registros relacionados correctamente.'))
+                
+                msg_success(request, _(f'Se eliminó "{obj_display}" y sus registros relacionados correctamente.'))
                 return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
-            # Intento normal de borrado: capturar ProtectedError y mostrar aviso
+            
+            # Intento normal de delete
             try:
                 with transaction.atomic():
                     self.log_deletion(request, obj, str(obj))
                     obj_display = str(obj)
                     obj.delete()
-                messages.success(request, _(f'Se eliminó "{obj_display}" correctamente.'))
+                msg_success(request, _(f'Se eliminó "{obj_display}" correctamente.'))
                 return redirect(f"admin:{opts.app_label}_{opts.model_name}_changelist")
-            except ProtectedError:
-                # Obtener objetos protegidos que impiden la eliminación
-                protected_qs = AsignacionPorTrabajador.objects.filter(empleado=obj)
+            except (ProtectedError, IntegrityError) as e:
+                related_items = self._build_employee_related_items(obj)
                 context = {
                     **self.admin_site.each_context(request),
                     "title": _("No se puede eliminar: existen registros relacionados"),
                     "object": obj,
-                    "protected_qs": protected_qs,
+                    "related_items": related_items,
                     "opts": opts,
                     "app_label": opts.app_label,
                 }
@@ -776,22 +905,21 @@ class EmpleadoAdmin(admin.ModelAdmin):
                     context.update(extra_context)
                 return TemplateResponse(request, "admin/recursos_humanos/empleado/delete_protected_confirmation.html", context)
 
+        # GET: Mostrar confirmación
+        # SIEMPRE mostrar nuestra template custom
+        related_items = self._build_employee_related_items(obj)
+        
         context = {
             **self.admin_site.each_context(request),
-            "title": _("Are you sure?"),
-            "object_id": object_id,
-            "original": obj,
-            "object": obj,  # por compatibilidad con plantilla
+            "title": _("¿Está seguro de que desea eliminar este empleado?"),
+            "object": obj,
+            "related_items": related_items,
             "opts": opts,
             "app_label": opts.app_label,
-            # Evitar cálculos de relaciones que puedan intentar hacer reverse
-            "deleted_objects": [],
-            "perms_lacking": [],
-            "protected": [],
         }
         if extra_context:
             context.update(extra_context)
-        return TemplateResponse(request, "admin/delete_confirmation.html", context)
+        return TemplateResponse(request, "admin/recursos_humanos/empleado/delete_protected_confirmation.html", context)
 
 
 @admin.register(Inasistencia)
