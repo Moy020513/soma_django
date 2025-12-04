@@ -55,8 +55,11 @@ class AsignacionAdmin(admin.ModelAdmin):
     # además de nuestra tabla personalizada, generando duplicados).
 
     def get_empleados(self, obj):
-        return ', '.join([str(e) for e in obj.empleados.all()])
-    get_empleados.short_description = 'Empleados'
+        empleados_list = list(obj.empleados.all())
+        if obj.supervisor:
+            empleados_list.append(obj.supervisor)
+        return ', '.join([str(e) for e in empleados_list])
+    get_empleados.short_description = 'EMPLEADOS'
 
     def dias_activos(self, obj):
         try:

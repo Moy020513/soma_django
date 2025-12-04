@@ -207,7 +207,7 @@
             <tr>
                 <td class="column-contrato_numero">{{ obj.numero_cotizacion|default:'-' }}</td>
                 <td>{{ obj.fecha|date:"d/m/Y" }}</td>
-                <td style="text-align:center">{{ obj.empleados.count }}</td>
+                <td style="text-align:center">{{ obj.total_personas }}</td>
                 <td>{{ obj.empresa }}</td>
                 <td>{{ obj.supervisor.nombre_primer_apellido|default:'-' }}</td>
                 <td>{{ obj.detalles }}</td>

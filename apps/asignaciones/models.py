@@ -92,6 +92,14 @@ class Asignacion(models.Model):
         if len(empleados) == 1:
             return primero
         return f"{primero} + {len(empleados)-1}"
+    
+    @property
+    def total_personas(self):
+        """Retorna el total de personas involucradas: empleados + supervisor"""
+        total = self.empleados.count()
+        if self.supervisor:
+            total += 1
+        return total
     @property
     def archivo_nombre(self):
         return self.archivos.name.split('/')[-1] if self.archivos else ''
