@@ -19,7 +19,7 @@ from django.shortcuts import get_object_or_404
 # Inline para administrar los días trabajados desde el admin de Asignacion
 class DiaTrabajadoInline(admin.TabularInline):
     model = AsignacionDiaTrabajado
-    extra = 1
+    extra = 0
     verbose_name = 'Día trabajado'
     verbose_name_plural = 'Días trabajados'
     # Usar formulario personalizado que agrega help_text a los campos
