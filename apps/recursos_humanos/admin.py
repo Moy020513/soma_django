@@ -117,12 +117,29 @@ class ContratoAdmin(admin.ModelAdmin):
                     # Mapear empleado -> lista de asignaciones relacionadas en este contrato
                     emp_map = {}
                     for a in asigns:
+                        # Agregar supervisor si existe
+                        if hasattr(a, 'supervisor') and a.supervisor:
+                            emp_map.setdefault(a.supervisor.pk, {'empleado': a.supervisor, 'fechas_inicio': [], 'fechas_termino': []})
+                            if getattr(a, 'fecha', None):
+                                emp_map[a.supervisor.pk]['fechas_inicio'].append(a.fecha)
+                            if getattr(a, 'fecha_termino', None):
+                                emp_map[a.supervisor.pk]['fechas_termino'].append(a.fecha_termino)
+                        
+                        # Agregar empleados del M2M
                         for emp in a.empleados.all():
                             emp_map.setdefault(emp.pk, {'empleado': emp, 'fechas_inicio': [], 'fechas_termino': []})
                             if getattr(a, 'fecha', None):
                                 emp_map[emp.pk]['fechas_inicio'].append(a.fecha)
                             if getattr(a, 'fecha_termino', None):
                                 emp_map[emp.pk]['fechas_termino'].append(a.fecha_termino)
+                    
+                    import sys
+                    print(f"\n=== Creando AsignacionPorTrabajador ===", file=sys.stderr)
+                    print(f"Contrato: {contrato.numero_contrato}", file=sys.stderr)
+                    print(f"Empleados encontrados: {len(emp_map)}", file=sys.stderr)
+                    for emp_pk, info in emp_map.items():
+                        print(f"  - {info['empleado']}", file=sys.stderr)
+                    
                     from .models import AsignacionPorTrabajador
                     existing_qs = AsignacionPorTrabajador.objects.filter(contrato=contrato)
                     existing_map = {ap.empleado_id: ap for ap in existing_qs}
@@ -137,13 +154,23 @@ class ContratoAdmin(admin.ModelAdmin):
                             'fecha_termino': fecha_termino,
                             'nss': getattr(empleado, 'nss', '') or ''
                         }
-                        AsignacionPorTrabajador.objects.update_or_create(contrato=contrato, empleado=empleado, defaults=defaults)
+                        apt, created = AsignacionPorTrabajador.objects.update_or_create(
+                            contrato=contrato, 
+                            empleado=empleado, 
+                            defaults=defaults
+                        )
+                        print(f"  {'Creado' if created else 'Actualizado'}: {apt}", file=sys.stderr)
                     # Borrar registros que ya no correspondan
                     to_delete = [ap.pk for eid, ap in existing_map.items() if eid not in emp_map]
                     if to_delete:
                         AsignacionPorTrabajador.objects.filter(pk__in=to_delete).delete()
-                except Exception:
+                        print(f"  Eliminados: {len(to_delete)} registros", file=sys.stderr)
+                except Exception as e:
                     # no bloquear el guardado de contrato por errores en la creación automática
+                    import sys
+                    print(f"ERROR creando AsignacionPorTrabajador: {e}", file=sys.stderr)
+                    import traceback
+                    traceback.print_exc(file=sys.stderr)
                     pass
             return contrato
 
@@ -169,6 +196,68 @@ class ContratoAdmin(admin.ModelAdmin):
             'fields': (('fecha_inicio', 'fecha_termino'), ('resumen_asignaciones',))
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        """Guardar el contrato primero"""
+        super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, formsets, change):
+        """Guardar relaciones M2M y crear AsignacionPorTrabajador"""
+        # Primero guardar las relaciones M2M (asignaciones_vinculadas)
+        super().save_related(request, form, formsets, change)
+        
+        obj = form.instance
+        asigns = obj.asignaciones_vinculadas.all()
+        
+        if asigns:
+            try:
+                # Mapear empleado -> lista de asignaciones relacionadas en este contrato
+                emp_map = {}
+                for a in asigns:
+                    # Agregar supervisor si existe
+                    if hasattr(a, 'supervisor') and a.supervisor:
+                        emp_map.setdefault(a.supervisor.pk, {'empleado': a.supervisor, 'fechas_inicio': [], 'fechas_termino': []})
+                        if getattr(a, 'fecha', None):
+                            emp_map[a.supervisor.pk]['fechas_inicio'].append(a.fecha)
+                        if getattr(a, 'fecha_termino', None):
+                            emp_map[a.supervisor.pk]['fechas_termino'].append(a.fecha_termino)
+                    
+                    # Agregar empleados del M2M
+                    for emp in a.empleados.all():
+                        emp_map.setdefault(emp.pk, {'empleado': emp, 'fechas_inicio': [], 'fechas_termino': []})
+                        if getattr(a, 'fecha', None):
+                            emp_map[emp.pk]['fechas_inicio'].append(a.fecha)
+                        if getattr(a, 'fecha_termino', None):
+                            emp_map[emp.pk]['fechas_termino'].append(a.fecha_termino)
+                
+                from .models import AsignacionPorTrabajador
+                existing_qs = AsignacionPorTrabajador.objects.filter(contrato=obj)
+                existing_map = {ap.empleado_id: ap for ap in existing_qs}
+                
+                # Actualizar o crear
+                for emp_pk, info in emp_map.items():
+                    empleado = info['empleado']
+                    fecha_inicio = min(info['fechas_inicio']) if info['fechas_inicio'] else None
+                    fecha_termino = max(info['fechas_termino']) if info['fechas_termino'] else None
+                    defaults = {
+                        'empresa': obj.empresa,
+                        'fecha_inicio': fecha_inicio,
+                        'fecha_termino': fecha_termino,
+                        'nss': getattr(empleado, 'nss', '') or ''
+                    }
+                    AsignacionPorTrabajador.objects.update_or_create(
+                        contrato=obj, 
+                        empleado=empleado, 
+                        defaults=defaults
+                    )
+                
+                # Borrar registros que ya no correspondan
+                to_delete = [ap.pk for eid, ap in existing_map.items() if eid not in emp_map]
+                if to_delete:
+                    AsignacionPorTrabajador.objects.filter(pk__in=to_delete).delete()
+                    
+            except Exception:
+                pass
 
     def resumen_asignaciones(self, obj):
         """Muestra un resumen (días estimados y total empleados) por asignación vinculada."""

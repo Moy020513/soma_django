@@ -418,23 +418,9 @@ class AsignacionAdmin(admin.ModelAdmin):
         """
         Guardar el formset de días trabajados
         """
-        import sys
-        print(f"\n=== save_formset llamado ===", file=sys.stderr)
-        print(f"Modelo formset: {formset.model.__name__}", file=sys.stderr)
-        print(f"Es AsignacionDiaTrabajado: {formset.model == AsignacionDiaTrabajado}", file=sys.stderr)
-        
         if formset.model == AsignacionDiaTrabajado:
-            print("ENTRANDO en procesamiento especial de días trabajados", file=sys.stderr)
-            
-            # Ver TODO el POST relacionado con días trabajados
-            print("\nClaves del POST relacionadas con dias_trabajados:", file=sys.stderr)
-            for key in sorted(request.POST.keys()):
-                if 'dias_trabajados' in key.lower() or 'diatrabajado' in key.lower():
-                    print(f"  {key}: {request.POST.get(key)}", file=sys.stderr)
-            
             # Llamar a save para que Django inicialice los atributos necesarios
             instances = formset.save(commit=False)
-            print(f"Instancias del formset: {len(instances)}", file=sys.stderr)
             
             # Eliminar los marcados para borrar
             if hasattr(formset, 'deleted_objects'):
@@ -443,7 +429,6 @@ class AsignacionAdmin(admin.ModelAdmin):
             
             # Ahora procesar TODOS los días del POST (incluyendo los que Django limitó)
             obj = form.instance
-            print(f"Llamando a _procesar_dias_trabajados_del_post con asignacion {obj.id}", file=sys.stderr)
             self._procesar_dias_trabajados_del_post(request, obj)
         else:
             super().save_formset(request, form, formset, change)
@@ -507,46 +492,29 @@ class AsignacionAdmin(admin.ModelAdmin):
     
     def _procesar_dias_trabajados_del_post(self, request, asignacion):
         """Procesar y guardar TODOS los días trabajados del POST"""
-        import sys
-        
-        print(f"\n=== _procesar_dias_trabajados_del_post ===", file=sys.stderr)
-        print(f"Asignación ID: {asignacion.id}", file=sys.stderr)
-        
-        # Ver el TOTAL_FORMS que llega
-        total_forms = request.POST.get('dias_trabajados-TOTAL_FORMS', '0')
-        print(f"dias_trabajados-TOTAL_FORMS: {total_forms}", file=sys.stderr)
-        
         # Buscar TODOS los índices que tienen fecha (incluyendo __prefix__)
         dias_indices = set()
         for key in request.POST.keys():
             if key.startswith('dias_trabajados-') and '-fecha' in key:
-                # Extraer el índice (puede ser número o __prefix__)
                 try:
                     parts = key.split('-')
                     if len(parts) >= 2:
                         idx = parts[1]
-                        # Verificar si tiene valor
                         fecha_val = request.POST.get(key, '').strip()
                         if fecha_val:
                             dias_indices.add(idx)
                 except (ValueError, IndexError):
                     pass
         
-        print(f"Índices encontrados: {sorted(dias_indices)}", file=sys.stderr)
-        
-        # Primero, limpiar todos los días trabajados anteriores
-        antes = asignacion.dias_trabajados.count()
+        # Limpiar todos los días trabajados anteriores
         asignacion.dias_trabajados.all().delete()
-        print(f"Eliminados: {antes}", file=sys.stderr)
         
         # Procesar cada índice encontrado (incluyendo __prefix__)
-        dias_creados = 0
         for idx in sorted(dias_indices):
             fecha_key = f'dias_trabajados-{idx}-fecha'
             notas_key = f'dias_trabajados-{idx}-notas'
             delete_key = f'dias_trabajados-{idx}-DELETE'
             
-            # Si no está marcado para eliminar
             if not request.POST.get(delete_key):
                 fecha = request.POST.get(fecha_key, '').strip()
                 notas = request.POST.get(notas_key, '').strip()
@@ -557,11 +525,6 @@ class AsignacionAdmin(admin.ModelAdmin):
                         fecha=fecha,
                         notas=notas
                     )
-                    dias_creados += 1
-                    print(f"  Creado día {idx}: {fecha} (notas: {notas})", file=sys.stderr)
-        
-        print(f"Total creados: {dias_creados}", file=sys.stderr)
-        print(f"Total en BD: {asignacion.dias_trabajados.count()}\n", file=sys.stderr)
 
     def _actualizar_actividades_preservando_completadas(self, obj, actividades_formset, supervisor_anterior):
         """
