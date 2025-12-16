@@ -1487,11 +1487,11 @@ class CTZFormatoMPAForm(forms.ModelForm):
             'suite': forms.TextInput(attrs={'size': 20}),
             'proveedor': forms.TextInput(attrs={'size': 40}),
             'fecha_elaboracion': forms.DateInput(attrs={'type': 'date'}),
-            'importe_contrato': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+            'importe_contrato': forms.NumberInput(attrs={'step': '0.01', 'min': 0, 'readonly': 'readonly'}),
             'anticipo_solicitado': forms.TextInput(attrs={'size': 20}),
             'mano_de_obra': forms.TextInput(attrs={'size': 20}),
             'materiales': forms.TextInput(attrs={'size': 20}),
-            'tiempo_ejecucion_valor': forms.NumberInput(attrs={'min': 1}),
+            'tiempo_ejecucion_valor': forms.TextInput(attrs={'size': 10}),
             'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'notas': forms.Textarea(attrs={'rows': 4}),
         }
@@ -1504,7 +1504,7 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
     list_filter = ('moneda', 'ctzs', 'fecha_creacion', 'proveedor')
     search_fields = ('obra', 'solicitante__nombre', 'departamento', 'edificio', 'suite', 'proveedor')
     filter_horizontal = ('ctzs',)
-    readonly_fields = ('total', 'fecha_creacion', 'fecha_actualizacion')
+    readonly_fields = ('importe_contrato', 'total', 'fecha_creacion', 'fecha_actualizacion')
     
     fieldsets = (
         ('Información Básica', {
@@ -1559,6 +1559,8 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 pu = 0.0
             subtotal += pu * qty
         obj.total = round(subtotal, 2)
+        # Importe de contrato ahora se autocompleta con la suma de los importes de CTZs
+        obj.importe_contrato = obj.total
         super().save_model(request, obj, form, change)
         # Guardar m2m
         try:
@@ -1763,9 +1765,13 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
             # Mano de obra / Materiales
             draw_value(190, height - 260, obj.mano_de_obra, fsize=5)
             draw_value(254, height - 260, obj.materiales, fsize=5)
-            # Tiempo de ejecución (valor y unidad)
-            draw_value(303, height - 260, obj.tiempo_ejecucion_valor, fsize=5)
-            draw_value(355, height - 260, obj.tiempo_ejecucion_unidad, fsize=5)
+            # Tiempo de ejecución (valor y unidad). Si la unidad es "NO APLICA", solo se oculta la unidad.
+            te_val = obj.tiempo_ejecucion_valor or ''
+            te_unit = obj.tiempo_ejecucion_unidad or ''
+            if str(te_unit).lower() == 'no_aplica':
+                te_unit = ''
+            draw_value(303, height - 260, te_val, fsize=5)
+            draw_value(355, height - 260, te_unit, fsize=5)
 
             # Tabla inferior: Catálogo de conceptos
             # Coordenadas base de la primera fila de datos (no encabezados; ya están en el PDF)
@@ -1781,10 +1787,11 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
 
             c.setFont('Helvetica', 10)
             total_suma = 0  # Acumulador para la suma real de importes
-            for ctz in obj.ctzs.all():
+            for idx, ctz in enumerate(obj.ctzs.all(), start=1):
                 if ty < 80:
                     break  # limitar a una página del formato base
-                cod = getattr(ctz, 'id_manual', ctz.pk)
+                # COD secuencial 1,2,3,... en lugar del id de la CTZ
+                cod = idx
                 concepto = (getattr(ctz, 'concepto', '') or '')
                 
                 # Obtener valores guardados en CTZFormatoMPADetalle
@@ -1851,7 +1858,11 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 # Cantidad
                 c.rect(tx + col_cod + col_conc, cell_bottom, col_cant, row_h_effective)
                 c.setFont('Helvetica', 6)
-                c.drawString(tx + col_cod + col_conc + 10, y_center - 2, str(cantidad))
+                try:
+                    qty_txt = f"{float(cantidad):.2f}"
+                except Exception:
+                    qty_txt = str(cantidad)
+                c.drawString(tx + col_cod + col_conc + 10, y_center - 2, qty_txt)
                 
                 # Unidad
                 c.rect(tx + col_cod + col_conc + col_cant, cell_bottom, col_unid, row_h_effective)

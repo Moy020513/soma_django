@@ -273,6 +273,7 @@ class CTZFormatoMPA(models.Model):
     TIEMPO_EJECUCION_CHOICES = [
         ('semanas', 'Semanas'),
         ('meses', 'Meses'),
+        ('no_aplica', 'NO APLICA'),
     ]
     
     # Información de la obra
@@ -348,8 +349,10 @@ class CTZFormatoMPA(models.Model):
     )
     
     # Tiempo de ejecución
-    tiempo_ejecucion_valor = models.IntegerField(
-        default=1,
+    tiempo_ejecucion_valor = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
         verbose_name='Tiempo de Ejecución (valor)'
     )
     
