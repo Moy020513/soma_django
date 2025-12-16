@@ -410,3 +410,28 @@ class CTZFormatoMPA(models.Model):
         self.total = self.calcular_total()
         super().save(*args, **kwargs)
 
+
+class CTZFormatoMPADetalle(models.Model):
+    """Detalle por CTZ dentro de un CTZFormatoMPA: guarda cantidad, PU, unidad y total para
+    cada CTZ seleccionada al crear/editar un CTZFormatoMPA."""
+    formato_mpa = models.ForeignKey(CTZFormatoMPA, on_delete=models.CASCADE, related_name='detalles')
+    ctz = models.ForeignKey(CTZ, on_delete=models.CASCADE)
+    cantidad = models.DecimalField(max_digits=12, decimal_places=3, default=1)
+    pu = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    unidad = models.CharField(max_length=30, verbose_name='Unidad', blank=True, default='')
+
+    class Meta:
+        verbose_name = 'Detalle CTZ Formato MPA'
+        verbose_name_plural = 'Detalles CTZ Formato MPA'
+
+    def __str__(self):
+        return f"{self.formato_mpa.obra} - {getattr(self.ctz, 'id_manual', self.ctz.pk)}: {self.cantidad} x {self.pu} = {self.total}"
+
+    def save(self, *args, **kwargs):
+        try:
+            self.total = round(float(self.cantidad or 0) * float(self.pu or 0), 2)
+        except Exception:
+            self.total = 0
+        super().save(*args, **kwargs)
+

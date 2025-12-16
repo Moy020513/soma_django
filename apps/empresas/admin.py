@@ -14,6 +14,7 @@ from .models import CTZItem
 from .models import CTZFormato
 from .models import CTZFormatoDetalle
 from .models import CTZFormatoMPA
+from .models import CTZFormatoMPADetalle
 from django import forms
 import logging
 from django.db.models.deletion import ProtectedError
@@ -1531,18 +1532,119 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
     )
     
     def save_model(self, request, obj, form, change):
-        """Guardar modelo y recalcular total"""
-        # Recalcular total automáticamente
-        obj.total = obj.calcular_total()
+        """Guardar modelo y recalcular total.
+
+        Si vienen cantidades por CTZ (ctz_qty_<id>) del widget dinámico, usar esas
+        cantidades para calcular el total; si no, usar total_pu de cada CTZ con qty=1.
+        Además persistir detalles.
+        """
+        try:
+            ctz_ids = request.POST.getlist('ctzs') or []
+        except Exception:
+            ctz_ids = []
+        subtotal = 0.0
+        for cid in ctz_ids:
+            try:
+                c = CTZ.objects.get(pk=int(cid))
+            except Exception:
+                continue
+            try:
+                qty_raw = request.POST.get(f'ctz_qty_{cid}', '')
+                qty = float(str(qty_raw).replace(',', '.')) if qty_raw else 1.0
+            except Exception:
+                qty = 1.0
+            try:
+                pu = float(getattr(c, 'total_pu', 0) or 0)
+            except Exception:
+                pu = 0.0
+            subtotal += pu * qty
+        obj.total = round(subtotal, 2)
         super().save_model(request, obj, form, change)
+        # Guardar m2m
+        try:
+            if hasattr(form, 'save_m2m'):
+                form.save_m2m()
+        except Exception:
+            pass
+        # Persistir detalles por CTZ
+        try:
+            from decimal import Decimal
+            obj.detalles.all().delete()
+            ctz_ids = request.POST.getlist('ctzs') or []
+            detalles = []
+            for cid in ctz_ids:
+                try:
+                    c = CTZ.objects.get(pk=int(cid))
+                except Exception:
+                    continue
+                qty_raw = request.POST.get(f'ctz_qty_{cid}', '')
+                unit_raw = request.POST.get(f'ctz_unit_{cid}', '')
+                try:
+                    qty = Decimal(str(qty_raw).replace(',', '.')) if qty_raw else Decimal('1')
+                except Exception:
+                    qty = Decimal('1')
+                try:
+                    pu = Decimal(str(getattr(c, 'total_pu', 0)))
+                except Exception:
+                    pu = Decimal('0')
+                total = (qty * pu).quantize(Decimal('0.01'))
+                if qty and qty != Decimal('0'):
+                    detalles.append(CTZFormatoMPADetalle(formato_mpa=obj, ctz=c, cantidad=qty, pu=pu, total=total, unidad=unit_raw))
+            if detalles:
+                CTZFormatoMPADetalle.objects.bulk_create(detalles)
+        except Exception:
+            pass
 
     def get_urls(self):
         from django.urls import path
         urls = super().get_urls()
         my_urls = [
             path('export-pdf-mpa/<int:pk>/', self.admin_site.admin_view(self.export_pdf_view), name=f'{self.opts.app_label}_{self.opts.model_name}_export_pdf'),
+            path('ctz-detalles/<int:formato_id>/', self.admin_site.admin_view(self.ctz_detalles_view), name=f'{self.opts.app_label}_{self.opts.model_name}_ctz_detalles'),
         ]
         return my_urls + urls
+
+    def ctz_detalles_view(self, request, formato_id):
+        """Devuelve JSON con los detalles guardados para un CTZFormatoMPA (lista de dicts)."""
+        from django.http import JsonResponse
+        from django.shortcuts import get_object_or_404
+        try:
+            obj = get_object_or_404(CTZFormatoMPA, pk=formato_id)
+            from decimal import Decimal
+
+            def _fmt_number_trim(v):
+                try:
+                    if v is None:
+                        return ''
+                    if isinstance(v, Decimal):
+                        s = format(v, 'f')
+                    else:
+                        s = str(v)
+                    if '.' in s:
+                        s = s.rstrip('0').rstrip('.')
+                    return s
+                except Exception:
+                    return str(v)
+
+            detalles = []
+            for d in obj.detalles.select_related('ctz').all():
+                detalles.append({
+                    'ctz_id': d.ctz.pk,
+                    'ctz_label': getattr(d.ctz, 'id_manual', d.ctz.pk),
+                    'cantidad': _fmt_number_trim(d.cantidad),
+                    'pu': _fmt_number_trim(d.pu),
+                    'total': _fmt_number_trim(d.total),
+                    'concepto': getattr(d.ctz, 'concepto', '') or '',
+                    'unidad': d.unidad or '',
+                })
+            return JsonResponse({'detalles': detalles})
+        except Exception:
+            return JsonResponse({'error': 'not found'}, status=404)
+
+    class Media:
+        js = ('js/ctz_formato_admin.js',)
+
+
 
     def export_pdf_view(self, request, pk):
         """Exporta un CTZFormatoMPA a PDF usando la plantilla `static/pdf/MPA.pdf`.
@@ -1657,67 +1759,90 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
 
             # Tabla inferior: Catálogo de conceptos
             # Coordenadas base de la primera fila de datos (no encabezados; ya están en el PDF)
-            tx = 45
-            ty = 240
+            tx = 31.5
+            ty = 516  # Movido más arriba (era 240)
             row_h = 16
-            col_cod = 55
-            col_conc = 260
-            col_cant = 60
-            col_unid = 60
-            col_pu = 60
-            col_imp = 60
+            col_cod = 39.2
+            col_conc = 227.6
+            col_cant = 52
+            col_unid = 67.6
+            col_pu = 49
+            col_imp = 96.2
 
             c.setFont('Helvetica', 10)
+            total_suma = 0  # Acumulador para la suma real de importes
             for ctz in obj.ctzs.all():
                 if ty < 80:
                     break  # limitar a una página del formato base
                 cod = getattr(ctz, 'id_manual', ctz.pk)
                 concepto = (getattr(ctz, 'concepto', '') or '')
-                cantidad = 1
-                unidad = ''
-                pu = getattr(ctz, 'total_pu', 0)
-                importe = pu * cantidad
+                
+                # Obtener valores guardados en CTZFormatoMPADetalle
+                try:
+                    detalle = CTZFormatoMPADetalle.objects.get(formato_mpa=obj, ctz=ctz)
+                    cantidad = float(detalle.cantidad or 0)
+                    unidad = detalle.unidad or ''
+                    pu = float(detalle.pu or 0)
+                    importe = float(detalle.total or 0)
+                except CTZFormatoMPADetalle.DoesNotExist:
+                    # Fallback si no existe detalle
+                    cantidad = 1
+                    unidad = ''
+                    pu = float(getattr(ctz, 'total_pu', 0))
+                    importe = pu * cantidad
+                
+                # Acumular el importe al total
+                total_suma += importe
 
+                # Dibujar bordes de la fila (celdas de tabla)
+                c.setStrokeColorRGB(0, 0, 0)
+                c.setLineWidth(0.5)
                 # COD
-                draw_value(tx + 4, ty, cod, fsize=9, bold=False)
-                # Concepto (envuelto)
-                used_h = draw_wrapped(tx + col_cod + 4, ty + 2, concepto, width=col_conc - 8, fsize=9, leading=12)
+                c.rect(tx, ty - 3, col_cod, row_h)
+                draw_value(tx + 4, ty, cod, fsize=6, bold=False)
+                # Concepto
+                c.rect(tx + col_cod, ty - 3, col_conc, row_h)
+                used_h = draw_wrapped(tx + col_cod + 4, ty + 2, concepto, width=col_conc - 8, fsize=5, leading=12)
                 # Cantidad
-                draw_value(tx + col_cod + col_conc + 20, ty, str(cantidad), fsize=9, bold=False)
+                c.rect(tx + col_cod + col_conc, ty - 3, col_cant, row_h)
+                draw_value(tx + col_cod + col_conc + 10, ty, str(cantidad), fsize=6, bold=False)
                 # Unidad
-                draw_value(tx + col_cod + col_conc + col_cant + 20, ty, unidad, fsize=9, bold=False)
+                c.rect(tx + col_cod + col_conc + col_cant, ty - 3, col_unid, row_h)
+                draw_value(tx + col_cod + col_conc + col_cant + 20, ty, unidad, fsize=6, bold=False)
                 # P.U. (derecha)
+                c.rect(tx + col_cod + col_conc + col_cant + col_unid, ty - 3, col_pu, row_h)
                 try:
                     from reportlab.pdfbase import pdfmetrics
-                    c.setFont('Helvetica', 9)
-                    txt = fmt_money(pu)
-                    w = pdfmetrics.stringWidth(txt, 'Helvetica', 9)
+                    c.setFont('Helvetica', 6)
+                    txt = fmt_money_us(pu)
+                    w = pdfmetrics.stringWidth(txt, 'Helvetica', 6)
                     c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu - w - 6, ty, txt)
                 except Exception:
-                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + 6, ty, fmt_money(pu), fsize=9, bold=False)
+                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + 6, ty, fmt_money_us(pu), fsize=9, bold=False)
                 # Importe (derecha)
+                c.rect(tx + col_cod + col_conc + col_cant + col_unid + col_pu, ty - 3, col_imp, row_h)
                 try:
                     from reportlab.pdfbase import pdfmetrics
-                    c.setFont('Helvetica', 9)
-                    txt = fmt_money(importe)
-                    w = pdfmetrics.stringWidth(txt, 'Helvetica', 9)
+                    c.setFont('Helvetica', 6)
+                    txt = fmt_money_us(importe)
+                    w = pdfmetrics.stringWidth(txt, 'Helvetica', 6)
                     c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, ty, txt)
                 except Exception:
-                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, ty, fmt_money(importe), fsize=9, bold=False)
+                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, ty, fmt_money_us(importe), fsize=9, bold=False)
 
                 # avanzar a la siguiente fila; ajustar por alto usado en concepto
                 ty -= max(row_h, int(used_h))
 
             # Total general
-            # Total general (esquina derecha de la tabla)
+            # Total general (esquina derecha de la tabla) - usar la suma calculada de los importes
             try:
                 from reportlab.pdfbase import pdfmetrics
                 c.setFont('Helvetica-Bold', 11)
-                txt = fmt_money(obj.total)
+                txt = fmt_money_us(total_suma)
                 w = pdfmetrics.stringWidth(txt, 'Helvetica-Bold', 11)
                 c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, 110, txt)
             except Exception:
-                draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, 110, fmt_money(obj.total), fsize=11)
+                draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, 110, fmt_money_us(total_suma), fsize=11)
 
             c.showPage()
             c.save()

@@ -284,15 +284,26 @@
     if(selectEl){
       // construir filas si ya hay opciones seleccionadas
       buildCTZRowsFromSelect(selectEl);
-      // Si estamos en la vista de cambio (URL contiene /ctzformato/<id>/change/),
+      // Si estamos en la vista de cambio (URL contiene /ctzformato/<id>/change/ o /ctzformatompa/<id>/change/),
       // pedir los detalles guardados vía AJAX y rellenar las filas dinámicas.
       try{
         var m = window.location.pathname.match(/\/admin\/empresas\/ctzformato\/(\d+)\/change\/?$/);
+        var mMPA = window.location.pathname.match(/\/admin\/empresas\/ctzformatompa\/(\d+)\/change\/?$/);
+        var formatoId = null;
+        var detallesUrl = null;
+        
         if(m && m[1]){
-          var formatoId = m[1];
+          formatoId = m[1];
+          detallesUrl = '/admin/empresas/ctzformato/ctz-detalles/'+formatoId+'/';
+        } else if(mMPA && mMPA[1]){
+          formatoId = mMPA[1];
+          detallesUrl = '/admin/empresas/ctzformatompa/ctz-detalles/'+formatoId+'/';
+        }
+        
+        if(formatoId && detallesUrl){
           // esperar un poco para que el widget filter_horizontal esté inicializado
           setTimeout(function(){
-            fetch('/admin/empresas/ctzformato/ctz-detalles/'+formatoId+'/', {credentials:'same-origin'})
+            fetch(detallesUrl, {credentials:'same-origin'})
               .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
               .then(function(data){
                 if(!data || !data.detalles) return;
