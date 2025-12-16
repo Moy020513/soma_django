@@ -13,6 +13,7 @@ from .models import CTZ
 from .models import CTZItem
 from .models import CTZFormato
 from .models import CTZFormatoDetalle
+from .models import CTZFormatoMPA
 from django import forms
 import logging
 from django.db.models.deletion import ProtectedError
@@ -1458,5 +1459,302 @@ admin.site.register(CTZFormato, CTZFormatoAdmin)
 # de los `CTZFormatoDetalle` tanto en add como en change, y persiste via
 # `CTZFormatoAdmin.save_model` evitando mostrar el inline adicional.
 
+
+class CTZFormatoMPAForm(forms.ModelForm):
+    """Formulario para CTZFormatoMPA"""
+    class Meta:
+        model = CTZFormatoMPA
+        fields = (
+            'obra', 'solicitante', 'departamento', 'edificio', 'suite', 'proveedor', 'fecha_elaboracion',
+            'importe_contrato', 'anticipo_solicitado', 'moneda',
+            'mano_de_obra', 'materiales',
+            'tiempo_ejecucion_valor', 'tiempo_ejecucion_unidad',
+            'ctzs', 'total', 'notas'
+        )
+        widgets = {
+            'obra': forms.TextInput(attrs={'size': 50}),
+            'departamento': forms.TextInput(attrs={'size': 40}),
+            'edificio': forms.TextInput(attrs={'size': 40}),
+            'suite': forms.TextInput(attrs={'size': 20}),
+            'proveedor': forms.TextInput(attrs={'size': 40}),
+            'fecha_elaboracion': forms.DateInput(attrs={'type': 'date'}),
+            'importe_contrato': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+            'anticipo_solicitado': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+            'mano_de_obra': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+            'materiales': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+            'tiempo_ejecucion_valor': forms.NumberInput(attrs={'min': 1}),
+            'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
+            'notas': forms.Textarea(attrs={'rows': 4}),
+        }
+
+
+class CTZFormatoMPAAdmin(admin.ModelAdmin):
+    """Admin para CTZFormatoMPA"""
+    form = CTZFormatoMPAForm
+    list_display = ('obra', 'solicitante', 'departamento', 'edificio', 'suite', 'proveedor', 'importe_contrato', 'anticipo_solicitado', 'total', 'moneda', 'export_pdf_link')
+    list_filter = ('moneda', 'ctzs', 'fecha_creacion', 'proveedor')
+    search_fields = ('obra', 'solicitante__nombre', 'departamento', 'edificio', 'suite', 'proveedor')
+    filter_horizontal = ('ctzs',)
+    readonly_fields = ('total', 'fecha_creacion', 'fecha_actualizacion')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('obra', 'solicitante', 'departamento', 'edificio', 'suite', 'proveedor', 'fecha_elaboracion')
+        }),
+        ('Importes', {
+            'fields': ('importe_contrato', 'anticipo_solicitado', 'moneda', 'total')
+        }),
+        ('Costos', {
+            'fields': ('mano_de_obra', 'materiales')
+        }),
+        ('Tiempo de Ejecución', {
+            'fields': ('tiempo_ejecucion_valor', 'tiempo_ejecucion_unidad')
+        }),
+        ('CTZs Seleccionadas', {
+            'fields': ('ctzs',)
+        }),
+        ('Notas', {
+            'fields': ('notas',)
+        }),
+        ('Auditoría', {
+            'fields': ('fecha_creacion', 'fecha_actualizacion'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        """Guardar modelo y recalcular total"""
+        # Recalcular total automáticamente
+        obj.total = obj.calcular_total()
+        super().save_model(request, obj, form, change)
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        my_urls = [
+            path('export-pdf-mpa/<int:pk>/', self.admin_site.admin_view(self.export_pdf_view), name=f'{self.opts.app_label}_{self.opts.model_name}_export_pdf'),
+        ]
+        return my_urls + urls
+
+    def export_pdf_view(self, request, pk):
+        """Exporta un CTZFormatoMPA a PDF usando la plantilla `static/pdf/MPA.pdf`.
+        Solo imprime valores (los títulos ya están en el PDF) y dibuja la tabla inferior
+        con las CTZ seleccionadas (COD, Concepto, Cantidad, Unidad, P.U., Importe).
+        """
+        from django.http import HttpResponse
+        from django.shortcuts import get_object_or_404
+        from django.contrib.staticfiles import finders
+        import io
+        try:
+            obj = get_object_or_404(CTZFormatoMPA, pk=pk)
+            # Encontrar el PDF base MPA
+            base_path = finders.find('pdf/MPA.pdf')
+            if not base_path:
+                return HttpResponse('No se encontró el PDF base MPA en static/pdf/MPA.pdf', status=404)
+
+            # Crear un overlay con ReportLab del mismo tamaño que la primera página
+            try:
+                from pypdf import PdfReader
+                base_reader = PdfReader(open(base_path, 'rb'))
+                first_page = base_reader.pages[0]
+                try:
+                    width = float(first_page.mediabox.width)
+                    height = float(first_page.mediabox.height)
+                except Exception:
+                    width = 595.27  # A4 width
+                    height = 841.89  # A4 height
+            except Exception:
+                width = 595.27
+                height = 841.89
+
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.utils import ImageReader
+            overlay_buf = io.BytesIO()
+            c = canvas.Canvas(overlay_buf, pagesize=(width, height))
+
+            # Helpers
+            def fmt_money(v):
+                try:
+                    return f"$ {float(v):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                except Exception:
+                    return str(v or '')
+
+            def draw_value(x, y, value, fsize=10, bold=True):
+                try:
+                    c.setFont('Helvetica-Bold' if bold else 'Helvetica', fsize)
+                    c.drawString(x, y, str(value or ''))
+                except Exception:
+                    pass
+
+            def draw_wrapped(x, y, text, width, fsize=10, leading=12):
+                try:
+                    from reportlab.lib.styles import getSampleStyleSheet
+                    from reportlab.platypus import Paragraph
+                    from reportlab.lib.enums import TA_LEFT
+                    from reportlab.lib import colors
+                    styles = getSampleStyleSheet()
+                    style = styles['Normal']
+                    style.fontName = 'Helvetica'
+                    style.fontSize = fsize
+                    style.leading = leading
+                    style.textColor = colors.black
+                    style.alignment = TA_LEFT
+                    p = Paragraph(str(text or ''), style)
+                    w, h = p.wrap(width, 1000)
+                    p.drawOn(c, x, y - h + leading)
+                    return h
+                except Exception:
+                    # fallback simple
+                    c.setFont('Helvetica', fsize)
+                    c.drawString(x, y, (text or '')[:100])
+                    return leading
+
+            # Coordenadas para imprimir valores (aprox, basadas en A4 595x842)
+            # Origen (0,0) en esquina inferior izquierda
+            # Bloque superior derecho (Edificio, Suite, Proveedor, Fecha)
+            # Letra más pequeña y menor separación entre líneas
+            draw_value(468, height - 87, obj.edificio, fsize=7)
+            draw_value(536, height - 87, obj.suite, fsize=6)
+            draw_value(474, height - 108, obj.proveedor, fsize=6)
+            fecha = obj.fecha_elaboracion.strftime('%d/%m/%Y') if obj.fecha_elaboracion else ''
+            draw_value(468, height - 122, fecha, fsize=6)
+
+            # Presupuesto de Obra / datos principales
+            # Obra (cuadro grande izquierda)
+            draw_wrapped(210, height - 185, obj.obra, width=500, fsize=6, leading=12)
+            # Solicitante / Departamento (cuadro derecho)
+            solicitante = obj.solicitante.nombre_completo if obj.solicitante else ''
+            draw_value(468, height - 168, solicitante, fsize=5)
+            draw_value(468, height - 190, obj.departamento, fsize=5)
+
+            # Datos de contratación (fila con importes)
+            draw_value(35, height - 260, fmt_money(obj.importe_contrato), fsize=5)
+            draw_value(75, height - 260, fmt_money(obj.anticipo_solicitado), fsize=5)
+            draw_value(120, height - 260, obj.moneda, fsize=5)
+            # Mano de obra / Materiales
+            draw_value(190, height - 260, fmt_money(obj.mano_de_obra), fsize=5)
+            draw_value(254, height - 260, fmt_money(obj.materiales), fsize=5)
+            # Tiempo de ejecución (valor y unidad)
+            draw_value(303, height - 260, obj.tiempo_ejecucion_valor, fsize=5)
+            draw_value(355, height - 260, obj.tiempo_ejecucion_unidad, fsize=5)
+
+            # Tabla inferior: Catálogo de conceptos
+            # Coordenadas base de la primera fila de datos (no encabezados; ya están en el PDF)
+            tx = 45
+            ty = 240
+            row_h = 16
+            col_cod = 55
+            col_conc = 260
+            col_cant = 60
+            col_unid = 60
+            col_pu = 60
+            col_imp = 60
+
+            c.setFont('Helvetica', 10)
+            for ctz in obj.ctzs.all():
+                if ty < 80:
+                    break  # limitar a una página del formato base
+                cod = getattr(ctz, 'id_manual', ctz.pk)
+                concepto = (getattr(ctz, 'concepto', '') or '')
+                cantidad = 1
+                unidad = ''
+                pu = getattr(ctz, 'total_pu', 0)
+                importe = pu * cantidad
+
+                # COD
+                draw_value(tx + 4, ty, cod, fsize=9, bold=False)
+                # Concepto (envuelto)
+                used_h = draw_wrapped(tx + col_cod + 4, ty + 2, concepto, width=col_conc - 8, fsize=9, leading=12)
+                # Cantidad
+                draw_value(tx + col_cod + col_conc + 20, ty, str(cantidad), fsize=9, bold=False)
+                # Unidad
+                draw_value(tx + col_cod + col_conc + col_cant + 20, ty, unidad, fsize=9, bold=False)
+                # P.U. (derecha)
+                try:
+                    from reportlab.pdfbase import pdfmetrics
+                    c.setFont('Helvetica', 9)
+                    txt = fmt_money(pu)
+                    w = pdfmetrics.stringWidth(txt, 'Helvetica', 9)
+                    c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu - w - 6, ty, txt)
+                except Exception:
+                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + 6, ty, fmt_money(pu), fsize=9, bold=False)
+                # Importe (derecha)
+                try:
+                    from reportlab.pdfbase import pdfmetrics
+                    c.setFont('Helvetica', 9)
+                    txt = fmt_money(importe)
+                    w = pdfmetrics.stringWidth(txt, 'Helvetica', 9)
+                    c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, ty, txt)
+                except Exception:
+                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, ty, fmt_money(importe), fsize=9, bold=False)
+
+                # avanzar a la siguiente fila; ajustar por alto usado en concepto
+                ty -= max(row_h, int(used_h))
+
+            # Total general
+            # Total general (esquina derecha de la tabla)
+            try:
+                from reportlab.pdfbase import pdfmetrics
+                c.setFont('Helvetica-Bold', 11)
+                txt = fmt_money(obj.total)
+                w = pdfmetrics.stringWidth(txt, 'Helvetica-Bold', 11)
+                c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, 110, txt)
+            except Exception:
+                draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, 110, fmt_money(obj.total), fsize=11)
+
+            c.showPage()
+            c.save()
+            overlay_buf.seek(0)
+            overlay_bytes = overlay_buf.getvalue()
+
+            # Merge overlay sobre el PDF base MPA
+            try:
+                from pypdf import PdfReader, PdfWriter
+                base_reader = PdfReader(open(base_path, 'rb'))
+                overlay_reader = PdfReader(io.BytesIO(overlay_bytes))
+                writer = PdfWriter()
+                for i, base_page in enumerate(base_reader.pages):
+                    page = overlay_reader.pages[i] if i < len(overlay_reader.pages) else None
+                    if page:
+                        try:
+                            base_page.merge_page(page)
+                        except Exception:
+                            base_page.mergePage(page)
+                    writer.add_page(base_page)
+                out = io.BytesIO()
+                writer.write(out)
+                pdf_bytes = out.getvalue()
+            except Exception:
+                # Fallback: devolver sólo el overlay
+                pdf_bytes = overlay_bytes
+
+            resp = HttpResponse(pdf_bytes, content_type='application/pdf')
+            resp['Content-Disposition'] = f'attachment; filename="ctzformato_mpa_{obj.pk}.pdf"'
+            return resp
+        except Exception:
+            return HttpResponse('No se encontró el CTZ Formato MPA.', status=404)
+
+    def export_pdf_link(self, obj):
+        """Enlace para exportar este CTZFormatoMPA a PDF."""
+        try:
+            url = reverse('admin:%s_%s_export_pdf' % (self.opts.app_label, self.opts.model_name), args=(obj.pk,))
+            try:
+                from django.templatetags.static import static
+                img_url = static('img/pdf-icon.svg')
+            except Exception:
+                img_url = '/static/img/pdf-icon.svg'
+            return format_html(
+                '<div style="text-align:center; width:100%;"><a href="{}" title="Exportar PDF" style="display:inline-flex;align-items:center;justify-content:center;height:40px;width:40px;margin:0 auto;"><img src="{}" alt="PDF" style="width:32px;height:32px;object-fit:contain;"/></a></div>',
+                url,
+                img_url,
+            )
+        except Exception:
+            return ''
+    export_pdf_link.short_description = 'Exportar'
+
+
+# Registrar CTZFormatoMPA en admin
+admin.site.register(CTZFormatoMPA, CTZFormatoMPAAdmin)
 
 

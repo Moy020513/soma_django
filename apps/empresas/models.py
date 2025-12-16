@@ -258,3 +258,155 @@ class CTZFormatoDetalle(models.Model):
         super().save(*args, **kwargs)
 
 
+class CTZFormatoMPA(models.Model):
+    """Formato MPA (similar a CTZFormato pero con campos específicos para solicitud de materiales y adelantos)
+    
+    Permite seleccionar múltiples CTZs y agregar información sobre la obra, solicitante, etc.
+    El total se calcula automáticamente sumando los importes de las CTZs seleccionadas.
+    """
+    MONEDA_CHOICES = [
+        ('MXN', 'Pesos Mexicanos (MXN)'),
+        ('USD', 'Dólares Estadounidenses (USD)'),
+        ('EUR', 'Euros (EUR)'),
+    ]
+    
+    TIEMPO_EJECUCION_CHOICES = [
+        ('semanas', 'Semanas'),
+        ('meses', 'Meses'),
+    ]
+    
+    # Información de la obra
+    obra = models.CharField(max_length=200, verbose_name='Obra (Trabajos a ejecutar)')
+    
+    # Solicitante (FK a Contacto)
+    solicitante = models.ForeignKey(
+        Contacto, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=False,
+        related_name='formatos_mpa',
+        verbose_name='Solicitante'
+    )
+    
+    # Departamento
+    departamento = models.CharField(max_length=100, verbose_name='Departamento', blank=True)
+
+    # Edificio y suite (datos de ubicación dentro de la obra)
+    edificio = models.CharField(max_length=150, verbose_name='Edificio', blank=True, default='')
+    suite = models.CharField(max_length=50, verbose_name='Suite', blank=True, default='')
+
+    # Proveedor (por defecto Servicios Industriales SOMA)
+    proveedor = models.CharField(
+        max_length=150,
+        verbose_name='Proveedor',
+        default='Servicios Industriales SOMA',
+        blank=True,
+    )
+
+    # Fecha de elaboración (manual, opcional)
+    fecha_elaboracion = models.DateField(blank=True, null=True, verbose_name='Fecha de Elaboración')
+
+    # Importe de contrato (usa la misma columna legacy para no perder datos)
+    importe_contrato = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        verbose_name='Importe de Contrato',
+        db_column='importe_contacto'
+    )
+    
+    # Anticipo solicitado
+    anticipo_solicitado = models.DecimalField(
+        max_digits=14, 
+        decimal_places=2, 
+        default=0, 
+        verbose_name='Anticipo Solicitado'
+    )
+    
+    # Moneda
+    moneda = models.CharField(
+        max_length=3,
+        choices=MONEDA_CHOICES,
+        default='MXN',
+        verbose_name='Moneda'
+    )
+    
+    # Mano de obra
+    mano_de_obra = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        verbose_name='Mano de Obra'
+    )
+    
+    # Materiales
+    materiales = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        verbose_name='Materiales'
+    )
+    
+    # Tiempo de ejecución
+    tiempo_ejecucion_valor = models.IntegerField(
+        default=1,
+        verbose_name='Tiempo de Ejecución (valor)'
+    )
+    
+    tiempo_ejecucion_unidad = models.CharField(
+        max_length=10,
+        choices=TIEMPO_EJECUCION_CHOICES,
+        default='semanas',
+        verbose_name='Unidad de Tiempo'
+    )
+    
+    # CTZs seleccionadas (M2M similar a CTZFormato)
+    ctzs = models.ManyToManyField(
+        CTZ,
+        blank=True,
+        related_name='formatos_mpa',
+        verbose_name='CTZs'
+    )
+    
+    # Total (suma de importes de CTZs)
+    total = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        default=0,
+        verbose_name='Total'
+    )
+    
+    # Notas opcionales
+    notas = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Notas'
+    )
+    
+    # Información de auditoría
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'CTZ Formato MPA'
+        verbose_name_plural = 'CTZs Formato MPA'
+    
+    def __str__(self):
+        return f"MPA - {self.obra} ({self.solicitante})"
+    
+    def calcular_total(self):
+        """Calcular total sumando los total_pu de todas las CTZs seleccionadas"""
+        try:
+            total = sum(
+                float(ctz.total_pu or 0) 
+                for ctz in self.ctzs.all()
+            )
+            return round(total, 2)
+        except Exception:
+            return 0.0
+    
+    def save(self, *args, **kwargs):
+        # Calcular total automáticamente
+        self.total = self.calcular_total()
+        super().save(*args, **kwargs)
+
