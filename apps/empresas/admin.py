@@ -1804,40 +1804,63 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 # Acumular el importe al total
                 total_suma += importe
 
-                # Dibujar bordes de la fila (celdas de tabla)
-                # ty es la posición superior de la celda
+                # Helpers de wrapping para concepto (hasta 3 líneas)
+                from reportlab.pdfbase import pdfmetrics
+                def wrap_text(txt, max_width, font='Helvetica', size=5, max_lines=3):
+                    words = (txt or '').split()
+                    lines = []
+                    current = ''
+                    for w in words:
+                        candidate = (current + ' ' + w).strip()
+                        if pdfmetrics.stringWidth(candidate, font, size) <= max_width:
+                            current = candidate
+                        else:
+                            if current:
+                                lines.append(current)
+                                if len(lines) >= max_lines:
+                                    return lines[:max_lines]
+                            current = w
+                    if current and len(lines) < max_lines:
+                        lines.append(current)
+                    return lines[:max_lines]
+
+                concept_lines = wrap_text(concepto, max_width=col_conc - 8, size=5, max_lines=3)
+                line_h = 7
+                row_h_effective = max(row_h, line_h * len(concept_lines) + 4)
+
+                # Dibujar bordes de la fila (celdas de tabla) con altura dinámica
                 cell_top = ty
-                cell_bottom = ty - row_h
+                cell_bottom = ty - row_h_effective
                 c.setStrokeColorRGB(0, 0, 0)
                 c.setLineWidth(0.5)
                 
                 # COD
-                c.rect(tx, cell_bottom, col_cod, row_h)
-                y_center = cell_bottom + row_h / 2
+                c.rect(tx, cell_bottom, col_cod, row_h_effective)
+                y_center = cell_bottom + row_h_effective / 2
                 c.setFont('Helvetica', 6)
                 c.drawString(tx + 4, y_center - 2, str(cod))
                 
                 # Concepto
-                c.rect(tx + col_cod, cell_bottom, col_conc, row_h)
+                c.rect(tx + col_cod, cell_bottom, col_conc, row_h_effective)
                 c.setFont('Helvetica', 5)
-                # Truncar el concepto si es muy largo para que quepa en la celda
-                concepto_trunc = (concepto[:50] + '...') if len(concepto) > 50 else concepto
-                c.drawString(tx + col_cod + 4, y_center - 2, concepto_trunc)
+                y_text = cell_bottom + row_h_effective - 6
+                for ln in concept_lines:
+                    c.drawString(tx + col_cod + 4, y_text, ln)
+                    y_text -= line_h
                 
                 # Cantidad
-                c.rect(tx + col_cod + col_conc, cell_bottom, col_cant, row_h)
+                c.rect(tx + col_cod + col_conc, cell_bottom, col_cant, row_h_effective)
                 c.setFont('Helvetica', 6)
                 c.drawString(tx + col_cod + col_conc + 10, y_center - 2, str(cantidad))
                 
                 # Unidad
-                c.rect(tx + col_cod + col_conc + col_cant, cell_bottom, col_unid, row_h)
+                c.rect(tx + col_cod + col_conc + col_cant, cell_bottom, col_unid, row_h_effective)
                 c.setFont('Helvetica', 6)
                 c.drawString(tx + col_cod + col_conc + col_cant + 20, y_center - 2, unidad)
                 
                 # P.U. (derecha)
-                c.rect(tx + col_cod + col_conc + col_cant + col_unid, cell_bottom, col_pu, row_h)
+                c.rect(tx + col_cod + col_conc + col_cant + col_unid, cell_bottom, col_pu, row_h_effective)
                 try:
-                    from reportlab.pdfbase import pdfmetrics
                     c.setFont('Helvetica', 6)
                     txt = fmt_money_us(pu)
                     w = pdfmetrics.stringWidth(txt, 'Helvetica', 6)
@@ -1846,9 +1869,8 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                     pass
                 
                 # Importe (derecha)
-                c.rect(tx + col_cod + col_conc + col_cant + col_unid + col_pu, cell_bottom, col_imp, row_h)
+                c.rect(tx + col_cod + col_conc + col_cant + col_unid + col_pu, cell_bottom, col_imp, row_h_effective)
                 try:
-                    from reportlab.pdfbase import pdfmetrics
                     c.setFont('Helvetica', 6)
                     txt = fmt_money_us(importe)
                     w = pdfmetrics.stringWidth(txt, 'Helvetica', 6)
@@ -1857,7 +1879,7 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                     pass
 
                 # avanzar a la siguiente fila
-                ty -= row_h
+                ty -= row_h_effective
 
             # Total general
             # Total general (esquina derecha de la tabla) - usar la suma calculada de los importes
@@ -1920,13 +1942,13 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 x_right = tx + combined_width_1
                 width_right = combined_width_2
                 # Línea de firma centrada
-                line_y = cell_bottom + (big_row_h / 2) + 8
+                line_y = cell_bottom + (big_row_h / 2) + 1
                 c.setStrokeColorRGB(0, 0, 0)
                 c.setLineWidth(0.6)
                 c.line(x_right + 20, line_y, x_right + width_right - 20, line_y)
 
                 # Leyenda completa debajo de la línea
-                c.setFont('Helvetica-Bold', 7)
+                c.setFont('Helvetica-Bold', 5)
                 c.setFillColorRGB(0, 0, 0)
                 from reportlab.pdfbase import pdfmetrics
                 legend_lines = [
@@ -1936,9 +1958,9 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 ]
                 y_text = line_y - 10
                 for txt in legend_lines:
-                    w_text = pdfmetrics.stringWidth(txt, 'Helvetica-Bold', 7)
+                    w_text = pdfmetrics.stringWidth(txt, 'Helvetica-Bold', 5)
                     c.drawString(x_right + (width_right - w_text) / 2, y_text, txt)
-                    y_text -= 9
+                    y_text -= 7
             except Exception:
                 pass
             
