@@ -81,6 +81,7 @@ class CTZForm(forms.ModelForm):
             'mo_soma': forms.NumberInput(attrs={'min': 0}),
             'otros_materiales': forms.NumberInput(attrs={'min': 0}),
             'porcentaje_pu': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+            'concepto': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Concepto específico...'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -437,15 +438,15 @@ class ContactoAdmin(admin.ModelAdmin):
 class CTZAdmin(admin.ModelAdmin):
     form = CTZForm
     inlines = []
-    list_display = ('id_manual', 'empresa', 'proveedor_display', 'mo_soma_display', 'otros_materiales_display', 'pu_display', 'porcentaje_pu_display', 'total_pu_display', 'fecha_creacion')
+    list_display = ('id_manual', 'empresa', 'concepto_display', 'proveedor_display', 'mo_soma_display', 'otros_materiales_display', 'pu_display', 'porcentaje_pu_display', 'total_pu_display', 'fecha_creacion')
     list_filter = ('empresa',)
-    search_fields = ('empresa__nombre',)
+    search_fields = ('empresa__nombre', 'concepto')
     # Mostrar los campos calculados como inputs readonly (no como "readonly_fields")
     # para que puedan actualizarse dinámicamente desde JS en el formulario.
     readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
     fieldsets = (
         (None, {
-            'fields': ('empresa', 'id_manual')
+            'fields': ('empresa', 'id_manual', 'concepto')
         }),
         ('Costos', {
             'fields': ('proveedor', 'mo_soma', 'otros_materiales', 'porcentaje_pu')
@@ -599,6 +600,18 @@ class CTZAdmin(admin.ModelAdmin):
         except Exception:
             return f"$\u00A0{v}"
 
+    def concepto_display(self, obj):
+        """Muestra una versión truncada del concepto para la lista."""
+        try:
+            concepto = obj.concepto or ''
+            if len(concepto) > 50:
+                return concepto[:50] + '...'
+            return concepto or '—'
+        except Exception:
+            return '—'
+    concepto_display.short_description = 'Concepto'
+    concepto_display.admin_order_field = 'concepto'
+
     def proveedor_display(self, obj):
         # Mostrar suma de items si existen, sino el campo antiguo
         try:
@@ -725,7 +738,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                 ((
                     reverse('admin:empresas_ctz_change', args=(d.ctz.pk,), current_app=self.admin_site.name),
                     getattr(d.ctz, 'id_manual', d.ctz.pk),
-                    (d.concepto or '').strip(),
+                    (getattr(d.ctz, 'concepto', '') or '').strip(),
                     (d.unidad or '').strip(),
                     d.pu,
                     _fmt_number_trim(d.cantidad),
@@ -767,12 +780,15 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         return my_urls + urls
 
     def ctz_total_pu_view(self, request, ctz_id):
-        # Devuelve JSON con el total_pu de la CTZ solicitada.
+        # Devuelve JSON con el total_pu y concepto de la CTZ solicitada.
         from django.http import JsonResponse
         from django.shortcuts import get_object_or_404
         try:
             ctz = get_object_or_404(CTZ, pk=ctz_id)
-            return JsonResponse({'total_pu': ctz.total_pu})
+            return JsonResponse({
+                'total_pu': ctz.total_pu,
+                'concepto': getattr(ctz, 'concepto', '') or ''
+            })
         except Exception:
             return JsonResponse({'error': 'not found'}, status=404)
 
@@ -806,7 +822,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     'cantidad': _fmt_number_trim(d.cantidad),
                     'pu': _fmt_number_trim(d.pu),
                     'total': _fmt_number_trim(d.total),
-                    'concepto': d.concepto or '',
+                    'concepto': getattr(d.ctz, 'concepto', '') or '',
                     'unidad': d.unidad or '',
                 })
             return JsonResponse({'detalles': detalles})
@@ -1227,7 +1243,7 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                         except Exception:
                             partida_label = str(idx)
                         c.drawString(x, y, partida_label)
-                        c.drawString(x+80, y, (d.concepto or '')[:30])
+                        c.drawString(x+80, y, (getattr(d.ctz, 'concepto', '') or '')[:30])
                         # cantidad (centered)
                         try:
                             c.drawCentredString(x+300, y, str(d.cantidad))
@@ -1302,6 +1318,15 @@ class CTZFormatoAdmin(admin.ModelAdmin):
         """Calcular subtotal/iva/total a partir de las CTZs seleccionadas y las cantidades
         publicadas en campos con nombre 'ctz_qty_<id>'. Luego guardar el objeto y las relaciones m2m.
         """
+        # Debug: Mostrar todas las claves del POST
+        import sys
+        print(f"POST keys: {list(request.POST.keys())}", file=sys.stderr)
+        print(f"POST ctzs: {request.POST.getlist('ctzs')}", file=sys.stderr)
+        # Mostrar valores de ctz_qty_*
+        for key in request.POST.keys():
+            if key.startswith('ctz_qty_'):
+                print(f"  {key} = {request.POST.get(key)}", file=sys.stderr)
+        
         # Construir la instancia desde el form (sin guardar todavía) para
         # evitar que `form.save()` sobrescriba los campos que calculemos aquí.
         try:
@@ -1387,7 +1412,6 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                 except Exception:
                     continue
                 qty_raw = request.POST.get(f'ctz_qty_{cid}', '')
-                concept_raw = request.POST.get(f'ctz_concept_{cid}', '')
                 unit_raw = request.POST.get(f'ctz_unit_{cid}', '')
                 try:
                     qty = Decimal(str(qty_raw).replace(',', '.')) if qty_raw else Decimal('0')
@@ -1400,20 +1424,30 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                     pu = Decimal('0')
                 total = (qty * pu).quantize(Decimal('0.01'))
                 if qty and qty != Decimal('0'):
-                    detalles.append(CTZFormatoDetalle(formato=instance, ctz=c, cantidad=qty, pu=pu, total=total, concepto=concept_raw, unidad=unit_raw))
+                    detalles.append(CTZFormatoDetalle(formato=instance, ctz=c, cantidad=qty, pu=pu, total=total, unidad=unit_raw))
             if detalles:
                 CTZFormatoDetalle.objects.bulk_create(detalles)
         except Exception:
             # no queremos romper el guardado por errores en persistencia de detalles
-            pass
+            import traceback
+            logger = logging.getLogger(__name__)
+            logger.error('Error al guardar detalles de CTZFormato: %s', traceback.format_exc())
 
 
 class CTZFormatoDetalleInline(admin.TabularInline):
     model = CTZFormatoDetalle
     extra = 0
-    readonly_fields = ('pu', 'total')
-    fields = ('ctz', 'cantidad', 'unidad', 'concepto', 'pu', 'total')
+    readonly_fields = ('pu', 'total', 'concepto_ctz')
+    fields = ('ctz', 'concepto_ctz', 'cantidad', 'unidad', 'pu', 'total')
     can_delete = True
+
+    def concepto_ctz(self, obj):
+        """Muestra el concepto del CTZ asociado (readonly)."""
+        try:
+            return getattr(obj.ctz, 'concepto', '') or '—'
+        except Exception:
+            return '—'
+    concepto_ctz.short_description = 'Concepto CTZ'
 
 
 # Registrar CTZFormato en admin

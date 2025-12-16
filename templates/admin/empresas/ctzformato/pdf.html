@@ -284,7 +284,7 @@
         {% for d in object.detalles.all %}
           <tr>
             <td class="center">{{ forloop.counter|floatformat:2 }}</td>
-            <td>{{ d.concepto }}</td>
+            <td>{{ d.ctz.concepto }}</td>
             <td class="center">{{ d.cantidad|trim_number }}</td>
             <td class="center">{{ d.unidad }}</td>
             <td class="right">{{ d.pu|money }}</td>

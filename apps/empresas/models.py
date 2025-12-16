@@ -2,6 +2,7 @@ from django.db import models
 from django.urls import reverse
 from django.core.validators import RegexValidator
 from django.db.models import SET_NULL
+from django.utils import timezone
 
 
 class Empresa(models.Model):
@@ -74,6 +75,8 @@ class CTZ(models.Model):
     total_pu = models.IntegerField(default=0, verbose_name='TOTAL PU')
     # Identificador manual (editable por el usuario). No confundir con la PK automática `id`.
     id_manual = models.CharField(max_length=50, blank=True, null=True, verbose_name='ID')
+    # Campo concepto para describir el CTZ
+    concepto = models.TextField(verbose_name='Concepto', blank=True, default='')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -173,7 +176,7 @@ class CTZFormato(models.Model):
     subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Subtotal')
     iva = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='IVA')
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='TOTAL')
-    # Fecha manual editable por el usuario (puede dejarse en blanco)
+    # Fecha manual editable por el usuario (valor por defecto es hoy)
     fecha_manual = models.DateField(blank=True, null=True, verbose_name='Fecha')
     # Texto libre para la redacción propuesta (aprox. media cuartilla). Opcional.
     propuesta_redaccion = models.TextField(blank=True, null=True, verbose_name='Propuesta Redacción')
@@ -199,6 +202,10 @@ class CTZFormato(models.Model):
         # agregados sin que sean sobrescritos por la lógica por defecto.
         if getattr(self, '_skip_recalc', False):
             return super().save(*args, **kwargs)
+
+        # Si no hay fecha_manual, asignara hoy
+        if not self.fecha_manual:
+            self.fecha_manual = timezone.now().date()
 
         # Si se vinculó una CTZ y no se especificó PU manualmente, usar total_pu de la CTZ
         try:
@@ -233,8 +240,6 @@ class CTZFormatoDetalle(models.Model):
     cantidad = models.DecimalField(max_digits=12, decimal_places=3, default=0)
     pu = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    # Concepto específico para esta CTZ dentro del formato
-    concepto = models.TextField(verbose_name='Concepto CTZ', blank=True, default='')
     # Unidad específica para esta CTZ dentro del formato
     unidad = models.CharField(max_length=30, verbose_name='Unidad CTZ', blank=True, default='')
 

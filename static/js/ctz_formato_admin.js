@@ -23,6 +23,48 @@
     }catch(e){return v}
   }
 
+  // Función para preparar el formulario antes de enviarlo
+  function prepareFormForSubmit(){
+    // Recolectar todos los valores de inputs dinámicos (ctz_qty_*, ctz_unit_*) 
+    // y crear hidden inputs para incluirlos en el POST
+    var ctzRows = document.querySelectorAll('.ctz-row');
+    var formEl = document.querySelector('form');
+    if(!formEl) return;
+    
+    ctzRows.forEach(function(row){
+      var ctzId = row.getAttribute('data-ctz-id');
+      if(!ctzId) return;
+      
+      // Recolectar cantidad
+      var qtyInput = row.querySelector('.ctz-qty');
+      if(qtyInput){
+        var hiddenQty = document.getElementById('hidden_ctz_qty_' + ctzId);
+        if(!hiddenQty){
+          hiddenQty = document.createElement('input');
+          hiddenQty.type = 'hidden';
+          hiddenQty.id = 'hidden_ctz_qty_' + ctzId;
+          hiddenQty.name = 'ctz_qty_' + ctzId;
+          formEl.appendChild(hiddenQty);
+        }
+        hiddenQty.value = qtyInput.value;
+      }
+      
+      // Recolectar unidad
+      var unitInput = row.querySelector('.ctz-unit');
+      if(unitInput){
+        var hiddenUnit = document.getElementById('hidden_ctz_unit_' + ctzId);
+        if(!hiddenUnit){
+          hiddenUnit = document.createElement('input');
+          hiddenUnit.type = 'hidden';
+          hiddenUnit.id = 'hidden_ctz_unit_' + ctzId;
+          hiddenUnit.name = 'ctz_unit_' + ctzId;
+          formEl.appendChild(hiddenUnit);
+        }
+        hiddenUnit.value = unitInput.value;
+      }
+    });
+  }
+
   function computeAndSetTotals(){
     var subtotalEl = document.getElementById('id_subtotal');
     var ivaEl = document.getElementById('id_iva');
@@ -129,8 +171,8 @@
         var puInput = document.createElement('input'); puInput.type = 'number'; puInput.step = '0.01'; puInput.readOnly = true; puInput.className = 'ctz-pu'; puInput.id = 'id_ctz_pu_'+s.id;
         // cantidad (editable)
         var qtyInput = document.createElement('input'); qtyInput.type = 'number'; qtyInput.step = '0.001'; qtyInput.value = '0'; qtyInput.className = 'ctz-qty'; qtyInput.id = 'id_ctz_qty_'+s.id; qtyInput.name = 'ctz_qty_'+s.id;
-  // concepto específico por CTZ (editable)
-  var conceptInput = document.createElement('input'); conceptInput.type = 'text'; conceptInput.className = 'ctz-concept'; conceptInput.id = 'id_ctz_concept_'+s.id; conceptInput.name = 'ctz_concept_'+s.id; conceptInput.placeholder = 'Concepto específico...'; conceptInput.style.minWidth = '180px';
+  // concepto del CTZ (readonly, se muestra desde el CTZ)
+  var conceptText = document.createElement('span'); conceptText.className = 'ctz-concept'; conceptText.id = 'id_ctz_concept_'+s.id; conceptText.style.fontStyle = 'italic'; conceptText.style.color = '#666';
     // unidad específica por CTZ
     var unitInput = document.createElement('input'); unitInput.type = 'text'; unitInput.className = 'ctz-unit'; unitInput.id = 'id_ctz_unit_'+s.id; unitInput.name = 'ctz_unit_'+s.id; unitInput.placeholder = 'Unidad'; unitInput.style.minWidth = '80px';
         // per-ctz total (readonly)
@@ -141,30 +183,35 @@
   var inner = document.createElement('div'); inner.style.display='flex'; inner.style.gap='8px'; inner.style.marginTop='4px'; inner.style.alignItems='center';
   var puWrap = document.createElement('div'); puWrap.appendChild(document.createTextNode('PU: ')); puWrap.appendChild(puInput);
   var qtyWrap = document.createElement('div'); qtyWrap.appendChild(document.createTextNode('Cantidad: ')); qtyWrap.appendChild(qtyInput);
-  var conceptWrap = document.createElement('div'); conceptWrap.appendChild(document.createTextNode('Concepto: ')); conceptWrap.appendChild(conceptInput);
+  var conceptWrap = document.createElement('div'); conceptWrap.appendChild(document.createTextNode('Concepto: ')); conceptWrap.appendChild(conceptText);
   var unitWrap = document.createElement('div'); unitWrap.appendChild(document.createTextNode('Unidad: ')); unitWrap.appendChild(unitInput);
   var totalWrap = document.createElement('div'); totalWrap.appendChild(document.createTextNode('Total: ')); totalWrap.appendChild(perTotal);
   inner.appendChild(puWrap); inner.appendChild(qtyWrap); inner.appendChild(unitWrap); inner.appendChild(conceptWrap); inner.appendChild(totalWrap);
         layout.appendChild(inner);
         row.appendChild(layout);
         container.appendChild(row);
-        // fetch PU value
+        // fetch PU value and concepto
         fetch('/admin/empresas/ctzformato/ctz-total-pu/'+s.id+'/', {credentials:'same-origin'})
           .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
-          .then(function(data){ if(data && typeof data.total_pu !== 'undefined'){ puInput.value = fmtNumber(data.total_pu); // set initial
-                // compute per-ctz total when pu known
-                var qty = parseNumber(qtyInput.value || 0);
-                perTotal.value = fmtNumber(qty * parseNumber(puInput.value));
-                computeAndSetTotals();
-            }})
+          .then(function(data){ 
+            if(data && typeof data.total_pu !== 'undefined'){ 
+              puInput.value = fmtNumber(data.total_pu); // set initial
+              // set concepto if available
+              if(data.concepto && conceptText){ 
+                conceptText.textContent = data.concepto || '—'; 
+              }
+              // compute per-ctz total when pu known
+              var qty = parseNumber(qtyInput.value || 0);
+              perTotal.value = fmtNumber(qty * parseNumber(puInput.value));
+              computeAndSetTotals();
+            }
+          })
           .catch(function(e){ console && console.debug && console.debug('fetch pu failed', e); });
         // recompute when cantidad changes
         qtyInput.addEventListener('input', function(){
           try{ perTotal.value = fmtNumber(parseNumber(qtyInput.value) * parseNumber(puInput.value)); }catch(e){}
           computeAndSetTotals();
         });
-        // Optional: recompute totals when concept changes has no effect, but keep for future
-        conceptInput.addEventListener('input', function(){ /* noop for now */ });
       }
     });
     // finally recompute totals
@@ -185,6 +232,23 @@
               .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
               .then(function(data){
                 if(!data || !data.contacts) return;
+                if(data.contacts.length === 0){
+                  // No contacts found - show warning message
+                  var msg = document.createElement('div');
+                  msg.style.cssText = 'background-color: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 12px; margin: 10px 0; border-radius: 4px; display: none;';
+                  msg.textContent = '⚠️ No hay contactos registrados para esta empresa. Por favor, crea un contacto antes de continuar.';
+                  msg.id = 'no-contacts-warning';
+                  // Insert message near the contacto select
+                  if(contactoSelect.parentNode){
+                    contactoSelect.parentNode.insertBefore(msg, contactoSelect.nextSibling);
+                  }
+                  msg.style.display = 'block';
+                  return;
+                }
+                // Contacts found - clear any warning message
+                var warning = document.getElementById('no-contacts-warning');
+                if(warning) warning.remove();
+                
                 // clear existing options
                 contactoSelect.innerHTML = '';
                 // add empty option
@@ -242,7 +306,7 @@
                   }
                   if(row){
                     try{ var qty = row.querySelector('.ctz-qty'); if(qty) qty.value = d.cantidad; }catch(e){}
-                    try{ var concept = row.querySelector('.ctz-concept'); if(concept) concept.value = d.concepto; }catch(e){}
+                    try{ var concept = row.querySelector('.ctz-concept'); if(concept) concept.textContent = d.concepto || '—'; }catch(e){}
                     try{ var unit = row.querySelector('.ctz-unit'); if(unit) unit.value = d.unidad; }catch(e){}
                     try{ var pu = row.querySelector('.ctz-pu'); if(pu) pu.value = fmtNumber(d.pu); }catch(e){}
                     try{ var per = row.querySelector('.ctz-per-total'); if(per) per.value = fmtNumber(d.total); }catch(e){}
@@ -260,7 +324,37 @@
                       // populate based on first chosen
                       fetch('/admin/empresas/ctzformato/ctz-contacts/'+chosenOpts[0]+'/', {credentials:'same-origin'})
                         .then(function(r){ if(!r.ok) throw new Error('network'); return r.json(); })
-                        .then(function(data){ if(!data || !data.contacts) return; contactoSelect.innerHTML=''; var emptyOpt=document.createElement('option'); emptyOpt.value=''; emptyOpt.textContent='---------'; contactoSelect.appendChild(emptyOpt); data.contacts.forEach(function(c){ var o=document.createElement('option'); o.value=c.id; o.textContent=c.label + (c.correo ? (' - ' + c.correo) : ''); contactoSelect.appendChild(o); }); })
+                        .then(function(data){ 
+                          if(!data || !data.contacts) return; 
+                          if(data.contacts.length === 0){
+                            // No contacts found - show warning message
+                            var msg = document.createElement('div');
+                            msg.style.cssText = 'background-color: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 12px; margin: 10px 0; border-radius: 4px; display: none;';
+                            msg.textContent = '⚠️ No hay contactos registrados para esta empresa. Por favor, crea un contacto antes de continuar.';
+                            msg.id = 'no-contacts-warning';
+                            // Insert message near the contacto select
+                            if(contactoSelect.parentNode){
+                              contactoSelect.parentNode.insertBefore(msg, contactoSelect.nextSibling);
+                            }
+                            msg.style.display = 'block';
+                            return;
+                          }
+                          // Contacts found - clear any warning message
+                          var warning = document.getElementById('no-contacts-warning');
+                          if(warning) warning.remove();
+                          
+                          contactoSelect.innerHTML=''; 
+                          var emptyOpt=document.createElement('option'); 
+                          emptyOpt.value=''; 
+                          emptyOpt.textContent='---------'; 
+                          contactoSelect.appendChild(emptyOpt); 
+                          data.contacts.forEach(function(c){ 
+                            var o=document.createElement('option'); 
+                            o.value=c.id; 
+                            o.textContent=c.label + (c.correo ? (' - ' + c.correo) : ''); 
+                            contactoSelect.appendChild(o); 
+                          }); 
+                        })
                         .catch(function(e){console && console.debug && console.debug('fetch contacts failed', e);});
                     }
                   }
@@ -291,6 +385,14 @@
           setTimeout(function(){ buildCTZRowsFromSelect(selectEl); }, 50);
         }
       }, true);
+    }
+    
+    // Interceptar el envío del formulario para recolectar datos dinámicos
+    var formEl = document.querySelector('form');
+    if(formEl){
+      formEl.addEventListener('submit', function(){
+        prepareFormForSubmit();
+      });
     }
   });
 
