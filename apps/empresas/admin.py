@@ -1697,6 +1697,16 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 except Exception:
                     return str(v or '')
 
+            def draw_value_centered(x, y, value, fsize=10, bold=True, cell_height=16):
+                """Dibuja un valor centrado verticalmente en una celda."""
+                try:
+                    c.setFont('Helvetica-Bold' if bold else 'Helvetica', fsize)
+                    # Calcular la posición vertical centrada
+                    vertical_center = y - cell_height / 2 - fsize / 2 + 2
+                    c.drawString(x, vertical_center, str(value or ''))
+                except Exception:
+                    pass
+
             def draw_value(x, y, value, fsize=10, bold=True):
                 try:
                     c.setFont('Helvetica-Bold' if bold else 'Helvetica', fsize)
@@ -1760,7 +1770,7 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
             # Tabla inferior: Catálogo de conceptos
             # Coordenadas base de la primera fila de datos (no encabezados; ya están en el PDF)
             tx = 31.5
-            ty = 516  # Movido más arriba (era 240)
+            ty = 529  # Posición ajustada más cerca del encabezado
             row_h = 16
             col_cod = 39.2
             col_conc = 227.6
@@ -1795,55 +1805,163 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 total_suma += importe
 
                 # Dibujar bordes de la fila (celdas de tabla)
+                # ty es la posición superior de la celda
+                cell_top = ty
+                cell_bottom = ty - row_h
                 c.setStrokeColorRGB(0, 0, 0)
                 c.setLineWidth(0.5)
+                
                 # COD
-                c.rect(tx, ty - 3, col_cod, row_h)
-                draw_value(tx + 4, ty, cod, fsize=6, bold=False)
+                c.rect(tx, cell_bottom, col_cod, row_h)
+                y_center = cell_bottom + row_h / 2
+                c.setFont('Helvetica', 6)
+                c.drawString(tx + 4, y_center - 2, str(cod))
+                
                 # Concepto
-                c.rect(tx + col_cod, ty - 3, col_conc, row_h)
-                used_h = draw_wrapped(tx + col_cod + 4, ty + 2, concepto, width=col_conc - 8, fsize=5, leading=12)
+                c.rect(tx + col_cod, cell_bottom, col_conc, row_h)
+                c.setFont('Helvetica', 5)
+                # Truncar el concepto si es muy largo para que quepa en la celda
+                concepto_trunc = (concepto[:50] + '...') if len(concepto) > 50 else concepto
+                c.drawString(tx + col_cod + 4, y_center - 2, concepto_trunc)
+                
                 # Cantidad
-                c.rect(tx + col_cod + col_conc, ty - 3, col_cant, row_h)
-                draw_value(tx + col_cod + col_conc + 10, ty, str(cantidad), fsize=6, bold=False)
+                c.rect(tx + col_cod + col_conc, cell_bottom, col_cant, row_h)
+                c.setFont('Helvetica', 6)
+                c.drawString(tx + col_cod + col_conc + 10, y_center - 2, str(cantidad))
+                
                 # Unidad
-                c.rect(tx + col_cod + col_conc + col_cant, ty - 3, col_unid, row_h)
-                draw_value(tx + col_cod + col_conc + col_cant + 20, ty, unidad, fsize=6, bold=False)
+                c.rect(tx + col_cod + col_conc + col_cant, cell_bottom, col_unid, row_h)
+                c.setFont('Helvetica', 6)
+                c.drawString(tx + col_cod + col_conc + col_cant + 20, y_center - 2, unidad)
+                
                 # P.U. (derecha)
-                c.rect(tx + col_cod + col_conc + col_cant + col_unid, ty - 3, col_pu, row_h)
+                c.rect(tx + col_cod + col_conc + col_cant + col_unid, cell_bottom, col_pu, row_h)
                 try:
                     from reportlab.pdfbase import pdfmetrics
                     c.setFont('Helvetica', 6)
                     txt = fmt_money_us(pu)
                     w = pdfmetrics.stringWidth(txt, 'Helvetica', 6)
-                    c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu - w - 6, ty, txt)
+                    c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu - w - 6, y_center - 2, txt)
                 except Exception:
-                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + 6, ty, fmt_money_us(pu), fsize=9, bold=False)
+                    pass
+                
                 # Importe (derecha)
-                c.rect(tx + col_cod + col_conc + col_cant + col_unid + col_pu, ty - 3, col_imp, row_h)
+                c.rect(tx + col_cod + col_conc + col_cant + col_unid + col_pu, cell_bottom, col_imp, row_h)
                 try:
                     from reportlab.pdfbase import pdfmetrics
                     c.setFont('Helvetica', 6)
                     txt = fmt_money_us(importe)
                     w = pdfmetrics.stringWidth(txt, 'Helvetica', 6)
-                    c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, ty, txt)
+                    c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, y_center - 2, txt)
                 except Exception:
-                    draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, ty, fmt_money_us(importe), fsize=9, bold=False)
+                    pass
 
-                # avanzar a la siguiente fila; ajustar por alto usado en concepto
-                ty -= max(row_h, int(used_h))
+                # avanzar a la siguiente fila
+                ty -= row_h
 
             # Total general
             # Total general (esquina derecha de la tabla) - usar la suma calculada de los importes
+            # Dibuja justo debajo de la última fila de CTZ
+            # ty ya está decrementado después del loop, así que es el bottom de la última fila
+            # Necesitamos otra fila de separación, así que decrementamos una vez más
+            cell_bottom = ty - row_h
+            c.setStrokeColorRGB(0, 0, 0)
+            c.setLineWidth(0.5)
+            c.setFillColorRGB(0, 0, 0)  # Negro para fondo
+            
+            # Dibujar celdas llenas de negro (excepto la última que tiene el total)
+            c.rect(tx, cell_bottom, col_cod, row_h, fill=True)  # COD
+            c.rect(tx + col_cod, cell_bottom, col_conc, row_h, fill=True)  # Concepto
+            c.rect(tx + col_cod + col_conc, cell_bottom, col_cant, row_h, fill=True)  # Cantidad
+            c.rect(tx + col_cod + col_conc + col_cant, cell_bottom, col_unid, row_h, fill=True)  # Unidad
+            c.rect(tx + col_cod + col_conc + col_cant + col_unid, cell_bottom, col_pu, row_h, fill=True)  # P.U.
+            c.rect(tx + col_cod + col_conc + col_cant + col_unid + col_pu, cell_bottom, col_imp, row_h, fill=False)  # Importe (sin llenar)
+            
+            # Dibujar bordes sin llenar para todas las celdas
+            c.setFillColorRGB(1, 1, 1)  # Cambiar a blanco para no llenar
+            c.rect(tx, cell_bottom, col_cod, row_h)  # COD
+            c.rect(tx + col_cod, cell_bottom, col_conc, row_h)  # Concepto
+            c.rect(tx + col_cod + col_conc, cell_bottom, col_cant, row_h)  # Cantidad
+            c.rect(tx + col_cod + col_conc + col_cant, cell_bottom, col_unid, row_h)  # Unidad
+            c.rect(tx + col_cod + col_conc + col_cant + col_unid, cell_bottom, col_pu, row_h)  # P.U.
+            c.rect(tx + col_cod + col_conc + col_cant + col_unid + col_pu, cell_bottom, col_imp, row_h)  # Importe
+            
+            y_center = cell_bottom + row_h / 2
             try:
                 from reportlab.pdfbase import pdfmetrics
-                c.setFont('Helvetica-Bold', 11)
+                c.setFont('Helvetica-Bold', 7)
+                c.setFillColorRGB(0, 0, 0)  # Texto en negro
                 txt = fmt_money_us(total_suma)
-                w = pdfmetrics.stringWidth(txt, 'Helvetica-Bold', 11)
-                c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, 110, txt)
+                w = pdfmetrics.stringWidth(txt, 'Helvetica-Bold', 7)
+                c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + col_imp - w - 8, y_center - 2, txt)
             except Exception:
-                draw_value(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, 110, fmt_money_us(total_suma), fsize=11)
+                c.setFont('Helvetica-Bold', 7)
+                c.setFillColorRGB(0, 0, 0)  # Texto en negro
+                c.drawString(tx + col_cod + col_conc + col_cant + col_unid + col_pu + 6, y_center - 2, fmt_money_us(total_suma))
 
+            # Nueva fila combinada debajo del total (4 veces la altura)
+            big_row_h = row_h * 4
+            cell_bottom = ty - row_h - big_row_h
+            
+            c.setStrokeColorRGB(0, 0, 0)
+            c.setLineWidth(0.5)
+            c.setFillColorRGB(1, 1, 1)  # Blanco
+            
+            # Celda combinada: COD + Concepto + Cantidad + Unidad
+            combined_width_1 = col_cod + col_conc + col_cant + col_unid
+            c.rect(tx, cell_bottom, combined_width_1, big_row_h)
+            
+            # Celda combinada: P.U. + Importe
+            combined_width_2 = col_pu + col_imp
+            c.rect(tx + combined_width_1, cell_bottom, combined_width_2, big_row_h)
+
+            # Espacio de firma en la celda derecha (P.U. + Importe)
+            try:
+                x_right = tx + combined_width_1
+                width_right = combined_width_2
+                # Línea de firma centrada
+                line_y = cell_bottom + (big_row_h / 2) + 8
+                c.setStrokeColorRGB(0, 0, 0)
+                c.setLineWidth(0.6)
+                c.line(x_right + 20, line_y, x_right + width_right - 20, line_y)
+
+                # Leyenda completa debajo de la línea
+                c.setFont('Helvetica-Bold', 7)
+                c.setFillColorRGB(0, 0, 0)
+                from reportlab.pdfbase import pdfmetrics
+                legend_lines = [
+                    'FIRMA',
+                    'GUADALUPE FLORES DIAZ',
+                    'SERVICIOS INDUSTRIALES SOMA',
+                ]
+                y_text = line_y - 10
+                for txt in legend_lines:
+                    w_text = pdfmetrics.stringWidth(txt, 'Helvetica-Bold', 7)
+                    c.drawString(x_right + (width_right - w_text) / 2, y_text, txt)
+                    y_text -= 9
+            except Exception:
+                pass
+            
+            # Dibujar las notas en la celda combinada izquierda
+            if obj.notas:
+                try:
+                    # Leyenda NOTAS en negritas, esquina superior izquierda
+                    c.setFillColorRGB(0, 0, 0)
+                    c.setFont('Helvetica-Bold', 6)
+                    c.drawString(tx + 4, cell_bottom + big_row_h - 6, 'NOTAS:')
+
+                    # Envolver el texto de notas dentro de la celda
+                    c.setFont('Helvetica', 5)
+                    notas_text = (obj.notas or '')[:300]  # Limitar a 300 caracteres
+                    lines = notas_text.split('\n')
+                    y_pos = cell_bottom + big_row_h - 14  # debajo de la leyenda
+                    for line in lines[:15]:  # Máximo 15 líneas
+                        if y_pos < cell_bottom + 5:
+                            break
+                        c.drawString(tx + 4, y_pos, line[:80])  # Máximo 80 caracteres por línea
+                        y_pos -= 8
+                except Exception:
+                    pass
             c.showPage()
             c.save()
             overlay_buf.seek(0)
