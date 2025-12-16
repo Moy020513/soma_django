@@ -727,7 +727,6 @@ class CTZFormatoAdmin(admin.ModelAdmin):
                         s = format(v, 'f')
                     else:
                         s = str(v)
-                    # remove trailing zeros and trailing dot
                     if '.' in s:
                         s = s.rstrip('0').rstrip('.')
                     return s
@@ -1462,6 +1461,15 @@ admin.site.register(CTZFormato, CTZFormatoAdmin)
 
 class CTZFormatoMPAForm(forms.ModelForm):
     """Formulario para CTZFormatoMPA"""
+
+    # Aceptar tanto 'YYYY-MM-DD' (input date) como 'DD/MM/YYYY' que el usuario puede escribir
+    fecha_elaboracion = forms.DateField(
+        required=False,
+        # Aceptar: 2025-12-05 (input date), 05/12/2025, 2025/12/05
+        input_formats=['%Y-%m-%d', '%d/%m/%Y', '%Y/%m/%d'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+    )
+
     class Meta:
         model = CTZFormatoMPA
         fields = (
@@ -1479,9 +1487,9 @@ class CTZFormatoMPAForm(forms.ModelForm):
             'proveedor': forms.TextInput(attrs={'size': 40}),
             'fecha_elaboracion': forms.DateInput(attrs={'type': 'date'}),
             'importe_contrato': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
-            'anticipo_solicitado': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
-            'mano_de_obra': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
-            'materiales': forms.NumberInput(attrs={'step': '0.01', 'min': 0}),
+            'anticipo_solicitado': forms.TextInput(attrs={'size': 20}),
+            'mano_de_obra': forms.TextInput(attrs={'size': 20}),
+            'materiales': forms.TextInput(attrs={'size': 20}),
             'tiempo_ejecucion_valor': forms.NumberInput(attrs={'min': 1}),
             'total': forms.NumberInput(attrs={'readonly': 'readonly'}),
             'notas': forms.Textarea(attrs={'rows': 4}),
@@ -1580,6 +1588,13 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
                 except Exception:
                     return str(v or '')
 
+            def fmt_money_us(v):
+                """Formato con separador de miles coma y decimales punto (ej. 21,590.00)."""
+                try:
+                    return f"$ {float(v):,.2f}"
+                except Exception:
+                    return str(v or '')
+
             def draw_value(x, y, value, fsize=10, bold=True):
                 try:
                     c.setFont('Helvetica-Bold' if bold else 'Helvetica', fsize)
@@ -1629,12 +1644,13 @@ class CTZFormatoMPAAdmin(admin.ModelAdmin):
             draw_value(468, height - 190, obj.departamento, fsize=5)
 
             # Datos de contratación (fila con importes)
-            draw_value(35, height - 260, fmt_money(obj.importe_contrato), fsize=5)
+            # Importe de contrato con estilo miles="," y decimales="."
+            draw_value(35, height - 260, fmt_money_us(obj.importe_contrato), fsize=5)
             draw_value(75, height - 260, fmt_money(obj.anticipo_solicitado), fsize=5)
             draw_value(120, height - 260, obj.moneda, fsize=5)
             # Mano de obra / Materiales
-            draw_value(190, height - 260, fmt_money(obj.mano_de_obra), fsize=5)
-            draw_value(254, height - 260, fmt_money(obj.materiales), fsize=5)
+            draw_value(190, height - 260, obj.mano_de_obra, fsize=5)
+            draw_value(254, height - 260, obj.materiales, fsize=5)
             # Tiempo de ejecución (valor y unidad)
             draw_value(303, height - 260, obj.tiempo_ejecucion_valor, fsize=5)
             draw_value(355, height - 260, obj.tiempo_ejecucion_unidad, fsize=5)

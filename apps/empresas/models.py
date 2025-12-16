@@ -315,11 +315,11 @@ class CTZFormatoMPA(models.Model):
         db_column='importe_contacto'
     )
     
-    # Anticipo solicitado
-    anticipo_solicitado = models.DecimalField(
-        max_digits=14, 
-        decimal_places=2, 
-        default=0, 
+    # Anticipo solicitado (texto libre / puede ser cantidad o leyenda)
+    anticipo_solicitado = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
         verbose_name='Anticipo Solicitado'
     )
     
@@ -331,19 +331,19 @@ class CTZFormatoMPA(models.Model):
         verbose_name='Moneda'
     )
     
-    # Mano de obra
-    mano_de_obra = models.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        default=0,
+    # Mano de obra (texto libre / puede ser cantidad o leyenda)
+    mano_de_obra = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
         verbose_name='Mano de Obra'
     )
     
-    # Materiales
-    materiales = models.DecimalField(
-        max_digits=14,
-        decimal_places=2,
-        default=0,
+    # Materiales (texto libre / puede ser cantidad o leyenda)
+    materiales = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
         verbose_name='Materiales'
     )
     
