@@ -1,0 +1,70 @@
+{% extends 'admin/change_list.html' %}
+{% load i18n admin_urls admin_list %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    body.app-empresas.model-ctzformatompa #changelist-results {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      display: block;
+      width: 100%;
+    }
+
+    body.app-empresas.model-ctzformatompa #result_list {
+      width: auto;
+      min-width: 1400px;
+      table-layout: auto;
+    }
+
+    body.app-empresas.model-ctzformatompa #result_list th,
+    body.app-empresas.model-ctzformatompa #result_list td {
+      white-space: nowrap;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  {{ block.super }}
+  <script>
+    (function() {
+      function setupScroll() {
+        const changelistResults = document.getElementById('changelist-results');
+        const resultList = document.getElementById('result_list');
+        
+        if (!changelistResults || !resultList) {
+          console.log('Esperando tabla...');
+          setTimeout(setupScroll, 100);
+          return;
+        }
+        
+        console.log('Tabla encontrada, aplicando estilos...');
+        
+        // Aplicar estilos SOLO al contenedor de resultados (tabla)
+        changelistResults.style.cssText = 'overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; display: block; width: 100%;';
+        
+        // Asegurar que la tabla sea más ancha que el contenedor
+        resultList.style.cssText = 'width: auto; min-width: 1400px; table-layout: auto;';
+        
+        // Aplicar estilos a celdas
+        const cells = document.querySelectorAll('#result_list th, #result_list td');
+        cells.forEach(cell => {
+          cell.style.whiteSpace = 'nowrap';
+        });
+        
+        console.log('Estilos aplicados correctamente');
+      }
+      
+      // Ejecutar apenas sea posible
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupScroll);
+      } else {
+        setupScroll();
+      }
+      
+      // También ejecutar después de HTMX events
+      document.addEventListener('htmx:afterSwap', setupScroll);
+      document.addEventListener('htmx:afterSettle', setupScroll);
+    })();
+  </script>
+{% endblock %}

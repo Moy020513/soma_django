@@ -45,6 +45,24 @@
       overflow: hidden;
     }
 
+    /* OVERRIDE para CTZ Formato MPA: permitir scroll horizontal */
+    body.app-empresas.model-ctzformatompa .changelist-content {
+      overflow: hidden !important;
+      width: 100% !important;
+    }
+
+    body.app-empresas.model-ctzformatompa #result_list {
+      width: auto !important;
+      min-width: 1500px !important;
+      table-layout: auto !important;
+      margin: 0;
+    }
+
+    body.app-empresas.model-ctzformatompa #result_list th,
+    body.app-empresas.model-ctzformatompa #result_list td {
+      white-space: nowrap !important;
+    }
+
     /* Por defecto algunos changelists usan table-layout fixed para layouts compactos.
        Para CTZ queremos que las columnas crezcan según el contenido más largo, así que
        anulamos a table-layout:auto más abajo para el modelo ctz. */
@@ -90,6 +108,54 @@
    body.app-empresas.model-ctz #result_list td.column-total_pu_display { min-width: 120px; }
    body.app-empresas.model-ctz #result_list td.column-fecha_creacion { min-width: 160px; }
 
+    /* Para CTZ Formato MPA: permitir scroll horizontal */
+    body.app-empresas.model-ctzformatompa .changelist-content {
+      overflow: visible !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+
+    body.app-empresas.model-ctzformatompa .changelist-form-container,
+    body.app-empresas.model-ctzformatompa #changelist-form,
+    body.app-empresas.model-ctzformatompa #changelist,
+    body.app-empresas.model-ctzformatompa #changelist-results {
+      overflow: visible !important;
+      width: 100%;
+    }
+
+    body.app-empresas.model-ctzformatompa .results,
+    body.app-empresas.model-ctzformatompa #changelist .results {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+      display: block;
+      padding: 0 !important;
+    }
+
+    body.app-empresas.model-ctzformatompa #result_list {
+      width: auto !important;
+      min-width: 1100px !important;
+      table-layout: auto !important;
+      border-collapse: collapse;
+    }
+
+    body.app-empresas.model-ctzformatompa #result_list th,
+    body.app-empresas.model-ctzformatompa #result_list td {
+      white-space: normal !important;
+    }
+
+    /* Override para CTZ Formato MPA: permitir scroll horizontal */
+    body.app-empresas.model-ctzformatompa .changelist-content {
+      overflow: visible !important;
+      overflow-x: auto !important;
+      overflow-y: visible !important;
+    }
+
+    body.app-empresas.model-ctzformatompa #changelist {
+      overflow: visible !important;
+    }
+
     .breadcrumbs {
       background: #f9fafb;
       padding: 1rem 2rem;
@@ -103,8 +169,6 @@
       font-weight: 500;
       transition: color 0.2s;
     }
-
-    .breadcrumbs a:hover {
       color: #047857;
       text-decoration: underline;
     }
