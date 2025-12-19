@@ -39,7 +39,7 @@ class RegistrarUbicacionView(EmpleadoRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         empleado = self.request.user.empleado
-        hoy = timezone.now().date()
+        hoy = timezone.localtime(timezone.now()).date()
         
         # Verificar si hay una inasistencia registrada para hoy
         from apps.recursos_humanos.models import Inasistencia
@@ -119,7 +119,7 @@ class RegistrarUbicacionAPIView(EmpleadoRequiredMixin, View):
             
             # Verificar si hay inasistencia registrada para hoy
             from apps.recursos_humanos.models import Inasistencia
-            hoy = timezone.now().date()
+            hoy = timezone.localtime(timezone.now()).date()
             tiene_inasistencia = Inasistencia.objects.filter(
                 empleado=empleado,
                 fecha=hoy,
@@ -208,9 +208,9 @@ class DashboardUbicacionesView(AdminRequiredMixin, TemplateView):
             try:
                 fecha_consulta = datetime.strptime(fecha_param, '%Y-%m-%d').date()
             except ValueError:
-                fecha_consulta = timezone.now().date()
+                fecha_consulta = timezone.localtime(timezone.now()).date()
         else:
-            fecha_consulta = timezone.now().date()
+            fecha_consulta = timezone.localtime(timezone.now()).date()
         
         # Obtener registros del día específico
         registros_entrada = RegistroUbicacion.registros_del_dia(fecha_consulta).filter(tipo='entrada')
@@ -293,9 +293,9 @@ class EmpleadosSinEntradaView(AdminRequiredMixin, TemplateView):
             try:
                 fecha_consulta = datetime.strptime(fecha_param, '%Y-%m-%d').date()
             except ValueError:
-                fecha_consulta = timezone.now().date()
+                fecha_consulta = timezone.localtime(timezone.now()).date()
         else:
-            fecha_consulta = timezone.now().date()
+            fecha_consulta = timezone.localtime(timezone.now()).date()
         empleados_activos = Empleado.objects.filter(activo=True)
         registros_entrada = RegistroUbicacion.registros_del_dia(fecha_consulta).filter(tipo='entrada')
         empleados_ids_entrada = registros_entrada.values_list('empleado_id', flat=True).distinct()
@@ -316,9 +316,9 @@ class EmpleadosSinSalidaView(AdminRequiredMixin, TemplateView):
             try:
                 fecha_consulta = datetime.strptime(fecha_param, '%Y-%m-%d').date()
             except ValueError:
-                fecha_consulta = timezone.now().date()
+                fecha_consulta = timezone.localtime(timezone.now()).date()
         else:
-            fecha_consulta = timezone.now().date()
+            fecha_consulta = timezone.localtime(timezone.now()).date()
         empleados_activos = Empleado.objects.filter(activo=True)
         registros_salida = RegistroUbicacion.registros_del_dia(fecha_consulta).filter(tipo='salida')
         empleados_ids_salida = registros_salida.values_list('empleado_id', flat=True).distinct()

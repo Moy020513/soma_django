@@ -629,24 +629,23 @@ function enviarRegistro(tipo, coords) {
             `;
             ubicacionInfo.className = 'alert alert-success';
             
-            // Deshabilitar el botón del tipo registrado
+            const btnEntrada = document.getElementById('btnRegistrarEntrada');
+            const btnSalida = document.getElementById('btnRegistrarSalida');
+            
+            // Deshabilitar el botón del tipo registrado y actualizar su estado
             if (tipo === 'entrada') {
-                const btnEntrada = document.getElementById('btnRegistrarEntrada');
                 btnEntrada.disabled = true;
                 btnEntrada.innerHTML = '<i class="fas fa-check"></i><strong>ENTRADA REGISTRADA</strong><small class="d-block">Ya registrado hoy</small>';
                 btnEntrada.className = 'btn btn-success btn-lg btn-block mb-3 disabled';
+                
+                // Habilitar el botón de salida ahora que hay entrada
+                btnSalida.disabled = false;
+                btnSalida.title = '';
+                btnSalida.classList.remove('disabled');
             } else if (tipo === 'salida') {
-                const btnSalida = document.getElementById('btnRegistrarSalida');
                 btnSalida.disabled = true;
                 btnSalida.innerHTML = '<i class="fas fa-check"></i><strong>SALIDA REGISTRADA</strong><small class="d-block">Ya registrado hoy</small>';
                 btnSalida.className = 'btn btn-danger btn-lg btn-block mb-3 disabled';
-            }
-            
-            // Habilitar el otro botón
-            if (tipo === 'entrada') {
-                document.getElementById('btnRegistrarSalida').disabled = false;
-            } else {
-                document.getElementById('btnRegistrarEntrada').disabled = false;
             }
             
             // Recargar la página después de 3 segundos para mostrar el nuevo registro
@@ -723,6 +722,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mantener estilo de botón pero indicar que se requiere entrada
         btnSalida.classList.add('disabled');
     }
+    {% else %}
+    // Si ya hay entrada pero NO hay salida, habilitar el botón de salida
+    {% if not ya_registro_salida %}
+    if (btnSalida) {
+        btnSalida.disabled = false;
+        btnSalida.title = '';
+        btnSalida.classList.remove('disabled');
+    }
+    {% endif %}
     {% endif %}
 });
 

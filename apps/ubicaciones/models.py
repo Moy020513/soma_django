@@ -93,7 +93,7 @@ class RegistroUbicacion(models.Model):
     @classmethod
     def ya_registro_hoy(cls, empleado, tipo):
         """Verifica si el empleado ya registró entrada o salida hoy"""
-        hoy = timezone.now().date()
+        hoy = timezone.localtime(timezone.now()).date()
         return cls.objects.filter(
             empleado=empleado,
             tipo=tipo,
@@ -104,13 +104,13 @@ class RegistroUbicacion(models.Model):
     def registros_del_dia(cls, fecha=None):
         """Obtiene todos los registros de un día específico"""
         if fecha is None:
-            fecha = timezone.now().date()
+            fecha = timezone.localtime(timezone.now()).date()
         return cls.objects.filter(fecha=fecha)
     
     @classmethod
     def empleados_registrados_hoy(cls, tipo):
         """Obtiene empleados que ya registraron entrada o salida hoy"""
-        hoy = timezone.now().date()
+        hoy = timezone.localtime(timezone.now()).date()
         empleados_ids = cls.objects.filter(
             tipo=tipo,
             fecha=hoy
